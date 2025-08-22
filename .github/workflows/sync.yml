@@ -1,0 +1,32 @@
+name: Sync fork master with upstream master branch
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # run daily at midnight UTC
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream
+        run: git remote add upstream https://github.com/smallstep/certificates.git
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Mirror master
+        run: |
+          git checkout master
+          git reset --hard upstream/master
+          git push origin master --force
