@@ -1,3 +1,16 @@
+// This package contains a workaround for a transport layer timeout related bug
+// between the ACME client & this ACME server whenever
+// a certificate authority takes longer than 15 seconds to return a signed certificate.
+// This bug is specially triggered when using InCommon as the CA
+
+// The root cause of the bug appears to be caused by short `WriteTimeout` value
+// which is currently hardcoded to 15 seconds in the upstream repository
+// https://github.com/smallstep/certificates/blob/master/server/server.go#L45
+
+// This workaround simply bumps up those timeout values from 15 seconds to 90 seconds.
+// There is a pull request already out there to fix this but is yet to be merged
+// https://github.com/smallstep/certificates/pull/1643/files
+
 package server
 
 import (
@@ -14,7 +27,7 @@ import (
 
 // ServerShutdownTimeout is the default time to wait before closing
 // connections on shutdown.
-const ServerShutdownTimeout = 60 * time.Second
+const ServerShutdownTimeout = 90 * time.Second
 
 // Server is a incomplete component that implements a basic HTTP/HTTPS
 // server.
@@ -42,10 +55,10 @@ func newHTTPServer(addr string, handler http.Handler, tlsConfig *tls.Config) *ht
 		Addr:              addr,
 		Handler:           handler,
 		TLSConfig:         tlsConfig,
-		WriteTimeout:      15 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		ReadHeaderTimeout: 15 * time.Second,
-		IdleTimeout:       15 * time.Second,
+		WriteTimeout:      90 * time.Second,
+		ReadTimeout:       90 * time.Second,
+		ReadHeaderTimeout: 90 * time.Second,
+		IdleTimeout:       90 * time.Second,
 		ErrorLog:          log.New(os.Stderr, "", log.Ldate|log.Ltime|log.Llongfile),
 	}
 }

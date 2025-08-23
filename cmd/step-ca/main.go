@@ -13,8 +13,7 @@ import (
 	"time"
 
 	// Server profiler
-	//nolint:gosec // profile server, if enabled runs on a different port
-	_ "net/http/pprof"
+	_ "net/http/pprof" // #nosec // profile server, if enabled runs on a different port
 
 	"github.com/urfave/cli"
 
@@ -38,6 +37,8 @@ import (
 	_ "go.step.sm/crypto/kms/yubikey"
 
 	// Enabled cas interfaces.
+	_ "github.com/smallstep/certificates/cas/incommoncas"
+
 	_ "github.com/smallstep/certificates/cas/cloudcas"
 	_ "github.com/smallstep/certificates/cas/softcas"
 	_ "github.com/smallstep/certificates/cas/stepcas"
