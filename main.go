@@ -26,8 +26,22 @@ import (
 	"github.com/smallstep/cli-utils/usage"
 	"go.step.sm/crypto/pemutil"
 
-	// Enabled CAS interfaces
+	// Enabled kms interfaces.
+	_ "go.step.sm/crypto/kms/awskms"
+	_ "go.step.sm/crypto/kms/azurekms"
+	_ "go.step.sm/crypto/kms/cloudkms"
+	_ "go.step.sm/crypto/kms/pkcs11"
+	_ "go.step.sm/crypto/kms/softkms"
+	_ "go.step.sm/crypto/kms/sshagentkms"
+	_ "go.step.sm/crypto/kms/tpmkms"
+	_ "go.step.sm/crypto/kms/yubikey"
+
+	// Enabled cas interfaces.
 	_ "github.com/esnet/acmeproxy/externalcas"
+	_ "github.com/smallstep/certificates/cas/cloudcas"
+	_ "github.com/smallstep/certificates/cas/softcas"
+	_ "github.com/smallstep/certificates/cas/stepcas"
+	_ "github.com/smallstep/certificates/cas/vaultcas"
 )
 
 // commit and buildTime are filled in during build by the Makefile
