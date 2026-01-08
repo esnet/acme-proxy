@@ -21,14 +21,18 @@ TODO
 
 ## Install
 
-You will need Go >= 1.25 installed when building from source.
+```sh
+curl https://raw.githubusercontent.com/esnet/acme-proxy/refs/heads/main/hack/scripts/install.sh | sudo sh
+```
+
+### Build from source (Optional)
+
+You will need Go >= 1.25 installed.
 
 ```sh
 ❯ git clone https://github.com/esnet/acme-proxy.git
 ❯ make
 ```
-
-Other option is to use one of the pre-compiled binaries from releases page.
 
 ## Usage
 
