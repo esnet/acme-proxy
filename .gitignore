@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.gitlab-ci-local
+.devcontainer
+.build
+letsencryptcas
+step-ca
+ca-dev.json
+db
+.gitlab-ci.yml

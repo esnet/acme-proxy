@@ -1,0 +1,48 @@
+{
+  "address": ":443",
+  "dnsNames": ["acmeproxy.example.com"],
+  "logger": {
+    "format": "text"
+  },
+  "db": {
+    "type": "badgerv2",
+    "dataSource": "db"
+  },
+  "authority": {
+    "type": "externalcas",
+    "config": {
+      "ca_url": "",
+      "account_email": "",
+      "eab_kid": "",
+      "eab_hmac_key": "",
+      "metrics": {
+        "enabled": true,
+        "port": 9123
+      }
+    },
+    "provisioners": [
+      {
+        "type": "ACME",
+        "name": "acme",
+        "claims": {
+          "enableSSHCA": false,
+          "disableRenewal": false,
+          "allowRenewalAfterExpiry": false,
+          "disableSmallstepExtensions": true
+        },
+        "options": {
+          "x509": {},
+          "ssh": {}
+        }
+      }
+    ],
+    "template": {},
+    "backdate": "1m0s"
+  },
+  "tls": {
+    "minVersion": 1.1,
+    "maxVersion": 1.2,
+    "renegotiation": false
+  },
+  "commonName": "acmeproxy.example.com"
+}
