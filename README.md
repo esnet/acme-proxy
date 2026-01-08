@@ -19,15 +19,17 @@ TODO
 - [ ] Write admin docs
 - [ ] Write user docs
 
-## Install
+## Quick Start
+
+### Installer script
 
 ```sh
-curl https://raw.githubusercontent.com/esnet/acme-proxy/refs/heads/main/hack/scripts/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh
 ```
 
 ### Build from source (Optional)
 
-You will need Go >= 1.25 installed.
+Make sure you have Go >=1.25 installed.
 
 ```sh
 ❯ git clone https://github.com/esnet/acme-proxy.git
@@ -76,9 +78,6 @@ Many commercial certificate authorities support ACME over external account bindi
 Upon starting the ACME server it automatically obtains a SSL/TLS certificate from InCommon for itself
 
 ```sh
-
-
-# Start the ACME server
 $ ./step-ca ca.json
 badger 2025/07/15 22:12:24 INFO: All 1 tables opened in 0s
 badger 2025/07/15 22:12:24 INFO: Replaying file id: 0 at offset: 105133
