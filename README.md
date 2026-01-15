@@ -66,7 +66,7 @@ The most important part of the config is this section
 
 `ca_url` : ACME directory URL of external certificate authority. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV`
 
-Many commercial certificate authorities support ACME over external account binding (EAB). You will need to create an EAB token to get HMAC Key and Key ID related to your account.
+Most commercial certificate authorities (such as Sectigo) support ACME over external account binding (EAB). You will need to  to get your EAB credentials i.e HMAC Key and Key ID related to your account.
 
 ```json
   "account_email": "admin@example.com",
@@ -76,7 +76,7 @@ Many commercial certificate authorities support ACME over external account bindi
 
 ### Starting the ACME server
 
-Upon starting the ACME server it automatically obtains a SSL/TLS certificate from InCommon for itself
+Upon starting the ACME server it automatically obtains a SSL/TLS certificate for itself.
 
 ```sh
 $ ./step-ca ca.json
@@ -192,7 +192,7 @@ We have our certificate signed by InCommon 🎉
 
 ### Renewing a certificate
 
-Issuing a certificate is _generally_ not a problem. It's the ability to renew a certificate and reload services post renewal and doing so in a consistent and reliable way is usually the problem. The certificate we obtained above has validity for 13 months! I am using the `--force` flag for renewal only because the default configuration in ACME clients only performs automatic renewal `1 < N < 30` number of days before certificate expiration. This default behaviour can be changed if needed, I think.
+Issuing a certificate is _generally_ not a problem in enterprise environments. But the ability to reliably renew certificates and reload services gracefully post renewal is. I am using the `--force` flag for renewal only because the default configuration in ACME clients only performs automatic renewal `1 < N < 30` number of days before certificate expiration.
 
 ```sh
 $ ./acme.sh --renew --domain myserver.example.com --force

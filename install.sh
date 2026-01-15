@@ -23,7 +23,7 @@ cat > "$CONFIG_FILE" << 'EOF'
   "address": ":443",
   "dnsNames": ["acmeproxy.example.com"],
   "logger": {
-    "format": "text"
+    "format": "json"
   },
   "db": {
     "type": "badgerv2",
@@ -36,10 +36,6 @@ cat > "$CONFIG_FILE" << 'EOF'
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
-      "metrics": {
-        "enabled": true,
-        "port": 9123
-      }
     },
     "provisioners": [
       {
@@ -71,11 +67,79 @@ EOF
 
 echo "Downloading latest release..."
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-BINARY_NAME="acme-proxy_${OS}_${ARCH}"
+BINARY_NAME="step-ca_${OS}_${ARCH}"
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST_RELEASE}/${BINARY_NAME}"
 
-curl -L -o acme-proxy "$DOWNLOAD_URL"
-chmod +x acme-proxy
+curl -L -o step-ca "$DOWNLOAD_URL"
+chmod +x step-ca
+
+echo "Installing binary to /usr/local/bin..."
+mv step-ca /usr/local/bin/
+
+echo "Creating acmeproxy service user..."
+if ! id acmeproxy >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin acmeproxy
+fi
+
+echo "Setting ownership of config directory..."
+chown -R acmeproxy:acmeproxy "$CONFIG_DIR"
+
+echo "Installing systemd service..."
+cat > /etc/systemd/system/acmeproxy.service << 'EOF'
+[Unit]
+Description=ACME Proxy Server (step-ca)
+Documentation=https://github.com/esnet/acme-proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=acmeproxy
+Group=acmeproxy
+
+# Paths
+ExecStart=/usr/local/bin/step-ca /etc/acmeproxy/ca.json
+WorkingDirectory=/etc/acmeproxy
+
+# Restart behavior
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+
+# Allow binding to privileged ports (443)
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Allow write access to config and database directories
+ReadWritePaths=/etc/acmeproxy
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=acmeproxy
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "Reloading systemd daemon..."
+systemctl daemon-reload
+
+echo "Enabling acmeproxy service..."
+systemctl enable acmeproxy
 
 echo ""
 echo "Installation complete!"
@@ -85,9 +149,13 @@ echo "  1. Edit ${CONFIG_FILE} and configure:"
 echo "     - dnsNames: Your ACME proxy hostname"
 echo "     - ca_url: Your upstream ACME CA URL"
 echo "     - account_email: Your account email"
-echo "     - eab_kid: External Account Binding Key ID (if required)"
-echo "     - eab_hmac_key: External Account Binding HMAC key (if required)"
+echo "     - eab_kid: External Account Binding Key ID"
+echo "     - eab_hmac_key: External Account Binding HMAC key"
 echo ""
-echo "  2. Start the server:"
-echo "     step-ca ${CONFIG_FILE}"
+echo "  2. Start the service:"
+echo "     sudo systemctl start acmeproxy"
+echo ""
+echo "  3. Check status:"
+echo "     sudo systemctl status acmeproxy"
+echo "     sudo journalctl -u acmeproxy -f"
 echo ""
