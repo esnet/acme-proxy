@@ -24,7 +24,7 @@ TODO
 ### Installer script
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/refs/heads/main/install.sh | sudo sh
 ```
 
 ### Build from source (Optional)
