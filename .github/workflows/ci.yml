@@ -68,7 +68,9 @@ jobs:
           sudo apt-get install -y libpcsclite-dev
 
       - name: Run tests
-        run: go test -v -race ./...
+        run: |
+          make dev
+          go test -v -race ./...
 
   security-scan:
     name: Security Scan
