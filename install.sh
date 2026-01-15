@@ -14,6 +14,36 @@ case "$ARCH" in
     aarch64|arm64) ARCH="arm64" ;;
 esac
 
+# Check and install libpcsclite dependency
+echo "Checking for libpcsclite dependency..."
+OS_NAME=$(uname -s)
+if [ "$OS_NAME" = "Darwin" ]; then
+    echo "Found macOS - skipping dependency check"
+elif [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if echo "$ID" | grep -Eqi 'ubuntu|debian'; then
+        if ! dpkg -s libpcsclite-dev >/dev/null 2>&1; then
+            echo "Installing libpcsclite-dev on Debian/Ubuntu..."
+            apt-get update && apt-get install -y libpcsclite-dev
+        else
+            echo "libpcsclite-dev already installed"
+        fi
+    elif echo "$ID" | grep -Eqi 'rhel|rocky|centos'; then
+        if ! rpm -q pcsc-lite-devel >/dev/null 2>&1; then
+            echo "Installing pcsc-lite-devel on RHEL/Rocky/CentOS..."
+            dnf install -y pcsc-lite-devel
+        else
+            echo "pcsc-lite-devel already installed"
+        fi
+    else
+        echo "Warning: Unknown Linux distribution: $ID"
+        echo "You may need to install pcsc-lite development libraries manually"
+    fi
+else
+    echo "Warning: Cannot detect OS (/etc/os-release not found)"
+    echo "You may need to install pcsc-lite development libraries manually"
+fi
+
 echo "Creating configuration directory..."
 mkdir -p "$DB_DIR"
 
