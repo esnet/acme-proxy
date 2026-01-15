@@ -10,7 +10,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -42,7 +42,7 @@ type AcmeProxyConfig struct {
 	HmacKey string `json:"eab_hmac_key"`
 
 	// Certificate lifetime in days
-	ValidFor int `json:"validity,omitempty"`
+	CertLifetime int `json:"certlifetime,omitempty"`
 
 	// Prometheus metrics endpoint
 	Metrics Metrics `json:"metrics"`
@@ -91,7 +91,7 @@ func (c *ExternalCAS) Type() apiv1.Type {
 
 func (c *ExternalCAS) initClient() error {
 	c.initOnce.Do(func() {
-		log.Println("Initializing ACME client...")
+		slog.Info("initializing ACME client")
 
 		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
@@ -102,7 +102,9 @@ func (c *ExternalCAS) initClient() error {
 		// Unmarshal EAB config from ca.json
 		var eab AcmeProxyConfig
 		if err = json.Unmarshal(c.config, &eab); err != nil {
-			log.Fatal("Error unmarshalling EAB config from ca.json", err)
+			slog.Error("failed to unmarshal EAB config", "error", err)
+			c.initError = fmt.Errorf("failed to unmarshal EAB config: %w", err)
+			return
 		}
 
 		user := User{
@@ -138,7 +140,7 @@ func (c *ExternalCAS) initClient() error {
 		}
 		c.user.Registration = reg
 
-		log.Println("ACME client initialized successfully")
+		slog.Info("ACME client initialized")
 	})
 	return c.initError
 }
@@ -158,14 +160,14 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		return nil, fmt.Errorf("failed to initialize ACME client: %w", err)
 	}
 
-	log.Printf("Processing certificate request for domains: %v", req.CSR.DNSNames)
+	slog.Info("processing certificate request", "domains", req.CSR.DNSNames)
 
 	resultChan := make(chan *certificateResult, 1)
 
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Recovered from panic in processCertificateRequest: %v", r)
+				slog.Error("recovered from panic in processCertificateRequest", "panic", r)
 				resultChan <- &certificateResult{
 					err: fmt.Errorf("internal error: %v", r),
 				}
@@ -176,7 +178,7 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		select {
 		case resultChan <- result:
 		case <-ctx.Done():
-			log.Printf("Certificate request timed out or cancelled for domains: %v", req.CSR.DNSNames)
+			slog.Warn("certificate request timed out or cancelled", "domains", req.CSR.DNSNames)
 		}
 	}()
 
@@ -192,7 +194,7 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 }
 
 func (c *ExternalCAS) processCertificateRequest(ctx context.Context, req *apiv1.CreateCertificateRequest) *certificateResult {
-	log.Printf("Starting certificate request processing for domains: %v", req.CSR.DNSNames)
+	slog.Debug("starting certificate request processing", "domains", req.CSR.DNSNames)
 
 	select {
 	case <-ctx.Done():
@@ -202,18 +204,31 @@ func (c *ExternalCAS) processCertificateRequest(ctx context.Context, req *apiv1.
 	default:
 	}
 
-	cert, err := c.client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
-		CSR:      req.CSR,
-		Bundle:   true,
-		NotAfter: time.Now().Add(1 * 24 * time.Hour),
-	})
+	var cfg AcmeProxyConfig
+	if err := json.Unmarshal(c.config, &cfg); err != nil {
+		return &certificateResult{
+			err: fmt.Errorf("failed to parse acmeproxy config: %v", err),
+		}
+	}
+
+	// Build certificate request - only set NotAfter if CertLifetime is configured
+	csrRequest := certificate.ObtainForCSRRequest{
+		CSR:    req.CSR,
+		Bundle: true,
+	}
+	if cfg.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
+		slog.Debug("using configured certificate lifetime", "days", cfg.CertLifetime)
+	}
+
+	cert, err := c.client.Certificate.ObtainForCSR(csrRequest)
 	if err != nil {
 		return &certificateResult{
 			err: fmt.Errorf("failed to obtain certificate from InCommon: %v", err),
 		}
 	}
 
-	log.Printf("Successfully obtained certificate from InCommon for domains: %v", req.CSR.DNSNames)
+	slog.Info("obtained certificate from external CA", "domains", req.CSR.DNSNames)
 
 	leaf, intermediates, err := c.splitCertificateBundle(cert.Certificate)
 	if err != nil {
@@ -271,6 +286,38 @@ func (c *ExternalCAS) RenewCertificate(req *apiv1.RenewCertificateRequest) (*api
 }
 
 func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
-	c.client.Certificate.Revoke(req.Certificate.Raw)
-	return nil, apiv1.NotImplementedError{}
+	if req == nil || req.Certificate == nil {
+		return nil, errors.New("certificate cannot be nil")
+	}
+
+	if err := c.initClient(); err != nil {
+		return nil, fmt.Errorf("failed to initialize ACME client: %w", err)
+	}
+
+	// Convert DER-encoded certificate to PEM (lego expects PEM)
+	pemBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: req.Certificate.Raw,
+	})
+
+	slog.Info("revoking certificate",
+		"serial", req.Certificate.SerialNumber.String(),
+		"subject", req.Certificate.Subject.CommonName,
+	)
+
+	if err := c.client.Certificate.Revoke(pemBytes); err != nil {
+		slog.Error("failed to revoke certificate",
+			"serial", req.Certificate.SerialNumber.String(),
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
+	}
+
+	slog.Info("certificate revoked successfully",
+		"serial", req.Certificate.SerialNumber.String(),
+	)
+
+	return &apiv1.RevokeCertificateResponse{
+		Certificate: req.Certificate,
+	}, nil
 }

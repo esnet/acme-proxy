@@ -15,6 +15,7 @@
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "certlifetime": 30,
       "metrics": {
         "enabled": true,
         "port": 9123
