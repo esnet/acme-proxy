@@ -142,6 +142,48 @@ func TestRenewCertificate(t *testing.T) {
 }
 
 func TestRevokeCertificate(t *testing.T) {
+	ctx := context.Background()
+	opts := apiv1.Options{
+		Type:   "externalcas",
+		Config: []byte("{}"),
+	}
+
+	extcas, err := New(ctx, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Table-driven tests for validation logic (no network calls)
+	tests := []struct {
+		name    string
+		req     *apiv1.RevokeCertificateRequest
+		wantErr string
+	}{
+		{
+			name:    "nil request returns error",
+			req:     nil,
+			wantErr: "certificate cannot be nil",
+		},
+		{
+			name:    "nil certificate returns error",
+			req:     &apiv1.RevokeCertificateRequest{Certificate: nil},
+			wantErr: "certificate cannot be nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := extcas.RevokeCertificate(tt.req)
+
+			if err == nil {
+				t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+			}
+
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Errorf("expected error containing %q, got %q", tt.wantErr, err.Error())
+			}
+		})
+	}
 }
 
 // Helper function that generates a self-signed test certificate in PEM format.

@@ -42,7 +42,7 @@ type AcmeProxyConfig struct {
 	HmacKey string `json:"eab_hmac_key"`
 
 	// Certificate lifetime in days
-	ValidFor int `json:"validity,omitempty"`
+	CertLifetime int `json:"certlifetime,omitempty"`
 
 	// Prometheus metrics endpoint
 	Metrics Metrics `json:"metrics"`
@@ -204,11 +204,24 @@ func (c *ExternalCAS) processCertificateRequest(ctx context.Context, req *apiv1.
 	default:
 	}
 
-	cert, err := c.client.Certificate.ObtainForCSR(certificate.ObtainForCSRRequest{
-		CSR:      req.CSR,
-		Bundle:   true,
-		NotAfter: time.Now().Add(1 * 24 * time.Hour),
-	})
+	var cfg AcmeProxyConfig
+	if err := json.Unmarshal(c.config, &cfg); err != nil {
+		return &certificateResult{
+			err: fmt.Errorf("failed to parse acmeproxy config: %v", err),
+		}
+	}
+
+	// Build certificate request - only set NotAfter if CertLifetime is configured
+	csrRequest := certificate.ObtainForCSRRequest{
+		CSR:    req.CSR,
+		Bundle: true,
+	}
+	if cfg.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
+		slog.Debug("using configured certificate lifetime", "days", cfg.CertLifetime)
+	}
+
+	cert, err := c.client.Certificate.ObtainForCSR(csrRequest)
 	if err != nil {
 		return &certificateResult{
 			err: fmt.Errorf("failed to obtain certificate from InCommon: %v", err),
@@ -273,6 +286,38 @@ func (c *ExternalCAS) RenewCertificate(req *apiv1.RenewCertificateRequest) (*api
 }
 
 func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
-	c.client.Certificate.Revoke(req.Certificate.Raw)
-	return nil, apiv1.NotImplementedError{}
+	if req == nil || req.Certificate == nil {
+		return nil, errors.New("certificate cannot be nil")
+	}
+
+	if err := c.initClient(); err != nil {
+		return nil, fmt.Errorf("failed to initialize ACME client: %w", err)
+	}
+
+	// Convert DER-encoded certificate to PEM (lego expects PEM)
+	pemBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: req.Certificate.Raw,
+	})
+
+	slog.Info("revoking certificate",
+		"serial", req.Certificate.SerialNumber.String(),
+		"subject", req.Certificate.Subject.CommonName,
+	)
+
+	if err := c.client.Certificate.Revoke(pemBytes); err != nil {
+		slog.Error("failed to revoke certificate",
+			"serial", req.Certificate.SerialNumber.String(),
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
+	}
+
+	slog.Info("certificate revoked successfully",
+		"serial", req.Certificate.SerialNumber.String(),
+	)
+
+	return &apiv1.RevokeCertificateResponse{
+		Certificate: req.Certificate,
+	}, nil
 }

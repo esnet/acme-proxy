@@ -11,7 +11,7 @@ This is a work in progress. Not quite ready for production but will be soon.
 TODO
 
 - [x] Move config bits from env vars to `ca.json`
-- [ ] Implement Revoke method
+- [x] Implement Revoke method
 - [x] Re-assess if `GetCertificateAuthority` is a requirement or not
 - [ ] Write unit tests
 - [ ] Prometheus metrics
@@ -54,6 +54,7 @@ The most important part of the config is this section
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "certlifetime": 30,
       "metrics": {
         "enabled": true,
         "port": 9123
