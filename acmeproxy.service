@@ -6,12 +6,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=acmeproxy
-Group=acmeproxy
+#User=acmeproxy
+#Group=acmeproxy
 
 # Paths
-ExecStart=/usr/local/bin/step-ca /etc/acmeproxy/ca.json
-WorkingDirectory=/etc/acmeproxy
+ExecStart=/opt/acmeproxy/step-ca /opt/acmeproxy/ca.json
+WorkingDirectory=/opt/acmeproxy
 
 # Restart behavior
 Restart=on-failure
@@ -20,23 +20,23 @@ StartLimitIntervalSec=60
 StartLimitBurst=3
 
 # Security hardening
-NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
-PrivateTmp=yes
-PrivateDevices=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectControlGroups=yes
-RestrictSUIDSGID=yes
-RestrictNamespaces=yes
+#NoNewPrivileges=yes
+#ProtectSystem=strict
+#ProtectHome=yes
+#PrivateTmp=yes
+#PrivateDevices=yes
+#ProtectKernelTunables=yes
+#ProtectKernelModules=yes
+#ProtectControlGroups=yes
+#RestrictSUIDSGID=yes
+#RestrictNamespaces=yes
 
 # Allow binding to privileged ports (443)
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 # Allow write access to config and database directories
-ReadWritePaths=/etc/acmeproxy
+ReadWritePaths=/opt/acmeproxy
 
 # Logging
 StandardOutput=journal
