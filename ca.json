@@ -2,11 +2,11 @@
   "address": ":443",
   "dnsNames": ["acmeproxy.example.com"],
   "logger": {
-    "format": "text"
+    "format": "json"
   },
   "db": {
-    "type": "badgerv2",
-    "dataSource": "db"
+    "type": "bbolt",
+    "dataSource": "/opt/acmeproxy/db/bbolt"
   },
   "authority": {
     "type": "externalcas",

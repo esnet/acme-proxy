@@ -2,9 +2,11 @@
 set -e
 
 REPO="esnet/acme-proxy"
-CONFIG_DIR="/etc/acmeproxy"
-DB_DIR="${CONFIG_DIR}/db"
-CONFIG_FILE="${CONFIG_DIR}/ca.json"
+INSTALL_DIR="/opt/acmeproxy"
+DB_DIR="${INSTALL_DIR}/db"
+CONFIG_FILE="${INSTALL_DIR}/ca.json"
+SERVICE_USER="${SERVICE_USER:-acmeproxy}"
+SERVICE_GROUP="${SERVICE_GROUP:-acmeproxy}"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -44,7 +46,8 @@ else
     echo "You may need to install pcsc-lite development libraries manually"
 fi
 
-echo "Creating configuration directory..."
+echo "Creating installation directory..."
+mkdir -p "$INSTALL_DIR"
 mkdir -p "$DB_DIR"
 
 echo "Creating ca.json configuration file..."
@@ -56,8 +59,8 @@ cat > "$CONFIG_FILE" << 'EOF'
     "format": "json"
   },
   "db": {
-    "type": "badgerv2",
-    "dataSource": "/etc/acmeproxy/db"
+    "type": "bbolt",
+    "dataSource": "/opt/acmeproxy/db/bbolt"
   },
   "authority": {
     "type": "externalcas",
@@ -66,6 +69,10 @@ cat > "$CONFIG_FILE" << 'EOF'
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "metrics": {
+        "enabled": true,
+        "port": 9123
+      }
     },
     "provisioners": [
       {
@@ -103,19 +110,25 @@ DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST_RELEASE}/${B
 curl -L -o step-ca "$DOWNLOAD_URL"
 chmod +x step-ca
 
-echo "Installing binary to /usr/local/bin..."
-mv step-ca /usr/local/bin/
+echo "Installing binary to ${INSTALL_DIR}..."
+mv step-ca "${INSTALL_DIR}/"
 
-echo "Creating acmeproxy service user..."
-if ! id acmeproxy >/dev/null 2>&1; then
-    useradd --system --no-create-home --shell /usr/sbin/nologin acmeproxy
+echo "Creating ${SERVICE_USER} service user..."
+if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin "${SERVICE_USER}"
 fi
 
-echo "Setting ownership of config directory..."
-chown -R acmeproxy:acmeproxy "$CONFIG_DIR"
+# Create group if it doesn't exist and is different from user
+if [ "${SERVICE_USER}" != "${SERVICE_GROUP}" ] && ! getent group "${SERVICE_GROUP}" >/dev/null 2>&1; then
+    groupadd --system "${SERVICE_GROUP}"
+    usermod -a -G "${SERVICE_GROUP}" "${SERVICE_USER}"
+fi
+
+echo "Setting ownership of installation directory..."
+chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "$INSTALL_DIR"
 
 echo "Installing systemd service..."
-cat > /etc/systemd/system/acmeproxy.service << 'EOF'
+cat > /etc/systemd/system/acmeproxy.service << EOF
 [Unit]
 Description=ACME Proxy Server (step-ca)
 Documentation=https://github.com/esnet/acme-proxy
@@ -124,12 +137,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=acmeproxy
-Group=acmeproxy
+User=${SERVICE_USER}
+Group=${SERVICE_GROUP}
 
 # Paths
-ExecStart=/usr/local/bin/step-ca /etc/acmeproxy/ca.json
-WorkingDirectory=/etc/acmeproxy
+ExecStart=/opt/acmeproxy/step-ca /opt/acmeproxy/ca.json
+WorkingDirectory=/opt/acmeproxy
 
 # Restart behavior
 Restart=on-failure
@@ -138,23 +151,23 @@ StartLimitIntervalSec=60
 StartLimitBurst=3
 
 # Security hardening
-NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
-PrivateTmp=yes
-PrivateDevices=yes
-ProtectKernelTunables=yes
-ProtectKernelModules=yes
-ProtectControlGroups=yes
-RestrictSUIDSGID=yes
-RestrictNamespaces=yes
+# NoNewPrivileges=yes
+# ProtectSystem=strict
+# ProtectHome=yes
+# PrivateTmp=yes
+# PrivateDevices=yes
+# ProtectKernelTunables=yes
+# ProtectKernelModules=yes
+# ProtectControlGroups=yes
+# RestrictSUIDSGID=yes
+# RestrictNamespaces=yes
 
 # Allow binding to privileged ports (443)
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 # Allow write access to config and database directories
-ReadWritePaths=/etc/acmeproxy
+ReadWritePaths=/opt/acmeproxy
 
 # Logging
 StandardOutput=journal
