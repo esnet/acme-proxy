@@ -1,4 +1,4 @@
-# ACME Proxy - Registration Authority Mode
+# ACME Server as a Registration Authority
 
 `acme-proxy` is a standalone ACME server built on [step-ca](https://github.com/smallstep/certificates) that operates in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does **NOT** sign certificates or store private keys.
 
