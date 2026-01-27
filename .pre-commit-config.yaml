@@ -12,7 +12,7 @@ repos:
     hooks:
       - id: go-test
         name: go test
-        entry: go test ./externalcas
+        entry: go test -race ./externalcas
         language: system
         pass_filenames: false
         types: [go]
