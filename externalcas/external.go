@@ -48,6 +48,33 @@ type AcmeProxyConfig struct {
 	Metrics Metrics `json:"metrics"`
 }
 
+// Validate checks if the AcmeProxyConfig contains required fields and valid values
+func (c *AcmeProxyConfig) Validate() error {
+	if c.CaURL == "" {
+		return errors.New("ca_url is required")
+	}
+	if c.Kid == "" {
+		return errors.New("eab_kid is required")
+	}
+	if c.HmacKey == "" {
+		return errors.New("eab_hmac_key is required")
+	}
+	if c.CertLifetime < 0 {
+		return errors.New("certlifetime cannot be negative")
+	}
+	return nil
+}
+
+// HTTPTimeout returns the timeout for HTTP client operations
+func (c *AcmeProxyConfig) HTTPTimeout() time.Duration {
+	return 90 * time.Second
+}
+
+// RequestTimeout returns the timeout for certificate request operations
+func (c *AcmeProxyConfig) RequestTimeout() time.Duration {
+	return 2 * time.Minute
+}
+
 type Metrics struct {
 	Enabled bool `json:"enabled,omitempty"`
 	Port    int  `json:"port,omitempty"`
@@ -71,18 +98,39 @@ func (u *User) GetPrivateKey() crypto.PrivateKey {
 	return u.key
 }
 
+// ValidateCreateCertificateRequest validates that a CreateCertificateRequest has required fields
+func ValidateCreateCertificateRequest(req *apiv1.CreateCertificateRequest) error {
+	if req.CSR == nil {
+		return errors.New("CSR cannot be nil")
+	}
+	if req.Template == nil {
+		return errors.New("template cannot be nil")
+	}
+	return nil
+}
+
+// ValidateRevokeCertificateRequest validates that a RevokeCertificateRequest has required fields
+func ValidateRevokeCertificateRequest(req *apiv1.RevokeCertificateRequest) error {
+	if req == nil || req.Certificate == nil {
+		return errors.New("certificate cannot be nil")
+	}
+	return nil
+}
+
 type certificateResult struct {
 	response *apiv1.CreateCertificateResponse
 	err      error
 }
 
 type ExternalCAS struct {
-	ctx       context.Context
-	client    *lego.Client
-	user      *User
-	initOnce  sync.Once
-	initError error
-	config    json.RawMessage
+	ctx          context.Context
+	client       *lego.Client // Keep for registration
+	acmeClient   ACMEClient   // Injected ACME client for certificate operations
+	user         *User
+	initOnce     sync.Once
+	initError    error
+	config       json.RawMessage
+	parsedConfig *AcmeProxyConfig // Cached parsed configuration
 }
 
 func (c *ExternalCAS) Type() apiv1.Type {
@@ -93,17 +141,26 @@ func (c *ExternalCAS) initClient() error {
 	c.initOnce.Do(func() {
 		slog.Info("initializing ACME client")
 
-		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-		if err != nil {
-			c.initError = fmt.Errorf("failed to generate private key: %w", err)
+		// Parse and validate config once
+		var eab AcmeProxyConfig
+		if err := json.Unmarshal(c.config, &eab); err != nil {
+			slog.Error("failed to unmarshal EAB config", "error", err)
+			c.initError = fmt.Errorf("failed to unmarshal EAB config: %w", err)
 			return
 		}
 
-		// Unmarshal EAB config from ca.json
-		var eab AcmeProxyConfig
-		if err = json.Unmarshal(c.config, &eab); err != nil {
-			slog.Error("failed to unmarshal EAB config", "error", err)
-			c.initError = fmt.Errorf("failed to unmarshal EAB config: %w", err)
+		if err := eab.Validate(); err != nil {
+			slog.Error("invalid EAB config", "error", err)
+			c.initError = fmt.Errorf("invalid EAB config: %w", err)
+			return
+		}
+
+		// Cache parsed config for reuse
+		c.parsedConfig = &eab
+
+		privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			c.initError = fmt.Errorf("failed to generate private key: %w", err)
 			return
 		}
 
@@ -119,7 +176,7 @@ func (c *ExternalCAS) initClient() error {
 
 		// Set a timeout-aware HTTP client
 		config.HTTPClient = &http.Client{
-			Timeout: 90 * time.Second,
+			Timeout: eab.HTTPTimeout(),
 		}
 
 		client, err := lego.NewClient(config)
@@ -140,25 +197,25 @@ func (c *ExternalCAS) initClient() error {
 		}
 		c.user.Registration = reg
 
+		// Wrap lego client in our interface adapter
+		c.acmeClient = &legoClientAdapter{certClient: client.Certificate}
+
 		slog.Info("ACME client initialized")
 	})
 	return c.initError
 }
 
 func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*apiv1.CreateCertificateResponse, error) {
-	if req.CSR == nil {
-		return nil, errors.New("CSR cannot be nil")
+	if err := ValidateCreateCertificateRequest(req); err != nil {
+		return nil, err
 	}
-	if req.Template == nil {
-		return nil, errors.New("template cannot be nil")
-	}
-
-	ctx, cancel := context.WithTimeout(c.ctx, 2*time.Minute)
-	defer cancel()
 
 	if err := c.initClient(); err != nil {
 		return nil, fmt.Errorf("failed to initialize ACME client: %w", err)
 	}
+
+	ctx, cancel := context.WithTimeout(c.ctx, c.parsedConfig.RequestTimeout())
+	defer cancel()
 
 	slog.Info("processing certificate request", "domains", req.CSR.DNSNames)
 
@@ -204,33 +261,26 @@ func (c *ExternalCAS) processCertificateRequest(ctx context.Context, req *apiv1.
 	default:
 	}
 
-	var cfg AcmeProxyConfig
-	if err := json.Unmarshal(c.config, &cfg); err != nil {
-		return &certificateResult{
-			err: fmt.Errorf("failed to parse acmeproxy config: %v", err),
-		}
-	}
-
 	// Build certificate request - only set NotAfter if CertLifetime is configured
 	csrRequest := certificate.ObtainForCSRRequest{
 		CSR:    req.CSR,
 		Bundle: true,
 	}
-	if cfg.CertLifetime > 0 {
-		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
-		slog.Debug("using configured certificate lifetime", "days", cfg.CertLifetime)
+	if c.parsedConfig.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(c.parsedConfig.CertLifetime) * 24 * time.Hour)
+		slog.Debug("using configured certificate lifetime", "days", c.parsedConfig.CertLifetime)
 	}
 
-	cert, err := c.client.Certificate.ObtainForCSR(csrRequest)
+	cert, err := c.acmeClient.ObtainForCSR(csrRequest)
 	if err != nil {
 		return &certificateResult{
-			err: fmt.Errorf("failed to obtain certificate from InCommon: %v", err),
+			err: fmt.Errorf("failed to obtain certificate from external CA: %v", err),
 		}
 	}
 
 	slog.Info("obtained certificate from external CA", "domains", req.CSR.DNSNames)
 
-	leaf, intermediates, err := c.splitCertificateBundle(cert.Certificate)
+	leaf, intermediates, err := SplitCertificateBundle(cert.Certificate)
 	if err != nil {
 		return &certificateResult{
 			err: fmt.Errorf("failed to split certificate bundle: %v", err),
@@ -245,7 +295,10 @@ func (c *ExternalCAS) processCertificateRequest(ctx context.Context, req *apiv1.
 	}
 }
 
-func (c *ExternalCAS) splitCertificateBundle(pemBytes []byte) (*x509.Certificate, []*x509.Certificate, error) {
+// SplitCertificateBundle splits a PEM-encoded certificate bundle into a leaf certificate
+// and a chain of intermediate certificates. The first certificate in the bundle is treated
+// as the leaf certificate, and all subsequent certificates are treated as intermediates.
+func SplitCertificateBundle(pemBytes []byte) (*x509.Certificate, []*x509.Certificate, error) {
 	var certificates []*x509.Certificate
 	remaining := pemBytes
 
@@ -286,8 +339,8 @@ func (c *ExternalCAS) RenewCertificate(req *apiv1.RenewCertificateRequest) (*api
 }
 
 func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
-	if req == nil || req.Certificate == nil {
-		return nil, errors.New("certificate cannot be nil")
+	if err := ValidateRevokeCertificateRequest(req); err != nil {
+		return nil, err
 	}
 
 	if err := c.initClient(); err != nil {
@@ -305,7 +358,7 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		"subject", req.Certificate.Subject.CommonName,
 	)
 
-	if err := c.client.Certificate.Revoke(pemBytes); err != nil {
+	if err := c.acmeClient.Revoke(pemBytes); err != nil {
 		slog.Error("failed to revoke certificate",
 			"serial", req.Certificate.SerialNumber.String(),
 			"error", err,

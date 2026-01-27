@@ -1,23 +1,35 @@
 # ACME server as a Registration Authority
 
-`Step CA` is a swiss army knife for PKI. It can run as a standalone ACME server in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode. This server accepts certificate orders, and authenticates certificate requests over ACME protocol (RFC 8555). It does **NOT** sign certificates or store any private key. Instead, once ACME challenges are verified the certificate requests are then passed to an external certificate authority (such as InCommon) to sign and catalog. This repository implements a plugin for [Step CA](https://github.com/smallstep/certificates/tree/master) with InCommon as the upstream CA.
+Using [step-ca](https://github.com/smallstep/certificates) as a stand alone ACME server in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode, `acme-proxy` accepts certificate orders, and authenticates certificate requests over ACME protocol (RFC 8555). It does **NOT** sign certificates or store any private key. Instead, once acme-proxy validates that the ACME client succesfully solved challenge, certificate signing requests are then passed to an external certificate authority (e.g: Sectigo, ZeroSSL) using External Account Binding to sign and catalog.
 
-![How does it work?](docs/sequence.png)
+This approach is particularly useful for enterprise environments that cannot solve ACME challenges to get certificates issued by LetsEncrypt. Some of the possible reasons are listed below:
+
+- Security policy prohibits opening http/80 to the global internet hence they cannot solve HTTP-01 challenge from LetsEncrypt.
+
+- Can't use the DNS challenge due to a number of possible reasons:
+  - DNS management solution does not expose an api or there is no native integration with any standard ACME clients.
+  - Security policy prohibits from distributing api tokens or TSIG keys for large zones like candy.
+
+    Reference:
+    - [EFF blog post](https://www.eff.org/deeplinks/2018/02/technical-deep-dive-securing-automation-acme-dns-challenge-validation)
+    - [LetsEncrypt docs](<https://letsencrypt.org/docs/challenge-types/#dns-01-challenge>)
+
+![How does acme-proxy work?](docs/sequence.png)
 
 ## WARNING ⚠️
 
 This is a work in progress. Not quite ready for production but will be soon.
 
-TODO
+**TODO**
 
 - [x] Move config bits from env vars to `ca.json`
 - [x] Implement Revoke method
 - [x] Re-assess if `GetCertificateAuthority` is a requirement or not
-- [ ] Write unit tests
+- [x] Write unit tests
 - [ ] Prometheus metrics
-- [ ] Write Helm chart
 - [ ] Write admin docs
 - [ ] Write user docs
+- [ ] Write Helm chart
 
 ## Quick Start
 
@@ -29,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/refs/heads/main/in
 
 ### Build from source (Optional)
 
-Make sure you have Go >=1.25 installed.
+Requirements: Go >= 1.25
 
 ```sh
 ❯ git clone https://github.com/esnet/acme-proxy.git
@@ -38,15 +50,17 @@ Make sure you have Go >=1.25 installed.
 
 ## Usage
 
-Review/configure the ca.json file before starting the server
+Review and update configuration options in ca.json before starting the acme-proxy server.
 
 ```sh
 vim ca.json
 ```
 
-The most important part of the config is this section
+The most important parts of the config are -
 
 ```json
+  "dnsNames": ["acmeproxy.example.com"],
+  ...
   "authority": {
     "type": "externalcas",
     "config": {
@@ -60,16 +74,17 @@ The most important part of the config is this section
         "port": 9123
       }
     },
-    ...
+  ...
+    "commonName": "acmeproxy.example.com"
   }
 ```
 
 `ca_url` : ACME directory URL of external certificate authority. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV`
 
-Most commercial certificate authorities (such as Sectigo) support ACME over external account binding (EAB). You will need to  to get your EAB credentials i.e HMAC Key and Key ID related to your account.
+Most commercial certificate authorities (such as Sectigo, ZeroSSL) support ACME over external account binding (EAB). You will need to  to get EAB credentials i.e HMAC Key and Key ID associated with your account.
 
 ```json
-  "account_email": "admin@example.com",
+  "account_email": "certadmin@example.com",
   "eab_kid": "",
   "eab_hmac_key": "",
 ```
@@ -171,7 +186,7 @@ oSlzzVurgu0CIFeUruafCMHm2SzuP1eUCgAcMBHtTiugiduq+726bxcw2ln0noLE
 
 Let's decode the certificate just to be sure ;-)
 
-```
+```sh
 $ openssl x509 -in myserver.example.com.cer -noout -text
 Certificate:
     Data:
