@@ -1,8 +1,14 @@
-## How is the codebase organized ?
+# Intro
 
-### External Certificate Authority Service (ExternalCAS)
+`acmeproxy` is based on [smallstep/certificates](https://github.com/smallstep/certificates). That go module contains a collection of packages although the most important one for this project is certificate authority service (cas).
 
-`Step CA` is written in Go and the package provides an interface called `CertificateAuthorityService` [CAS](https://github.com/smallstep/certificates/tree/master/cas) to support external certificate authorities as the signing body. The code in `incommoncas` and `letsencryptcas` dir implements the `CertificateAuthorityService` interface.
+## Certificate Authority Service (CAS)
+
+CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that's Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL.
+
+### ExternalCAS
+
+`Step CA` provides an interface called `CertificateAuthorityService` [CAS](https://github.com/smallstep/certificates/tree/master/cas) to support external certificate authorities as the signing body. Our code in `externalcas` simply implements the `CertificateAuthorityService` interface.
 
 ```go
 type CertificateAuthorityService interface {
@@ -12,7 +18,7 @@ type CertificateAuthorityService interface {
 }
 ```
 
-The go package also defines a special type called `ExternalCAS` for this exact purpose. Which is why our [ca.json](ca.json) file defines an authority of `type: externalcas`.
+The go package also defines a special type called `ExternalCAS` for this exact purpose. Which is why our [ca.json](../ca.json) file defines an authority of `type: externalcas`.
 
 ```go
 const (
