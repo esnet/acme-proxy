@@ -1,45 +1,84 @@
-# ACME server as a Registration Authority
+# ACME Server as a Registration Authority
 
-Using [step-ca](https://github.com/smallstep/certificates) as a stand alone ACME server in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode, `acme-proxy` accepts certificate orders, and authenticates certificate requests over ACME protocol (RFC 8555). It does **NOT** sign certificates or store any private key. Instead, once acme-proxy validates that the ACME client succesfully solved challenge, certificate signing requests are then passed to an external certificate authority (e.g: Sectigo, ZeroSSL) using External Account Binding to sign and catalog.
+`acme-proxy` is a standalone ACME server built on [step-ca](https://github.com/smallstep/certificates) that operates in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does **NOT** sign certificates or store private keys.
 
-This approach is particularly useful for enterprise environments that cannot solve ACME challenges to get certificates issued by LetsEncrypt. Some of the possible reasons are listed below:
+## How It Works
 
-- Security policy prohibits opening http/80 to the global internet hence they cannot solve HTTP-01 challenge from LetsEncrypt.
+When a client successfully completes an ACME challenge, `acme-proxy` forwards the certificate signing request to an external certificate authority (CA) that supports External Account Binding (EAB). The external CA signs the certificate and returns it to the client through `acme-proxy`.
 
-- Can't use the DNS challenge due to a number of possible reasons:
-  - DNS management solution does not expose an api or there is no native integration with any standard ACME clients.
-  - Security policy prohibits from distributing api tokens or TSIG keys for large zones like candy.
+**Note:** LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo and ZeroSSL do.
 
-    Reference:
-    - [EFF blog post](https://www.eff.org/deeplinks/2018/02/technical-deep-dive-securing-automation-acme-dns-challenge-validation)
-    - [LetsEncrypt docs](<https://letsencrypt.org/docs/challenge-types/#dns-01-challenge>)
+## Use Cases
 
-![How does acme-proxy work?](docs/sequence.png)
+This architecture addresses typical enterprise constraints that prevent direct certificate issuance from LetsEncrypt:
 
-## WARNING ⚠️
+**HTTP-01 Challenge Limitations:**
 
-This is a work in progress. Not quite ready for production but will be soon.
+- Security policies prohibit exposing port 80 to the public internet
 
-**TODO**
+**DNS-01 Challenge Limitations:**
 
-- [x] Move config bits from env vars to `ca.json`
-- [x] Implement Revoke method
-- [x] Re-assess if `GetCertificateAuthority` is a requirement or not
-- [x] Write unit tests
-- [ ] Prometheus metrics
-- [ ] Write admin docs
-- [ ] Write user docs
-- [ ] Write Helm chart
+- Legacy DNS infrastructure lacks REST API support or ACME client integration
+- Security policies restrict distribution of API tokens or TSIG keys for large DNS zones
+
+For more information on DNS-01 security considerations:
+
+- [EFF: Technical Deep Dive on ACME DNS Challenge Validation](https://www.eff.org/deeplinks/2018/02/technical-deep-dive-securing-automation-acme-dns-challenge-validation)
+- [LetsEncrypt: DNS-01 Challenge](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge)
+
+## Benefits
+
+Using ACME with commercial CAs in enterprise environments provides several advantages:
+
+**Trusted Certificates:**
+
+- Certificates are signed by publicly trusted CAs are already in system trust stores
+- Eliminates the operational burden of distributing and maintaining custom root certificates across endpoints, servers, and client devices
+
+**Automation and Self-Service:**
+
+- Leverage standard ACME clients (Certbot, acme.sh, cert-manager.io) for certificate issuance, automatic renewals.
+- Enable self-service certificate requests for development teams
+
+## ACME Proxy Workflow
+
+`acme-proxy` runs as an ACME server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).
+
+**Certificate Request Flow:**
+
+1. Your internal server (behind a firewall perimeter) requests a certificate from `acme-proxy` using standard ACME clients like certbot, acme.sh or cert-manager.io if you're using Kubernetes.
+2. `acme-proxy` presents cryptographic challenges to verify domain ownership
+3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to your external CA using External Account Binding (EAB)
+4. The external CA signs the certificate
+5. `acme-proxy` retrieves the certificate bundle and returns it to your server
+
+![sequence diagram](docs/sequence.png)
 
 ## Quick Start
 
-### Installer script
-
 ```sh
-curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/refs/heads/main/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh
 ```
 
-### Build from source (Optional)
+The script installs acme-proxy as a systemd service with sensible defaults, all of which can be overridden with environment variables:
+
+```sh
+# Default values (all overridable)
+INSTALL_DIR="${INSTALL_DIR:-/opt/acme-proxy}"
+DB_DIR="${DB_DIR:-${INSTALL_DIR}/db}"
+CONFIG_FILE="${CONFIG_FILE:-${INSTALL_DIR}/ca.json}"
+SERVICE_USER="${SERVICE_USER:-acme-proxy}"
+SERVICE_GROUP="${SERVICE_GROUP:-acme-proxy}"
+```
+
+**Example with custom install directory:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | \
+  sudo INSTALL_DIR=/usr/local/acme-proxy SERVICE_USER=acmeservice sh
+```
+
+### Build from source (optional)
 
 Requirements: Go >= 1.25
 
@@ -50,7 +89,7 @@ Requirements: Go >= 1.25
 
 ## Usage
 
-Review and update configuration options in ca.json before starting the acme-proxy server.
+Review and update configuration options in [ca.json](./ca.json) before starting the acme-proxy server.
 
 ```sh
 vim ca.json
@@ -81,7 +120,7 @@ The most important parts of the config are -
 
 `ca_url` : ACME directory URL of external certificate authority. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV`
 
-Most commercial certificate authorities (such as Sectigo, ZeroSSL) support ACME over external account binding (EAB). You will need to  to get EAB credentials i.e HMAC Key and Key ID associated with your account.
+Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account.
 
 ```json
   "account_email": "certadmin@example.com",
@@ -207,7 +246,7 @@ We have our certificate signed by InCommon 🎉
 
 ### Renewing a certificate
 
-Issuing a certificate is _generally_ not a problem in enterprise environments. But the ability to reliably renew certificates and reload services gracefully post renewal is. I am using the `--force` flag for renewal only because the default configuration in ACME clients only performs automatic renewal `1 < N < 30` number of days before certificate expiration.
+Issuing a certificate is *generally* not a problem in enterprise environments. But the ability to reliably renew certificates and reload services gracefully post renewal is. I am using the `--force` flag for renewal only because the default configuration in ACME clients only performs automatic renewal `1 < N < 30` number of days before certificate expiration.
 
 ```sh
 $ ./acme.sh --renew --domain myserver.example.com --force
@@ -263,20 +302,17 @@ N+c9XyDLAiEAkbrRKBsYc8YSgYviREF9u+gz7jK5JY2dsaRatEfb8Eg=
 
 Cert renewal was a success! ✨
 
-## Upstream docs
+### WARNING ⚠️
 
-- Step CA full configuration options
-  <https://smallstep.com/docs/step-ca/configuration/>
+This is a work in progress. Not quite ready for production but will be very soon.
 
-- Certificate issuance policy configuration
-  <https://smallstep.com/docs/step-ca/policies/>
+#### TODO
 
-- Step CA Registration Authority (RA)
-  <https://smallstep.com/docs/step-ca/registration-authority-ra-mode/>
-
-- Step CA github repo
-  <https://github.com/smallstep/certificates/tree/master>
-
-- Registration Authority (RA) related discussions
-  - <https://github.com/smallstep/certificates/discussions/884>
-  - <https://github.com/smallstep/certificates/issues/343>
+- [x] Move config bits from env vars to `ca.json`
+- [x] Implement Revoke method
+- [x] Re-assess if `GetCertificateAuthority` is a requirement or not
+- [x] Write unit tests
+- [ ] Prometheus metrics
+- [ ] Write admin docs
+- [ ] Write user docs
+- [ ] Write Helm chart

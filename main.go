@@ -37,7 +37,7 @@ import (
 	_ "go.step.sm/crypto/kms/yubikey"
 
 	// Enabled cas interfaces.
-	_ "github.com/esnet/acmeproxy/externalcas"
+	_ "github.com/esnet/acme-proxy/externalcas"
 	_ "github.com/smallstep/certificates/cas/cloudcas"
 	_ "github.com/smallstep/certificates/cas/softcas"
 	_ "github.com/smallstep/certificates/cas/stepcas"

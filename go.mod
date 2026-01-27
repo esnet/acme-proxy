@@ -1,4 +1,4 @@
-module github.com/esnet/acmeproxy
+module github.com/esnet/acme-proxy
 
 go 1.25
 

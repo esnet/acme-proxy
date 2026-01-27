@@ -2,11 +2,11 @@
 set -e
 
 REPO="esnet/acme-proxy"
-INSTALL_DIR="/opt/acmeproxy"
-DB_DIR="${INSTALL_DIR}/db"
-CONFIG_FILE="${INSTALL_DIR}/ca.json"
-SERVICE_USER="${SERVICE_USER:-acmeproxy}"
-SERVICE_GROUP="${SERVICE_GROUP:-acmeproxy}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/acme-proxy}"
+DB_DIR="${DB_DIR:-${INSTALL_DIR}/db}"
+CONFIG_FILE="${CONFIG_FILE:-${INSTALL_DIR}/ca.json}"
+SERVICE_USER="${SERVICE_USER:-acme-proxy}"
+SERVICE_GROUP="${SERVICE_GROUP:-acme-proxy}"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -51,7 +51,7 @@ mkdir -p "$INSTALL_DIR"
 mkdir -p "$DB_DIR"
 
 echo "Creating ca.json configuration file..."
-cat > "$CONFIG_FILE" << 'EOF'
+cat > "$CONFIG_FILE" << EOF
 {
   "address": ":443",
   "dnsNames": ["acmeproxy.example.com"],
@@ -60,7 +60,7 @@ cat > "$CONFIG_FILE" << 'EOF'
   },
   "db": {
     "type": "bbolt",
-    "dataSource": "/opt/acmeproxy/db/bbolt"
+    "dataSource": "${DB_DIR}/bbolt"
   },
   "authority": {
     "type": "externalcas",
@@ -128,12 +128,14 @@ echo "Setting ownership of installation directory..."
 chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "$INSTALL_DIR"
 
 echo "Installing systemd service..."
-cat > /etc/systemd/system/acmeproxy.service << EOF
+cat > /etc/systemd/system/acme-proxy.service << EOF
 [Unit]
 Description=ACME Proxy Server (step-ca)
 Documentation=https://github.com/esnet/acme-proxy
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=simple
@@ -141,38 +143,36 @@ User=${SERVICE_USER}
 Group=${SERVICE_GROUP}
 
 # Paths
-ExecStart=/opt/acmeproxy/step-ca /opt/acmeproxy/ca.json
-WorkingDirectory=/opt/acmeproxy
+ExecStart=${INSTALL_DIR}/step-ca ${CONFIG_FILE}
+WorkingDirectory=${INSTALL_DIR}
 
 # Restart behavior
 Restart=on-failure
 RestartSec=5
-StartLimitIntervalSec=60
-StartLimitBurst=3
 
 # Security hardening
-# NoNewPrivileges=yes
-# ProtectSystem=strict
-# ProtectHome=yes
-# PrivateTmp=yes
-# PrivateDevices=yes
-# ProtectKernelTunables=yes
-# ProtectKernelModules=yes
-# ProtectControlGroups=yes
-# RestrictSUIDSGID=yes
-# RestrictNamespaces=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=no
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
 
 # Allow binding to privileged ports (443)
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 
 # Allow write access to config and database directories
-ReadWritePaths=/opt/acmeproxy
+ReadWritePaths=${INSTALL_DIR}
 
 # Logging
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=acmeproxy
+SyslogIdentifier=acme-proxy
 
 [Install]
 WantedBy=multi-user.target
@@ -181,8 +181,8 @@ EOF
 echo "Reloading systemd daemon..."
 systemctl daemon-reload
 
-echo "Enabling acmeproxy service..."
-systemctl enable acmeproxy
+echo "Enabling acme-proxy service..."
+systemctl enable acme-proxy
 
 echo ""
 echo "Installation complete!"
@@ -196,9 +196,9 @@ echo "     - eab_kid: External Account Binding Key ID"
 echo "     - eab_hmac_key: External Account Binding HMAC key"
 echo ""
 echo "  2. Start the service:"
-echo "     sudo systemctl start acmeproxy"
+echo "     sudo systemctl start acme-proxy"
 echo ""
 echo "  3. Check status:"
-echo "     sudo systemctl status acmeproxy"
-echo "     sudo journalctl -u acmeproxy -f"
+echo "     sudo systemctl status acme-proxy"
+echo "     sudo journalctl -u acme-proxy -f"
 echo ""
