@@ -7,7 +7,7 @@
 
 ## Contribute
 
-1. Fork this repo
+1. Fork the repo
 2. In your fork, create a new branch for your work
 3. Commit & push changes to your fork
 4. Submit a pull request

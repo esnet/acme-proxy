@@ -6,7 +6,7 @@
   },
   "db": {
     "type": "bbolt",
-    "dataSource": "/opt/acmeproxy/db/bbolt"
+    "dataSource": "/opt/acme-proxy/db/bbolt"
   },
   "authority": {
     "type": "externalcas",

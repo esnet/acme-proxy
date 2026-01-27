@@ -1,10 +1,10 @@
-# Intro
+# ACME server as Registration Authority
 
-`acmeproxy` is based on [smallstep/certificates](https://github.com/smallstep/certificates). That go module contains a collection of packages although the most important one for this project is certificate authority service (cas).
+See [upstream docs](#upstream-docs) section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
 
 ## Certificate Authority Service (CAS)
 
-CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that's Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL.
+CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that's Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL. ACME proxy can be run as a standalone ACME server in Registraiton Authority mode
 
 ### ExternalCAS
 
@@ -36,3 +36,22 @@ const (
     ExternalCAS = "externalcas"
 )
 ```
+
+## Upstream docs
+
+**Step CA github repo**
+<https://github.com/smallstep/certificates/tree/master>
+
+**Step CA Registration Authority (RA)**
+<https://smallstep.com/docs/step-ca/registration-authority-ra-mode/>
+
+**RA related github discussions**
+
+- <https://github.com/smallstep/certificates/discussions/884>
+- <https://github.com/smallstep/certificates/issues/343>
+
+**Step CA full configuration options**
+<https://smallstep.com/docs/step-ca/configuration/>
+
+**Certificate issuance policy configuration**
+<https://smallstep.com/docs/step-ca/policies/>
