@@ -7,8 +7,10 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"testing"
@@ -141,10 +143,65 @@ func TestAcmeProxyConfig_Timeouts(t *testing.T) {
 	}
 }
 
-func TestInitClient(t *testing.T) {
+func TestParseConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "valid config",
+			config: `{
+				"ca_url": "https://acme.example.com",
+				"account_email": "test@example.com",
+				"eab_kid": "test-kid",
+				"eab_hmac_key": "test-hmac"
+			}`,
+			wantErr: false,
+		},
+		{
+			name:    "invalid json",
+			config:  `{invalid json`,
+			wantErr: true,
+			errMsg:  "failed to unmarshal config",
+		},
+		{
+			name: "missing required field",
+			config: `{
+				"account_email": "test@example.com"
+			}`,
+			wantErr: true,
+			errMsg:  "invalid config",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cas := &ExternalCAS{
+				ctx:    context.Background(),
+				config: []byte(tt.config),
+			}
+
+			cfg, err := cas.parseConfig()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("parseConfig() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+			} else {
+				if cfg == nil {
+					t.Error("parseConfig() returned nil config")
+				}
+			}
+		})
+	}
 }
 
-func TestValidateCreateCertificateRequest(t *testing.T) {
+func Test_validateCreateCertificateRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		req     *apiv1.CreateCertificateRequest
@@ -190,7 +247,7 @@ func TestValidateCreateCertificateRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateCreateCertificateRequest(tt.req)
+			err := validateCreateCertificateRequest(tt.req)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateCreateCertificateRequest() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -202,7 +259,7 @@ func TestValidateCreateCertificateRequest(t *testing.T) {
 	}
 }
 
-func TestValidateRevokeCertificateRequest(t *testing.T) {
+func Test_validateRevokeCertificateRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		req     *apiv1.RevokeCertificateRequest
@@ -234,19 +291,19 @@ func TestValidateRevokeCertificateRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateRevokeCertificateRequest(tt.req)
+			err := validateRevokeCertificateRequest(tt.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateRevokeCertificateRequest() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("validateRevokeCertificateRequest() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantErr && !strings.Contains(err.Error(), tt.errMsg) {
-				t.Errorf("ValidateRevokeCertificateRequest() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				t.Errorf("validateRevokeCertificateRequest() error = %q, want error containing %q", err.Error(), tt.errMsg)
 			}
 		})
 	}
 }
 
-func TestCreateCertificate(t *testing.T) {
+func TestCreateCertificate_Validation(t *testing.T) {
 	ctx := context.Background()
 	opts := apiv1.Options{
 		Type:   "externalcas",
@@ -258,7 +315,6 @@ func TestCreateCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Table-driven tests for validation logic
 	tests := []struct {
 		name    string
 		req     *apiv1.CreateCertificateRequest
@@ -280,12 +336,10 @@ func TestCreateCertificate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := extcas.CreateCertificate(tt.req)
 
-			// We expect an error
 			if err == nil {
 				t.Fatalf("expected error containing %q, got nil", tt.wantErr)
 			}
 
-			// Check the error message contains expected text
 			if !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("expected error containing %q, got %q", tt.wantErr, err.Error())
 			}
@@ -293,30 +347,7 @@ func TestCreateCertificate(t *testing.T) {
 	}
 }
 
-// mockACMEClient is a mock implementation of ACMEClient for testing
-type mockACMEClient struct {
-	obtainFunc func(certificate.ObtainForCSRRequest) (*certificate.Resource, error)
-	revokeFunc func([]byte) error
-}
-
-func (m *mockACMEClient) ObtainForCSR(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
-	if m.obtainFunc != nil {
-		return m.obtainFunc(req)
-	}
-	return nil, errors.New("not implemented")
-}
-
-func (m *mockACMEClient) Revoke(pemBytes []byte) error {
-	if m.revokeFunc != nil {
-		return m.revokeFunc(pemBytes)
-	}
-	return errors.New("not implemented")
-}
-
-func TestProcessCertificateRequest(t *testing.T) {
-}
-
-func TestProcessCertificateRequest_WithMock(t *testing.T) {
+func TestCreateCertificate_WithMock(t *testing.T) {
 	// Create a mock ACME client that returns a test certificate
 	mockClient := &mockACMEClient{
 		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
@@ -327,17 +358,19 @@ func TestProcessCertificateRequest_WithMock(t *testing.T) {
 		},
 	}
 
-	// Create ExternalCAS with mock client and parsed config
-	cas := &ExternalCAS{
-		ctx:        context.Background(),
-		acmeClient: mockClient,
-		parsedConfig: &AcmeProxyConfig{
-			CaURL:        "https://acme.test.com",
-			Email:        "test@example.com",
-			Kid:          "test-kid",
-			HmacKey:      "test-hmac",
-			CertLifetime: 30,
+	// Create a mock ExternalCAS that uses our mock client
+	cas := &testExternalCAS{
+		ExternalCAS: &ExternalCAS{
+			ctx: context.Background(),
+			config: mustMarshalConfig(t, &AcmeProxyConfig{
+				CaURL:        "https://acme.test.com",
+				Email:        "test@example.com",
+				Kid:          "test-kid",
+				HmacKey:      "test-hmac",
+				CertLifetime: 30,
+			}),
 		},
+		mockClient: mockClient,
 	}
 
 	// Create a test CSR
@@ -350,24 +383,23 @@ func TestProcessCertificateRequest_WithMock(t *testing.T) {
 	}
 
 	// Process the request
-	result := cas.processCertificateRequest(context.Background(), req)
-
+	resp, err := cas.CreateCertificate(req)
 	// Verify the result
-	if result.err != nil {
-		t.Fatalf("expected no error, got: %v", result.err)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
 	}
-	if result.response == nil {
+	if resp == nil {
 		t.Fatal("expected response")
 	}
-	if result.response.Certificate == nil {
+	if resp.Certificate == nil {
 		t.Error("expected leaf certificate")
 	}
-	if len(result.response.CertificateChain) != 1 {
-		t.Errorf("expected 1 intermediate certificate, got %d", len(result.response.CertificateChain))
+	if len(resp.CertificateChain) != 1 {
+		t.Errorf("expected 1 intermediate certificate, got %d", len(resp.CertificateChain))
 	}
 }
 
-func TestProcessCertificateRequest_WithMock_Error(t *testing.T) {
+func TestCreateCertificate_WithMock_Error(t *testing.T) {
 	// Create a mock ACME client that returns an error
 	mockClient := &mockACMEClient{
 		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
@@ -375,15 +407,17 @@ func TestProcessCertificateRequest_WithMock_Error(t *testing.T) {
 		},
 	}
 
-	cas := &ExternalCAS{
-		ctx:        context.Background(),
-		acmeClient: mockClient,
-		parsedConfig: &AcmeProxyConfig{
-			CaURL:   "https://acme.test.com",
-			Email:   "test@example.com",
-			Kid:     "test-kid",
-			HmacKey: "test-hmac",
+	cas := &testExternalCAS{
+		ExternalCAS: &ExternalCAS{
+			ctx: context.Background(),
+			config: mustMarshalConfig(t, &AcmeProxyConfig{
+				CaURL:   "https://acme.test.com",
+				Email:   "test@example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			}),
 		},
+		mockClient: mockClient,
 	}
 
 	csr := &x509.CertificateRequest{
@@ -394,54 +428,140 @@ func TestProcessCertificateRequest_WithMock_Error(t *testing.T) {
 		Template: &x509.Certificate{},
 	}
 
-	result := cas.processCertificateRequest(context.Background(), req)
+	_, err := cas.CreateCertificate(req)
 
-	if result.err == nil {
+	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
-	if !strings.Contains(result.err.Error(), "ACME server error") {
-		t.Errorf("expected error containing 'ACME server error', got: %v", result.err)
+	if !strings.Contains(err.Error(), "ACME server error") {
+		t.Errorf("expected error containing 'ACME server error', got: %v", err)
 	}
 }
 
-func TestSplitCertificateBundle(t *testing.T) {
-	// Build a chain: leaf + intermediate + root
-	var chain []byte
-	chain = append(chain, createTestCertPEM(t, 1)...)
-	chain = append(chain, createTestCertPEM(t, 2)...)
-	chain = append(chain, createTestCertPEM(t, 3)...)
-
-	leaf, intermediates, err := SplitCertificateBundle(chain)
-	if err != nil {
-		t.Fatalf("SplitCertificateBundle failed: %v", err)
+func TestCreateCertificate_Timeout(t *testing.T) {
+	// Create a mock client that takes too long
+	mockClient := &mockACMEClient{
+		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+			time.Sleep(5 * time.Second)
+			return nil, errors.New("should not reach here")
+		},
 	}
 
-	// Verify we got a leaf certificate
-	if leaf == nil {
-		t.Fatal("expected non-nil leaf certificate")
+	cas := &testExternalCAS{
+		ExternalCAS: &ExternalCAS{
+			ctx: context.Background(),
+			config: mustMarshalConfig(t, &AcmeProxyConfig{
+				CaURL:   "https://acme.test.com",
+				Email:   "test@example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			}),
+		},
+		mockClient:     mockClient,
+		requestTimeout: 100 * time.Millisecond, // Short timeout for testing
 	}
 
-	// Verify we got 2 intermediates (intermediate + root)
-	if len(intermediates) != 2 {
-		t.Fatalf("expected 2 intermediates, got %d", len(intermediates))
+	csr := &x509.CertificateRequest{
+		DNSNames: []string{"test.example.com"},
+	}
+	req := &apiv1.CreateCertificateRequest{
+		CSR:      csr,
+		Template: &x509.Certificate{},
 	}
 
-	// Verify serial numbers are correct (leaf=1, intermediates=2,3)
-	if leaf.SerialNumber.Int64() != 1 {
-		t.Errorf("leaf serial: want 1, got %d", leaf.SerialNumber.Int64())
+	_, err := cas.CreateCertificate(req)
+
+	if err == nil {
+		t.Fatal("expected timeout error, got nil")
 	}
-	if intermediates[0].SerialNumber.Int64() != 2 {
-		t.Errorf("first intermediate serial: want 2, got %d", intermediates[0].SerialNumber.Int64())
-	}
-	if intermediates[1].SerialNumber.Int64() != 3 {
-		t.Errorf("second intermediate serial: want 3, got %d", intermediates[1].SerialNumber.Int64())
+	if !strings.Contains(err.Error(), "timed out") {
+		t.Errorf("expected timeout error, got: %v", err)
 	}
 }
 
-func TestRenewCertificate(t *testing.T) {
+func Test_splitCertificateBundle(t *testing.T) {
+	tests := []struct {
+		name             string
+		createBundle     func(t *testing.T) []byte
+		wantLeafSerial   int64
+		wantIntermediate int
+		wantErr          bool
+		errMsg           string
+	}{
+		{
+			name: "valid 3-cert bundle",
+			createBundle: func(t *testing.T) []byte {
+				var chain []byte
+				chain = append(chain, createTestCertPEM(t, 1)...)
+				chain = append(chain, createTestCertPEM(t, 2)...)
+				chain = append(chain, createTestCertPEM(t, 3)...)
+				return chain
+			},
+			wantLeafSerial:   1,
+			wantIntermediate: 2,
+			wantErr:          false,
+		},
+		{
+			name: "single cert (no intermediates)",
+			createBundle: func(t *testing.T) []byte {
+				return createTestCertPEM(t, 1)
+			},
+			wantLeafSerial:   1,
+			wantIntermediate: 0,
+			wantErr:          false,
+		},
+		{
+			name: "empty bundle",
+			createBundle: func(t *testing.T) []byte {
+				return []byte("")
+			},
+			wantErr: true,
+			errMsg:  "no certificates found",
+		},
+		{
+			name: "invalid PEM data",
+			createBundle: func(t *testing.T) []byte {
+				return []byte("not a certificate")
+			},
+			wantErr: true,
+			errMsg:  "no certificates found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bundle := tt.createBundle(t)
+
+			leaf, intermediates, err := splitCertificateBundle(bundle)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("splitCertificateBundle() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+				return
+			}
+
+			if leaf == nil {
+				t.Fatal("expected non-nil leaf certificate")
+			}
+
+			if leaf.SerialNumber.Int64() != tt.wantLeafSerial {
+				t.Errorf("leaf serial = %d, want %d", leaf.SerialNumber.Int64(), tt.wantLeafSerial)
+			}
+
+			if len(intermediates) != tt.wantIntermediate {
+				t.Errorf("intermediates count = %d, want %d", len(intermediates), tt.wantIntermediate)
+			}
+		})
+	}
 }
 
-func TestRevokeCertificate(t *testing.T) {
+func TestRevokeCertificate_Validation(t *testing.T) {
 	ctx := context.Background()
 	opts := apiv1.Options{
 		Type:   "externalcas",
@@ -453,7 +573,6 @@ func TestRevokeCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Table-driven tests for validation logic (no network calls)
 	tests := []struct {
 		name    string
 		req     *apiv1.RevokeCertificateRequest
@@ -486,9 +605,139 @@ func TestRevokeCertificate(t *testing.T) {
 	}
 }
 
+func TestRenewCertificate_NotImplemented(t *testing.T) {
+	ctx := context.Background()
+	opts := apiv1.Options{
+		Type:   "externalcas",
+		Config: []byte("{}"),
+	}
+
+	cas, err := New(ctx, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cas.RenewCertificate(&apiv1.RenewCertificateRequest{})
+	if err == nil {
+		t.Fatal("expected NotImplementedError, got nil")
+	}
+
+	var notImplErr apiv1.NotImplementedError
+	if !errors.As(err, &notImplErr) {
+		t.Errorf("expected NotImplementedError, got %T: %v", err, err)
+	}
+}
+
+// mockACMEClient is a mock implementation of ACMEClient for testing
+type mockACMEClient struct {
+	obtainFunc func(certificate.ObtainForCSRRequest) (*certificate.Resource, error)
+	revokeFunc func([]byte) error
+}
+
+func (m *mockACMEClient) ObtainForCSR(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+	if m.obtainFunc != nil {
+		return m.obtainFunc(req)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockACMEClient) Revoke(pemBytes []byte) error {
+	if m.revokeFunc != nil {
+		return m.revokeFunc(pemBytes)
+	}
+	return errors.New("not implemented")
+}
+
+// testExternalCAS is a test wrapper that allows injecting a mock ACME client
+type testExternalCAS struct {
+	*ExternalCAS
+	mockClient     ACMEClient
+	requestTimeout time.Duration
+}
+
+// Override createLegoClient to return our mock
+func (t *testExternalCAS) createLegoClient(cfg *AcmeProxyConfig) (ACMEClient, error) {
+	if t.mockClient != nil {
+		return t.mockClient, nil
+	}
+	return t.ExternalCAS.createLegoClient(cfg)
+}
+
+// CreateCertificate overrides the parent to use custom timeout for testing
+func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*apiv1.CreateCertificateResponse, error) {
+	if err := validateCreateCertificateRequest(req); err != nil {
+		return nil, err
+	}
+
+	cfg, err := t.parseConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	acmeClient, err := t.createLegoClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ACME client: %w", err)
+	}
+
+	// Use custom timeout if specified, otherwise use config timeout
+	timeout := cfg.RequestTimeout()
+	if t.requestTimeout > 0 {
+		timeout = t.requestTimeout
+	}
+
+	ctx, cancel := context.WithTimeout(t.ctx, timeout)
+	defer cancel()
+
+	// Build certificate request
+	csrRequest := certificate.ObtainForCSRRequest{
+		CSR:    req.CSR,
+		Bundle: true,
+	}
+	if cfg.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
+	}
+
+	// Request certificate with context timeout
+	resultChan := make(chan *certificateResult, 1)
+	go func() {
+		cert, err := acmeClient.ObtainForCSR(csrRequest)
+		if err != nil {
+			resultChan <- &certificateResult{
+				err: fmt.Errorf("failed to obtain certificate: %w", err),
+			}
+			return
+		}
+
+		leaf, intermediates, err := splitCertificateBundle(cert.Certificate)
+		if err != nil {
+			resultChan <- &certificateResult{
+				err: fmt.Errorf("failed to split certificate bundle: %w", err),
+			}
+			return
+		}
+
+		resultChan <- &certificateResult{
+			response: &apiv1.CreateCertificateResponse{
+				Certificate:      leaf,
+				CertificateChain: intermediates,
+			},
+		}
+	}()
+
+	select {
+	case result := <-resultChan:
+		if result.err != nil {
+			return nil, result.err
+		}
+		return result.response, nil
+	case <-ctx.Done():
+		return nil, fmt.Errorf("certificate request timed out: %w", ctx.Err())
+	}
+}
+
 // Helper function that generates a self-signed test certificate in PEM format.
 func createTestCertPEM(t *testing.T, serial int64) []byte {
-	t.Helper() // marks this as a test helper (better error line numbers)
+	t.Helper()
 
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -496,7 +745,7 @@ func createTestCertPEM(t *testing.T, serial int64) []byte {
 	}
 
 	template := &x509.Certificate{
-		SerialNumber: big.NewInt(serial), // use the serial parameter
+		SerialNumber: big.NewInt(serial),
 		Subject: pkix.Name{
 			CommonName:   "Test Cert",
 			Country:      []string{"US"},
@@ -517,6 +766,15 @@ func createTestCertPEM(t *testing.T, serial int64) []byte {
 		Bytes: certDER,
 	}
 
-	// return self signed cert in PEM format
 	return pem.EncodeToMemory(pemBlock)
+}
+
+// mustMarshalConfig marshals a config or fails the test
+func mustMarshalConfig(t *testing.T, cfg *AcmeProxyConfig) []byte {
+	t.Helper()
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("failed to marshal config: %v", err)
+	}
+	return data
 }

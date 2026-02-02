@@ -8,3 +8,5 @@ step-ca
 ca-dev.json
 db
 .gitlab-ci.yml
+CHANGES.md
+COMPARISON.md
