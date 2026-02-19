@@ -301,18 +301,3 @@ N+c9XyDLAiEAkbrRKBsYc8YSgYviREF9u+gz7jK5JY2dsaRatEfb8Eg=
 ```
 
 Cert renewal was a success! ✨
-
-### WARNING ⚠️
-
-This is a work in progress. Not quite ready for production but will be very soon.
-
-#### TODO
-
-- [x] Move config bits from env vars to `ca.json`
-- [x] Implement Revoke method
-- [x] Re-assess if `GetCertificateAuthority` is a requirement or not
-- [x] Write unit tests
-- [ ] Prometheus metrics
-- [ ] Write admin docs
-- [ ] Write user docs
-- [ ] Write Helm chart
