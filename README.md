@@ -173,7 +173,36 @@ badger 2025/07/15 22:12:24 INFO: Replay took: 5.99µs
 When using acme-proxy with docker take a note of the bind mount and port
 
 ```sh
-docker run -itd -p 443:443 -v ./ca.json:/acme-proxy/config/ca.json acme-proxy:latest
+$ docker run -itd -p 443:443 -v ./ca-dev.json:/acme-proxy/config/ca.json --name acme-proxy acme-proxy:latest
+29c1ca374832dc50d3215b404f620c2a08d988c30f630464bf9d7d35aa44345f
+
+$ docker logs acme-proxy
+2026/03/17 23:04:06 Building new tls configuration using step-ca x509 Signer Interface
+2026/03/17 23:04:07 [INFO] acme: Registering account for certadmin@example.com
+2026/03/17 23:04:07 INFO processing certificate request domains=[proxy.example.com]
+2026/03/17 23:04:07 [INFO] [proxy.example.com] acme: Obtaining bundled SAN certificate given a CSR
+2026/03/17 23:04:08 [INFO] [proxy.example.com] AuthURL: https://acme.sectigo.com/v2/InCommonRSAOV/authz/jQJHRdd-0kKdm-JVQVhjHQ
+2026/03/17 23:04:08 [INFO] [proxy.example.com] acme: authorization already valid; skipping challenge
+2026/03/17 23:04:08 [INFO] [proxy.example.com] acme: Validations succeeded; requesting certificates
+2026/03/17 23:04:08 [INFO] Wait for certificate [timeout: 30s, interval: 500ms]
+2026/03/17 23:04:13 [INFO] [proxy.example.com] Server responded with a certificate.
+2026/03/17 23:04:13 INFO obtained certificate from external CA domains=[proxy.example.com]
+2026/03/17 23:04:13 Starting Smallstep CA/0000000-dev (linux/amd64)
+2026/03/17 23:04:13 Documentation: https://u.step.sm/docs/ca
+2026/03/17 23:04:13 Community Discord: https://u.step.sm/discord
+2026/03/17 23:04:13 Config file: /acme-proxy/config/ca.json
+2026/03/17 23:04:13 The primary server URL is https://proxy.example.com:443
+2026/03/17 23:04:13 Root certificates are available at https://proxy.example.com:443/roots.pem
+2026/03/17 23:04:13 Serving HTTPS on :443 ...
+
+$ curl -s https://proxy.example.com/acme/acme/directory | jq .
+{
+  "newNonce": "https://proxy.example.com/acme/acme/new-nonce",
+  "newAccount": "https://proxy.example.com/acme/acme/new-account",
+  "newOrder": "https://proxy.example.com/acme/acme/new-order",
+  "revokeCert": "https://proxy.example.com/acme/acme/revoke-cert",
+  "keyChange": "https://proxy.example.com/acme/acme/key-change"
+}
 ```
 
 ### Obtaining a certificate
