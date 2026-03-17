@@ -170,10 +170,10 @@ badger 2025/07/15 22:12:24 INFO: Replay took: 5.99µs
 2025/07/15 22:12:33 Serving HTTPS on proxy.example.com:443 ...
 ```
 
-For Docker based install take a note of the bind mount and port
+When using acme-proxy with docker take a note of the bind mount and port
 
 ```sh
-docker run -itd -p 443:443 -v ./ca-dev.json:/acme-proxy/config/ca.json acme-proxy:latest
+docker run -itd -p 443:443 -v ./ca.json:/acme-proxy/config/ca.json acme-proxy:latest
 ```
 
 ### Obtaining a certificate

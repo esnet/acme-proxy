@@ -100,7 +100,7 @@ jobs:
       - name: Run govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./...
+          govulncheck -C ./externalcas ./...
 
   build:
     name: Build (${{ matrix.os }}_${{ matrix.arch }})
