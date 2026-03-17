@@ -84,7 +84,18 @@ Requirements: Go >= 1.25
 
 ```sh
 ❯ git clone https://github.com/esnet/acme-proxy.git
-❯ make
+❯ cd acme-proxy && make
+```
+
+### Using Docker
+
+You can either use our [pre-built container images](https://github.com/esnet/acme-proxy/pkgs/container/acme-proxy) or you can build the image yourself.
+
+**DIY - Build docker image**
+
+```sh
+❯ git clone https://github.com/esnet/acme-proxy.git
+❯ cd acme-proxy && docker build -t acme-proxy:latest .
 ```
 
 ## Usage
@@ -118,11 +129,10 @@ The most important parts of the config are -
   }
 ```
 
-`ca_url` : ACME directory URL of external certificate authority. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV`
-
-Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account.
+Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV` as shown below
 
 ```json
+  "ca_url": "https://acme.sectigo.com/v2/InCommonRSAOV"
   "account_email": "certadmin@example.com",
   "eab_kid": "",
   "eab_hmac_key": "",
@@ -158,6 +168,12 @@ badger 2025/07/15 22:12:24 INFO: Replay took: 5.99µs
 2025/07/15 22:12:33 Root certificates are available at https://acmeproxy.example.com:443/roots.pem
 2025/07/15 22:12:33 X.509 Root Fingerprint: a6cf64dbb4c8d5fd19ce48896068db03b533a8d1336c6256a87d00cbb3def3ea
 2025/07/15 22:12:33 Serving HTTPS on proxy.example.com:443 ...
+```
+
+For Docker based install take a note of the bind mount and port
+
+```sh
+docker run -itd -p 443:443 -v ./ca-dev.json:/acme-proxy/config/ca.json acme-proxy:latest
 ```
 
 ### Obtaining a certificate

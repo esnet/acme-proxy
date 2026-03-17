@@ -16,6 +16,7 @@ WORKDIR /acme-proxy
 RUN chown -R nonroot:nonroot /acme-proxy/
 
 COPY --from=build --chown=nonroot:nonroot /build/step-ca .
+RUN apk add --no-cache pcsc-lite
 
 # KV store mount point
 RUN mkdir /acme-proxy/db && chown nonroot:nonroot /acme-proxy/db
