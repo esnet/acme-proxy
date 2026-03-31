@@ -1,5 +1,5 @@
 APP_NAME = step-ca
-VERSION = v0.29.0
+VERSION = v0.30.2
 UPSTREAM = https://github.com/smallstep/certificates.git
 
 SUDO := $(shell if [ $$(id -u) -ne 0 ]; then echo "$(SUDO)"; else echo ""; fi)
@@ -20,22 +20,18 @@ check-deps:
 	@echo "🔍 Checking for libpcsclite-dev dependency..."
 	@OS_NAME=$$(uname -s); \
 	if [ "$$OS_NAME" = "Darwin" ]; then \
-		echo "🍏 found macOS - Skipping dependency check"; \
+		echo "🍏 macOS - Skipping dependency check"; \
 	elif [ -f /etc/os-release ]; then \
 		. /etc/os-release; \
 		if echo "$$ID" | grep -Eqi 'ubuntu|debian'; then \
-			if ! dpkg -s libpcsclite-dev >/dev/null 2>&1; then \
-				echo "📦 Installing libpcsclite-dev on Debian/Ubuntu..."; \
-				$(SUDO) apt-get update && $(SUDO) apt-get install -y libpcsclite-dev; \
-			else \
-				echo "📦 libpcsclite-dev already installed."; \
+			if ! dpkg -s libpcsclite-dev >/dev/null 2>&1 || ! command -v pkg-config >/dev/null 2>&1; then \
+				echo "📦 Installing libpcsclite-dev and pkg-config on Debian/Ubuntu..."; \
+				$(SUDO) apt-get update && $(SUDO) apt-get install -y libpcsclite-dev pkg-config; \
 			fi; \
 		elif echo "$$ID" | grep -Eqi 'rhel|rocky|centos'; then \
-			if ! rpm -q pcsc-lite-devel >/dev/null 2>&1; then \
-				echo "📦 Installing pcsc-lite-devel on Rocky/RHEL..."; \
-				$(SUDO) dnf install -y pcsc-lite-devel; \
-			else \
-				echo "📦 pcsc-lite-devel already installed."; \
+			if ! rpm -q pcsc-lite-devel >/dev/null 2>&1 || ! command -v pkg-config >/dev/null 2>&1; then \
+				echo "📦 Installing pcsc-lite-devel and pkgconfig on Rocky/RHEL..."; \
+				$(SUDO) dnf install -y pcsc-lite-devel pkgconfig; \
 			fi; \
 		else \
 			echo "⚠️ Unknown Linux distribution: $$ID. You may need to install some dependencies manually."; \
