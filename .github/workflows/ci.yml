@@ -127,30 +127,19 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpcsclite-dev
-          # Install cross-compilation toolchain for arm64
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
-
-      - name: Setup dev environment
-        run: |
-          mkdir .build
-          git clone --branch v0.29.0 --depth 1 https://github.com/smallstep/certificates.git .build/certificates/
-          rm -rf .build/certificates/server && cp -r ./hack/server .build/certificates/server
-          mkdir -p db
-          go mod tidy
+          sudo apt-get install -y libpcsclite-dev pkg-config
 
       - name: Build binary
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: ${{ matrix.arch == 'arm64' && '0' || '1' }}
-          CC: ${{ matrix.arch == 'arm64' && 'aarch64-linux-gnu-gcc' || '' }}
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_ARCH: ${{ matrix.arch }}
         run: |
-          BINARY_NAME="step-ca_${{ matrix.os }}_${{ matrix.arch }}"
-          go build -v -o "${BINARY_NAME}" .
-          echo "Built ${BINARY_NAME}"
+          make build
+          mv step-ca "step-ca_${MATRIX_OS}_${MATRIX_ARCH}"
+          echo "Built step-ca_${MATRIX_OS}_${MATRIX_ARCH}"
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
