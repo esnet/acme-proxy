@@ -18,7 +18,8 @@
       "certlifetime": 30,
       "metrics": {
         "enabled": true,
-        "port": 9123
+        "port": 9123,
+        "dataSource": "/opt/acme-proxy/db/metrics"
       }
     },
     "provisioners": [
