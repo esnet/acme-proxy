@@ -23,7 +23,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx := context.Background()
 	opts := apiv1.Options{
-		Type:      "externalcas",
+		Type: "externalcas",
 		Config: mustMarshalConfig(t, &AcmeProxyConfig{
 			CaURL:   "https://acme.example.com",
 			Kid:     "test-kid",
