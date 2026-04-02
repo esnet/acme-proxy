@@ -23,10 +23,12 @@ import (
 func TestNew(t *testing.T) {
 	ctx := context.Background()
 	opts := apiv1.Options{
-		Type:       "externalcas",
-		IsCreator:  false,
-		IsCAGetter: false,
-		Config:     []byte(""),
+		Type: "externalcas",
+		Config: mustMarshalConfig(t, &AcmeProxyConfig{
+			CaURL:   "https://acme.example.com",
+			Kid:     "test-kid",
+			HmacKey: "test-hmac",
+		}),
 	}
 
 	cas, err := New(ctx, opts)
@@ -39,6 +41,46 @@ func TestNew(t *testing.T) {
 
 	if got != want {
 		t.Fatalf("want: %s; got %s", want, got)
+	}
+}
+
+func TestNew_ValidatesConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config []byte
+		errMsg string
+	}{
+		{
+			name:   "empty config",
+			config: []byte(""),
+			errMsg: "failed to unmarshal config",
+		},
+		{
+			name:   "missing ca_url",
+			config: mustMarshalConfig(t, &AcmeProxyConfig{Kid: "k", HmacKey: "h"}),
+			errMsg: "ca_url is required",
+		},
+		{
+			name: "metrics enabled without datasource",
+			config: mustMarshalConfig(t, &AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+				Metrics: Metrics{Enabled: true, DataSource: ""},
+			}),
+			errMsg: "metrics.datasource is required",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New(context.Background(), apiv1.Options{Config: tt.config})
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("error = %q, want error containing %q", err.Error(), tt.errMsg)
+			}
+		})
 	}
 }
 
@@ -110,6 +152,27 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 				Kid:          "test-kid",
 				HmacKey:      "test-hmac",
 				CertLifetime: 0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "metrics enabled without datasource",
+			config: AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+				Metrics: Metrics{Enabled: true, DataSource: ""},
+			},
+			wantErr: true,
+			errMsg:  "metrics.datasource is required",
+		},
+		{
+			name: "metrics enabled with datasource",
+			config: AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+				Metrics: Metrics{Enabled: true, DataSource: "/tmp/test.db"},
 			},
 			wantErr: false,
 		},
@@ -304,16 +367,7 @@ func Test_validateRevokeCertificateRequest(t *testing.T) {
 }
 
 func TestCreateCertificate_Validation(t *testing.T) {
-	ctx := context.Background()
-	opts := apiv1.Options{
-		Type:   "externalcas",
-		Config: []byte("{}"),
-	}
-
-	extcas, err := New(ctx, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	extcas := &ExternalCAS{ctx: context.Background()}
 
 	tests := []struct {
 		name    string
@@ -562,16 +616,7 @@ func Test_splitCertificateBundle(t *testing.T) {
 }
 
 func TestRevokeCertificate_Validation(t *testing.T) {
-	ctx := context.Background()
-	opts := apiv1.Options{
-		Type:   "externalcas",
-		Config: []byte("{}"),
-	}
-
-	extcas, err := New(ctx, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
+	extcas := &ExternalCAS{ctx: context.Background()}
 
 	tests := []struct {
 		name    string
@@ -606,18 +651,9 @@ func TestRevokeCertificate_Validation(t *testing.T) {
 }
 
 func TestRenewCertificate_NotImplemented(t *testing.T) {
-	ctx := context.Background()
-	opts := apiv1.Options{
-		Type:   "externalcas",
-		Config: []byte("{}"),
-	}
+	cas := &ExternalCAS{ctx: context.Background()}
 
-	cas, err := New(ctx, opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = cas.RenewCertificate(&apiv1.RenewCertificateRequest{})
+	_, err := cas.RenewCertificate(&apiv1.RenewCertificateRequest{})
 	if err == nil {
 		t.Fatal("expected NotImplementedError, got nil")
 	}

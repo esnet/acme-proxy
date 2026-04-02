@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
@@ -29,7 +30,15 @@ func init() {
 }
 
 func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
-	return &ExternalCAS{ctx: ctx, config: opts.Config}, nil
+	cas := &ExternalCAS{ctx: ctx, config: opts.Config}
+	cfg, err := cas.parseConfig()
+	if err != nil {
+		return nil, err
+	}
+	if err := StartMetricsServer(cfg.Metrics); err != nil {
+		return nil, err
+	}
+	return cas, nil
 }
 
 // AcmeProxyConfig contains the configuration for connecting to an external ACME CA
@@ -63,6 +72,9 @@ func (c *AcmeProxyConfig) Validate() error {
 	if c.CertLifetime < 0 {
 		return errors.New("certlifetime cannot be negative")
 	}
+	if c.Metrics.Enabled && c.Metrics.DataSource == "" {
+		return errors.New("metrics.datasource is required when metrics is enabled")
+	}
 	return nil
 }
 
@@ -77,8 +89,9 @@ func (c *AcmeProxyConfig) RequestTimeout() time.Duration {
 }
 
 type Metrics struct {
-	Enabled bool `json:"enabled,omitempty"`
-	Port    int  `json:"port,omitempty"`
+	Enabled    bool   `json:"enabled,omitempty"`
+	Port       int    `json:"port,omitempty"`
+	DataSource string `json:"datasource,omitempty"`
 }
 
 // User implements the lego registration.User interface
@@ -159,6 +172,7 @@ func splitCertificateBundle(pemBytes []byte) (*x509.Certificate, []*x509.Certifi
 // certificateResult holds the result of an async certificate operation
 type certificateResult struct {
 	response *apiv1.CreateCertificateResponse
+	duration time.Duration // time ObtainForCSR took; used for metrics
 	err      error
 }
 
@@ -273,10 +287,14 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 			}
 		}()
 
+		start := time.Now()
 		cert, err := acmeClient.ObtainForCSR(csrRequest)
+		duration := time.Since(start)
+
 		if err != nil {
 			resultChan <- &certificateResult{
-				err: fmt.Errorf("failed to obtain certificate: %w", err),
+				err:      fmt.Errorf("failed to obtain certificate: %w", err),
+				duration: duration,
 			}
 			return
 		}
@@ -284,7 +302,8 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		leaf, intermediates, err := splitCertificateBundle(cert.Certificate)
 		if err != nil {
 			resultChan <- &certificateResult{
-				err: fmt.Errorf("failed to split certificate bundle: %w", err),
+				err:      fmt.Errorf("failed to split certificate bundle: %w", err),
+				duration: duration,
 			}
 			return
 		}
@@ -294,17 +313,59 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 				Certificate:      leaf,
 				CertificateChain: intermediates,
 			},
+			duration: duration,
 		}
 	}()
 
 	select {
 	case result := <-resultChan:
 		if result.err != nil {
+			if metricsEnabled {
+				certificatesIssuedTotal.WithLabelValues("failure").Inc()
+				if req.CSR != nil {
+					if err := globalStore.recordIssued(CertRecord{
+						CommonName:      req.CSR.Subject.CommonName,
+						SANs:            strings.Join(req.CSR.DNSNames, ","),
+						DurationSeconds: result.duration.Seconds(),
+						Status:          "failure",
+					}); err != nil {
+						slog.Error("failed to record cert issuance failure", "error", err)
+					}
+				}
+			}
 			return nil, result.err
 		}
 		slog.Info("obtained certificate from external CA", "domains", req.CSR.DNSNames)
+		if metricsEnabled {
+			certificatesIssuedTotal.WithLabelValues("success").Inc()
+			cert := result.response.Certificate
+			if err := globalStore.recordIssued(CertRecord{
+				Serial:          cert.SerialNumber.Text(16),
+				CommonName:      cert.Subject.CommonName,
+				Issuer:          cert.Issuer.CommonName,
+				SANs:            strings.Join(cert.DNSNames, ","),
+				IssuedAt:        cert.NotBefore,
+				ExpiresAt:       cert.NotAfter,
+				DurationSeconds: result.duration.Seconds(),
+				Status:          "success",
+			}); err != nil {
+				slog.Error("failed to record cert issuance", "error", err)
+			}
+		}
 		return result.response, nil
 	case <-ctx.Done():
+		if metricsEnabled {
+			certificatesIssuedTotal.WithLabelValues("failure").Inc()
+			if req.CSR != nil {
+				if err := globalStore.recordIssued(CertRecord{
+					CommonName: req.CSR.Subject.CommonName,
+					SANs:       strings.Join(req.CSR.DNSNames, ","),
+					Status:     "failure",
+				}); err != nil {
+					slog.Error("failed to record cert issuance timeout", "error", err)
+				}
+			}
+		}
 		return nil, fmt.Errorf("certificate request timed out: %w", ctx.Err())
 	}
 }
@@ -344,17 +405,53 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		"subject", req.Certificate.Subject.CommonName,
 	)
 
-	if err := acmeClient.Revoke(pemBytes); err != nil {
+	revokeStart := time.Now()
+	revokeErr := acmeClient.Revoke(pemBytes)
+	revokeDuration := time.Since(revokeStart)
+
+	if revokeErr != nil {
 		slog.Error("failed to revoke certificate",
 			"serial", req.Certificate.SerialNumber.String(),
-			"error", err,
+			"error", revokeErr,
 		)
-		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
+		if metricsEnabled {
+			certificatesRevokedTotal.WithLabelValues("failure").Inc()
+			cert := req.Certificate
+			if err := globalStore.recordRevoked(CertRecord{
+				Serial:          cert.SerialNumber.Text(16),
+				CommonName:      cert.Subject.CommonName,
+				Issuer:          cert.Issuer.CommonName,
+				SANs:            strings.Join(cert.DNSNames, ","),
+				IssuedAt:        cert.NotBefore,
+				ExpiresAt:       cert.NotAfter,
+				DurationSeconds: revokeDuration.Seconds(),
+				Status:          "failure",
+			}); err != nil {
+				slog.Error("failed to record cert revocation failure", "error", err)
+			}
+		}
+		return nil, fmt.Errorf("failed to revoke certificate: %w", revokeErr)
 	}
 
 	slog.Info("certificate revoked successfully",
 		"serial", req.Certificate.SerialNumber.String(),
 	)
+	if metricsEnabled {
+		certificatesRevokedTotal.WithLabelValues("success").Inc()
+		cert := req.Certificate
+		if err := globalStore.recordRevoked(CertRecord{
+			Serial:          cert.SerialNumber.Text(16),
+			CommonName:      cert.Subject.CommonName,
+			Issuer:          cert.Issuer.CommonName,
+			SANs:            strings.Join(cert.DNSNames, ","),
+			IssuedAt:        cert.NotBefore,
+			ExpiresAt:       cert.NotAfter,
+			DurationSeconds: revokeDuration.Seconds(),
+			Status:          "success",
+		}); err != nil {
+			slog.Error("failed to record cert revocation", "error", err)
+		}
+	}
 
 	return &apiv1.RevokeCertificateResponse{
 		Certificate: req.Certificate,
