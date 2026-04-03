@@ -2,17 +2,10 @@ module github.com/esnet/acme-proxy
 
 go 1.25.0
 
-// The root cause of the bug appears to be caused by short `WriteTimeout` value
-// which is currently hardcoded to 15 seconds in the upstream repository
-// https://github.com/smallstep/certificates/blob/master/server/server.go#L45
-// Our workaround simply bumps up the timeout from 15s to 90s.
-// There is already a pull request for a permanent fix but it remains to be merged
-// See https://github.com/smallstep/certificates/pull/1643/files
-replace github.com/smallstep/certificates => ./.build/certificates
+replace github.com/smallstep/certificates => github.com/esnet/certificates v0.30.2-patch.2
 
 require (
 	github.com/go-acme/lego/v4 v4.33.0
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/smallstep/certificates v0.30.2
 	github.com/smallstep/cli-utils v0.12.2
@@ -136,6 +129,7 @@ require (
 	github.com/newrelic/go-agent/v3 v3.42.0 // indirect
 	github.com/peterbourgon/diskv/v3 v3.0.1 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
