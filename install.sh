@@ -71,8 +71,8 @@ cat > "$CONFIG_FILE" << EOF
       "eab_hmac_key": "",
       "metrics": {
         "enabled": true,
-        "port": 9123,
-        "dataSource": "${DB_DIR}/metrics"
+        "port": 9234,
+        "dataSource": "db/metrics"
       }
     },
     "provisioners": [
