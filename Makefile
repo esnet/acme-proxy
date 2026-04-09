@@ -1,6 +1,4 @@
 APP_NAME = step-ca
-VERSION = v0.30.2
-UPSTREAM = https://github.com/smallstep/certificates.git
 
 SUDO := $(shell if [ $$(id -u) -ne 0 ]; then echo "$(SUDO)"; else echo ""; fi)
 
@@ -14,7 +12,6 @@ clean:
 	go clean -cache
 	rm -f step-ca
 	rm -rf db
-	rm -rf .build
 
 check-deps:
 	@echo "🔍 Checking for libpcsclite-dev dependency..."
@@ -43,17 +40,12 @@ check-deps:
 
 dev: clean check-deps
 	@echo "⬇️ Downloading dependencies to create dev environment..."
-	git clone --branch $(VERSION) --depth 1 $(UPSTREAM) .build/certificates/
-	rm -rf .build/certificates/server && cp -r ./hack/server .build/certificates/server
 	mkdir db
 	go mod tidy
 	@echo "✅ Ready"
 
 build: clean check-deps
 	@echo "⚙️ Building ACME proxy with Step CA..."
-	mkdir .build
-	git clone --branch $(VERSION) --depth 1 $(UPSTREAM) .build/certificates/
-	rm -rf .build/certificates/server && cp -r ./hack/server .build/certificates/server
 	mkdir db
-	go build -v -o $(APP_NAME) .
+	go build -ldflags="-s -w" -v -o $(APP_NAME) .
 	@echo "✅ Done"
