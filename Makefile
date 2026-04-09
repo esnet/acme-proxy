@@ -47,5 +47,5 @@ dev: clean check-deps
 build: clean check-deps
 	@echo "⚙️ Building ACME proxy with Step CA..."
 	mkdir db
-	go build -v -o $(APP_NAME) .
+	go build -ldflags="-s -w" -v -o $(APP_NAME) .
 	@echo "✅ Done"
