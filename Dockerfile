@@ -1,6 +1,6 @@
 # Stage 1: Build step-ca with acme-proxy plugin
 
-FROM golang:1.25.5-trixie AS build
+FROM golang:1.26.2-trixie AS build
 
 WORKDIR /build
 
