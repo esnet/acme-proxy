@@ -1,6 +1,4 @@
 APP_NAME = step-ca
-VERSION = v0.30.2
-UPSTREAM = https://github.com/smallstep/certificates.git
 
 SUDO := $(shell if [ $$(id -u) -ne 0 ]; then echo "$(SUDO)"; else echo ""; fi)
 
