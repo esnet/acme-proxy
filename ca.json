@@ -15,11 +15,10 @@
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
-      "certlifetime": 30,
       "metrics": {
         "enabled": true,
-        "port": 9123,
-        "dataSource": "/opt/acme-proxy/db/metrics"
+        "port": 9234,
+        "dataSource": "db/metrics"
       }
     },
     "provisioners": [

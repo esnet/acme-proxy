@@ -121,7 +121,8 @@ The most important parts of the config are -
       "certlifetime": 30,
       "metrics": {
         "enabled": true,
-        "port": 9123
+        "port": 9234,
+        "dataSource": "db/metrics"
       }
     },
   ...

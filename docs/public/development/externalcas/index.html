@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ACME server as Registration Authority# See upstream docs section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
+Certificate Authority Service (CAS)# CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that’s Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL. ACME proxy can be run as a standalone ACME server in Registraiton Authority mode
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/development/externalcas/">
+  <meta property="og:site_name" content="ACME Proxy">
+  <meta property="og:title" content="External CAs">
+  <meta property="og:description" content="ACME server as Registration Authority# See upstream docs section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
+Certificate Authority Service (CAS)# CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that’s Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL. ACME proxy can be run as a standalone ACME server in Registraiton Authority mode">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="development">
+
+
+  <meta itemprop="name" content="External CAs">
+  <meta itemprop="description" content="ACME server as Registration Authority# See upstream docs section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
+Certificate Authority Service (CAS)# CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that’s Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL. ACME proxy can be run as a standalone ACME server in Registraiton Authority mode">
+  <meta itemprop="wordCount" content="250">
+
+<title>External CAs | ACME Proxy</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="http://localhost:1313/development/externalcas/">
+<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.4110d568457ca8c8befc6294cd7ee24d2e995833d91f04bd75abd16b0bfe61e7.js" integrity="sha256-QRDVaEV8qMi&#43;/GKUzX7iTS6ZWDPZHwS9davRawv&#43;Yec=" crossorigin="anonymous"></script>
+
+  <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
+
+
+
+
+</head>
+<body dir="ltr" class="book-kind-page book-type-development">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+
+<aside class="book-menu">
+  <div class="book-menu-content">
+
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>ACME Proxy</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text"
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <ul>
+
+
+        <li>
+
+
+
+
+
+    <a href="/quickstart/" class="">
+      Quickstart</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/install/" class="">
+      Install</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/admin/" class="">
+      Administration Guide</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/user/" class="">
+      User Guide</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a>
+      Developments</a>
+
+
+
+  <ul>
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/externalcas/" class="active">
+      External CAs</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/maintenance/" class="">
+      Maintenance</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/contribute/" class="">
+      Contributing</a>
+
+
+        </li>
+
+
+  </ul>
+
+        </li>
+
+
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+
+
+    <div class="book-page">
+      <header class="book-header hidden">
+
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>External CAs</h3>
+
+  <label for="toc-control">
+
+    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+
+  </label>
+</div>
+
+
+
+  <aside class="hidden">
+
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#acme-server-as-registration-authority">ACME server as Registration Authority</a>
+      <ul>
+        <li><a href="#certificate-authority-service-cas">Certificate Authority Service (CAS)</a>
+          <ul>
+            <li><a href="#externalcas">ExternalCAS</a></li>
+          </ul>
+        </li>
+        <li><a href="#upstream-docs">Upstream docs</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+
+
+      </header>
+
+
+
+  <article class="markdown book-article"><h1 id="acme-server-as-registration-authority">ACME server as Registration Authority<a class="anchor" href="#acme-server-as-registration-authority">#</a></h1>
+<p>See <a href="#upstream-docs">upstream docs</a> section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.</p>
+<h2 id="certificate-authority-service-cas">Certificate Authority Service (CAS)<a class="anchor" href="#certificate-authority-service-cas">#</a></h2>
+<p>CAS provides a plugin based architecture that allows Step CA to delegate certificate signing to different backends - whether that&rsquo;s Google Cloud, HashiCorp Vault, or in our case, external certificate authorities like Sectigo or ZeroSSL. ACME proxy can be run as a standalone ACME server in Registraiton Authority mode</p>
+<h3 id="externalcas">ExternalCAS<a class="anchor" href="#externalcas">#</a></h3>
+<p><code>Step CA</code> provides an interface called <code>CertificateAuthorityService</code> <a href="https://github.com/smallstep/certificates/tree/master/cas">CAS</a> to support external certificate authorities as the signing body. Our code in <code>externalcas</code> simply implements the <code>CertificateAuthorityService</code> interface.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff5c57">type</span> CertificateAuthorityService <span style="color:#ff5c57">interface</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#57c7ff">CreateCertificate</span>(req <span style="color:#ff6ac1">*</span>CreateCertificateRequest) (<span style="color:#ff6ac1">*</span>CreateCertificateResponse, <span style="color:#9aedfe">error</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#57c7ff">RenewCertificate</span>(req <span style="color:#ff6ac1">*</span>RenewCertificateRequest) (<span style="color:#ff6ac1">*</span>RenewCertificateResponse, <span style="color:#9aedfe">error</span>)
+</span></span><span style="display:flex;"><span>    <span style="color:#57c7ff">RevokeCertificate</span>(req <span style="color:#ff6ac1">*</span>RevokeCertificateRequest) (<span style="color:#ff6ac1">*</span>RevokeCertificateResponse, <span style="color:#9aedfe">error</span>)
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><p>The go package also defines a special type called <code>ExternalCAS</code> for this exact purpose. Which is why our <a href="../ca.json">ca.json</a> file defines an authority of <code>type: externalcas</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#ff5c57">const</span> (
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// DefaultCAS is a CertificateAuthorityService using software.</span>
+</span></span><span style="display:flex;"><span>    DefaultCAS = <span style="color:#5af78e">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// SoftCAS is a CertificateAuthorityService using software.</span>
+</span></span><span style="display:flex;"><span>    SoftCAS = <span style="color:#5af78e">&#34;softcas&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// CloudCAS is a CertificateAuthorityService using Google Cloud CAS.</span>
+</span></span><span style="display:flex;"><span>    CloudCAS = <span style="color:#5af78e">&#34;cloudcas&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// StepCAS is a CertificateAuthorityService using another step-ca instance.</span>
+</span></span><span style="display:flex;"><span>    StepCAS = <span style="color:#5af78e">&#34;stepcas&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// VaultCAS is a CertificateAuthorityService using Hasicorp Vault PKI.</span>
+</span></span><span style="display:flex;"><span>    VaultCAS = <span style="color:#5af78e">&#34;vaultcas&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#78787e">// ExternalCAS is a CertificateAuthorityService using an external injected CA implementation</span>
+</span></span><span style="display:flex;"><span>    ExternalCAS = <span style="color:#5af78e">&#34;externalcas&#34;</span>
+</span></span><span style="display:flex;"><span>)</span></span></code></pre></div><h2 id="upstream-docs">Upstream docs<a class="anchor" href="#upstream-docs">#</a></h2>
+<p><strong>Step CA github repo</strong>
+<a href="https://github.com/smallstep/certificates/tree/master">https://github.com/smallstep/certificates/tree/master</a></p>
+<p><strong>Step CA Registration Authority (RA)</strong>
+<a href="https://smallstep.com/docs/step-ca/registration-authority-ra-mode/">https://smallstep.com/docs/step-ca/registration-authority-ra-mode/</a></p>
+<p><strong>RA related github discussions</strong></p>
+<ul>
+<li><a href="https://github.com/smallstep/certificates/discussions/884">https://github.com/smallstep/certificates/discussions/884</a></li>
+<li><a href="https://github.com/smallstep/certificates/issues/343">https://github.com/smallstep/certificates/issues/343</a></li>
+</ul>
+<p><strong>Step CA full configuration options</strong>
+<a href="https://smallstep.com/docs/step-ca/configuration/">https://smallstep.com/docs/step-ca/configuration/</a></p>
+<p><strong>Certificate issuance policy configuration</strong>
+<a href="https://smallstep.com/docs/step-ca/policies/">https://smallstep.com/docs/step-ca/policies/</a></p>
+</article>
+
+
+
+      <footer class="book-footer">
+
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/development/externalcas.md" target="_blank" rel="noopener edit">
+    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+    <span>Edit this page</span>
+  </a>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+  <div class="flex flex-wrap justify-between">
+    <span>
+
+      <a href="/user/" class="flex align-center">
+        <img src="/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>User Guide</span>
+      </a>
+
+    </span>
+    <span>
+
+      <a href="/development/maintenance/" class="flex align-center">
+        <span>Maintenance</span>
+        <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+
+    </span>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+
+
+  <aside class="book-toc">
+    <div class="book-toc-content">
+
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#acme-server-as-registration-authority">ACME server as Registration Authority</a>
+      <ul>
+        <li><a href="#certificate-authority-service-cas">Certificate Authority Service (CAS)</a>
+          <ul>
+            <li><a href="#externalcas">ExternalCAS</a></li>
+          </ul>
+        </li>
+        <li><a href="#upstream-docs">Upstream docs</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+
+
+  </main>
+
+
+</body>
+</html>

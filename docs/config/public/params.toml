@@ -1,0 +1,4 @@
+# Public deployment overrides
+audience        = "public"
+support_email   = "support@example.com"
+show_internal_notes = false

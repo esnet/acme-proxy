@@ -1,0 +1,19 @@
+<script>
+  document.querySelectorAll("pre:has(code)").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      navigator.clipboard.writeText(code.innerText).then(function () {
+        btn.textContent = "copied!";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "copy";
+          btn.classList.remove("copied");
+        }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>
