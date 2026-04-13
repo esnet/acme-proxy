@@ -1,0 +1,4 @@
+# Internal deployment overrides
+audience        = "internal"
+support_email   = "support@example.internal"
+show_internal_notes = true

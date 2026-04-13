@@ -1,3 +1,9 @@
++++
+title = 'External CAs'
+weight = 30
+BookToC = true
++++
+
 # ACME server as Registration Authority
 
 See [upstream docs](#upstream-docs) section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Quickstart# This is the fastest path to a running acme-proxy. It uses a one-line installer script that sets up the service with sane defaults, requires only five config fields, and is ready to issue certificates in under five minutes.
+For production deployments with custom install paths, build-from-source, or Docker, see install.md.
+Step 1 — Install# curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo shThe script:
+Installs the step-ca binary to /opt/acme-proxy/ Writes a ca.json config template to /opt/acme-proxy/ca.json Creates a dedicated acme-proxy service user Registers and enables an acme-proxy.service systemd unit The service is enabled but not started — configure ca.json first.
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/quickstart/">
+  <meta property="og:site_name" content="ACME Proxy">
+  <meta property="og:title" content="Quickstart">
+  <meta property="og:description" content="Quickstart# This is the fastest path to a running acme-proxy. It uses a one-line installer script that sets up the service with sane defaults, requires only five config fields, and is ready to issue certificates in under five minutes.
+For production deployments with custom install paths, build-from-source, or Docker, see install.md.
+Step 1 — Install# curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo shThe script:
+Installs the step-ca binary to /opt/acme-proxy/ Writes a ca.json config template to /opt/acme-proxy/ca.json Creates a dedicated acme-proxy service user Registers and enables an acme-proxy.service systemd unit The service is enabled but not started — configure ca.json first.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+
+
+  <meta itemprop="name" content="Quickstart">
+  <meta itemprop="description" content="Quickstart# This is the fastest path to a running acme-proxy. It uses a one-line installer script that sets up the service with sane defaults, requires only five config fields, and is ready to issue certificates in under five minutes.
+For production deployments with custom install paths, build-from-source, or Docker, see install.md.
+Step 1 — Install# curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo shThe script:
+Installs the step-ca binary to /opt/acme-proxy/ Writes a ca.json config template to /opt/acme-proxy/ca.json Creates a dedicated acme-proxy service user Registers and enables an acme-proxy.service systemd unit The service is enabled but not started — configure ca.json first.">
+  <meta itemprop="wordCount" content="568">
+
+<title>Quickstart | ACME Proxy</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="http://localhost:1313/quickstart/">
+<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.4c7b822b52c27e45dcc401576e8748248407109c1dbb914b25910930a668c107.js" integrity="sha256-THuCK1LCfkXcxAFXbodIJIQHEJwdu5FLJZEJMKZowQc=" crossorigin="anonymous"></script>
+
+  <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
+
+
+
+  <style>
+  pre {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    border: 1px solid var(--gray-600, #999);
+    background: var(--body-background, #fff);
+    color: var(--body-font-color, #333);
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  pre:hover .copy-btn {
+    opacity: 1;
+  }
+  .copy-btn.copied {
+    color: #2a9d5c;
+    border-color: #2a9d5c;
+  }
+</style>
+
+</head>
+<body dir="ltr" class="book-kind-page book-type-page">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>ACME Proxy</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+<ul><li><a href="/">Home</a></li></ul>
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/quickstart/" class="active">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/install/" class="">
+      Install</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/user/" class="">
+      User Guide</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/client/" class="">
+      ACME Clients</a>
+  
+
+        </li>
+      
+    
+      
+    
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Quickstart</h3>
+
+  <label for="toc-control">
+    
+    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#quickstart">Quickstart</a>
+      <ul>
+        <li><a href="#step-1--install">Step 1 — Install</a></li>
+        <li><a href="#step-2--configure">Step 2 — Configure</a></li>
+        <li><a href="#step-3--start">Step 3 — Start</a></li>
+        <li><a href="#step-4--verify">Step 4 — Verify</a></li>
+        <li><a href="#step-5--issue-a-test-certificate">Step 5 — Issue a Test Certificate</a></li>
+        <li><a href="#next-steps">Next Steps</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="quickstart">Quickstart<a class="anchor" href="#quickstart">#</a></h1>
+<p>This is the fastest path to a running acme-proxy. It uses a one-line installer script that sets up the service with sane defaults, requires only five config fields, and is ready to issue certificates in under five minutes.</p>
+<p>For production deployments with custom install paths, build-from-source, or Docker, see <a href="/install/">install.md</a>.</p>
+<hr>
+<h2 id="step-1--install">Step 1 — Install<a class="anchor" href="#step-1--install">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh</span></span></code></pre></div><p>The script:</p>
+<ul>
+<li>Installs the <code>step-ca</code> binary to <code>/opt/acme-proxy/</code></li>
+<li>Writes a <code>ca.json</code> config template to <code>/opt/acme-proxy/ca.json</code></li>
+<li>Creates a dedicated <code>acme-proxy</code> service user</li>
+<li>Registers and enables an <code>acme-proxy.service</code> systemd unit</li>
+</ul>
+<p>The service is <strong>enabled but not started</strong> — configure <code>ca.json</code> first.</p>
+<p>Override install paths if needed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  sudo <span style="color:#ff5c57">INSTALL_DIR</span><span style="color:#ff6ac1">=</span>/usr/local/acme-proxy <span style="color:#ff5c57">SERVICE_USER</span><span style="color:#ff6ac1">=</span>acmeservice sh</span></span></code></pre></div><hr>
+<h2 id="step-2--configure">Step 2 — Configure<a class="anchor" href="#step-2--configure">#</a></h2>
+<p>Open the config file:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo vim /opt/acme-proxy/ca.json</span></span></code></pre></div><p>Set these five fields — everything else can stay at its default:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Where to find it</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>dnsNames</code></td>
+          <td>Your acme-proxy hostname, e.g. <code>[&quot;acmeproxy.example.com&quot;]</code></td>
+      </tr>
+      <tr>
+          <td><code>ca_url</code></td>
+          <td>Your upstream CA&rsquo;s ACME directory URL (see table below)</td>
+      </tr>
+      <tr>
+          <td><code>account_email</code></td>
+          <td>Contact email registered with the upstream CA</td>
+      </tr>
+      <tr>
+          <td><code>eab_kid</code></td>
+          <td>EAB Key ID from your CA&rsquo;s account portal</td>
+      </tr>
+      <tr>
+          <td><code>eab_hmac_key</code></td>
+          <td>EAB HMAC key from your CA&rsquo;s account portal</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Common upstream CA URLs:</strong></p>
+<table>
+  <thead>
+      <tr>
+          <th>CA</th>
+          <th>URL</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Sectigo / InCommon RSA OV</td>
+          <td><code>https://acme.sectigo.com/v2/InCommonRSAOV</code></td>
+      </tr>
+      <tr>
+          <td>ZeroSSL</td>
+          <td><code>https://acme.zerossl.com/v2/DV90</code></td>
+      </tr>
+  </tbody>
+</table>
+<blockquote class='book-hint '>
+<p>LetsEncrypt does not support EAB and cannot be used as an upstream CA with acme-proxy.</p>
+</blockquote><p><strong>Minimal working config:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;address&#34;</span>: <span style="color:#5af78e">&#34;:443&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;dnsNames&#34;</span>: [<span style="color:#5af78e">&#34;acmeproxy.example.com&#34;</span>],
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;authority&#34;</span>: {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;type&#34;</span>: <span style="color:#5af78e">&#34;externalcas&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;config&#34;</span>: {
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;ca_url&#34;</span>: <span style="color:#5af78e">&#34;https://acme.sectigo.com/v2/InCommonRSAOV&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;account_email&#34;</span>: <span style="color:#5af78e">&#34;certadmin@example.com&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;eab_kid&#34;</span>: <span style="color:#5af78e">&#34;your-key-id-here&#34;</span>,
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;eab_hmac_key&#34;</span>: <span style="color:#5af78e">&#34;your-hmac-key-here&#34;</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  },
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;commonName&#34;</span>: <span style="color:#5af78e">&#34;acmeproxy.example.com&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><hr>
+<h2 id="step-3--start">Step 3 — Start<a class="anchor" href="#step-3--start">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo systemctl start acme-proxy</span></span></code></pre></div><p>On first start, acme-proxy registers an account with the upstream CA and obtains a TLS certificate for itself before accepting connections. Follow the logs:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo journalctl -u acme-proxy -f</span></span></code></pre></div><p>The service is ready when logs show:</p>
+<pre tabindex="0"><code>2025/07/15 22:12:25 Building new tls configuration using step-ca x509 Signer Interface
+2025/07/15 22:12:25 Initializing ACME client...
+2025/07/15 22:12:25 [INFO] acme: Registering account for admin@example.com
+2025/07/15 22:12:26 ACME client initialized successfully
+2025/07/15 22:12:26 Processing certificate request for domains: [proxy.example.com]
+2025/07/15 22:12:26 Starting certificate request processing for domains: [proxy.example.com]
+2025/07/15 22:12:26 [INFO] [proxy.example.com] acme: Obtaining bundled SAN certificate given a CSR
+2025/07/15 22:12:27 [INFO] [proxy.example.com] AuthURL: https://acme.sectigo.com/v2/InCommonRSAOV/authz/sx4qvINAdWw2IjplmyH6kg
+2025/07/15 22:12:27 [INFO] [proxy.example.com] acme: authorization already valid; skipping challenge
+2025/07/15 22:12:27 [INFO] [proxy.example.com] acme: Validations succeeded; requesting certificates
+2025/07/15 22:12:27 [INFO] Wait for certificate [timeout: 30s, interval: 500ms]
+2025/07/15 22:12:33 [INFO] [proxy.example.com] Server responded with a certificate.
+2025/07/15 22:12:33 Successfully obtained certificate from InCommon for domains: [proxy.example.com]
+2025/07/15 22:12:33 Starting Smallstep CA/0000000-dev (linux/amd64)
+2025/07/15 22:12:33 Documentation: https://u.step.sm/docs/ca
+2025/07/15 22:12:33 Community Discord: https://u.step.sm/discord
+2025/07/15 22:12:33 Config file: ca.json
+2025/07/15 22:12:33 The primary server URL is https://acmeproxy.example.com:443
+2025/07/15 22:12:33 Root certificates are available at https://acmeproxy.example.com:443/roots.pem
+2025/07/15 22:12:33 X.509 Root Fingerprint: a6cf64dbb4c8d5fd19ce48896068db03b533a8d1336c6256a87d00cbb3def3ea
+2025/07/15 22:12:33 Serving HTTPS on proxy.example.com:443 ...</code></pre><hr>
+<h2 id="step-4--verify">Step 4 — Verify<a class="anchor" href="#step-4--verify">#</a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -s https://acmeproxy.example.com/acme/acme/directory | jq .</span></span></code></pre></div><p>Expected:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;newNonce&#34;</span>: <span style="color:#5af78e">&#34;https://acmeproxy.example.com/acme/acme/new-nonce&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;newAccount&#34;</span>: <span style="color:#5af78e">&#34;https://acmeproxy.example.com/acme/acme/new-account&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;newOrder&#34;</span>: <span style="color:#5af78e">&#34;https://acmeproxy.example.com/acme/acme/new-order&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;revokeCert&#34;</span>: <span style="color:#5af78e">&#34;https://acmeproxy.example.com/acme/acme/revoke-cert&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;keyChange&#34;</span>: <span style="color:#5af78e">&#34;https://acmeproxy.example.com/acme/acme/key-change&#34;</span>
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><hr>
+<h2 id="step-5--issue-a-test-certificate">Step 5 — Issue a Test Certificate<a class="anchor" href="#step-5--issue-a-test-certificate">#</a></h2>
+<p>Install acme.sh if not already present:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo apt-get install -y acme.sh              <span style="color:#78787e"># Debian / Ubuntu</span>
+</span></span><span style="display:flex;"><span>sudo dnf install -y epel-release acme.sh     <span style="color:#78787e"># RHEL / Rocky</span></span></span></code></pre></div><p>Issue a certificate in standalone mode (temporarily binds port 80 for the HTTP-01 challenge):</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acmeproxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --domain myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone</span></span></code></pre></div><p>Verify it was signed by your upstream CA:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>openssl x509 <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -in ~/.acme.sh/myserver.example.com_ecc/myserver.example.com.cer <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -noout -issuer -dates</span></span></code></pre></div><hr>
+<h2 id="next-steps">Next Steps<a class="anchor" href="#next-steps">#</a></h2>
+<ul>
+<li><strong>Set up ACME clients system-wide with auto-renewal</strong> — <a href="admin.md">Admin Guide</a></li>
+<li><strong>Issue certificates for NGINX, Apache, Docker workloads</strong> — <a href="/user/">User Guide</a></li>
+<li><strong>Alternative install methods</strong> (binary, source, Docker, full config reference) — <a href="/install/">Install</a></li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/quickstart.md" target="_blank" rel="noopener edit">
+    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+    <span>Edit this page</span>
+  </a>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+    </span>
+    <span>
+    
+      <a href="/install/" class="flex align-center">
+        <span>Install</span>
+        <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#quickstart">Quickstart</a>
+      <ul>
+        <li><a href="#step-1--install">Step 1 — Install</a></li>
+        <li><a href="#step-2--configure">Step 2 — Configure</a></li>
+        <li><a href="#step-3--start">Step 3 — Start</a></li>
+        <li><a href="#step-4--verify">Step 4 — Verify</a></li>
+        <li><a href="#step-5--issue-a-test-certificate">Step 5 — Issue a Test Certificate</a></li>
+        <li><a href="#next-steps">Next Steps</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  <script>
+  document.querySelectorAll("pre:has(code)").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      navigator.clipboard.writeText(code.innerText).then(function () {
+        btn.textContent = "copied!";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "copy";
+          btn.classList.remove("copied");
+        }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

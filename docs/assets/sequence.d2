@@ -1,0 +1,31 @@
+shape: sequence_diagram
+
+client: ACME Client\n(myserver.example.com)
+proxy: ACME Proxy\n(acme-proxy.example.com)
+ca: Certificate Authority
+
+client -> client: "Firewall rules\nmyserver → acme-proxy  tcp/443 (HTTPS)\nmyserver tcp/80 (HTTP) ← acme-proxy"
+
+client -> proxy: 1. Request certificate\n(myserver.example.com)
+
+proxy -> client: 2. HTTP-01 challenge\nhttp://myserver.example.com/.well-known/acme-challenge/<token>
+
+client -> client: 3. Stage challenge token\nat /.well-known/acme-challenge/<token> on :80
+
+proxy -> client: 4. Validate challenge\nGET /.well-known/acme-challenge/<token>
+
+client -> proxy: Validation success
+
+client -> proxy: 5. Certificate Signing Request (CSR)
+
+proxy -> client: Hold on...
+
+proxy -> ca: 6. Forward CSR for signing\nGetCertByUser() — poll every 500ms
+
+proxy -> ca: Is cert ready?
+proxy -> ca: Is cert ready?
+proxy -> ca: Is cert ready?
+
+ca -> proxy: 7. Signed certificate bundle
+
+proxy -> client: 8. Forward signed certificate bundle

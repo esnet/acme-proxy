@@ -1,3 +1,8 @@
++++
+title = 'Contributing'
+weight = 50
++++
+
 # Setup development environment
 
 1. Install `go >= 1.25`

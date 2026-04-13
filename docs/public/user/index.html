@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
+ACME directory URL:
+https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
+Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See admin.md for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# 1a. acme.sh# Register and issue a certificate (single domain):
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/user/">
+  <meta property="og:site_name" content="ACME Proxy">
+  <meta property="og:title" content="User Guide">
+  <meta property="og:description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
+ACME directory URL:
+https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
+Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See admin.md for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# 1a. acme.sh# Register and issue a certificate (single domain):">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+
+
+  <meta itemprop="name" content="User Guide">
+  <meta itemprop="description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
+ACME directory URL:
+https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
+Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See admin.md for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# 1a. acme.sh# Register and issue a certificate (single domain):">
+  <meta itemprop="wordCount" content="3307">
+
+<title>User Guide | ACME Proxy</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="http://localhost:1313/user/">
+<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.4c7b822b52c27e45dcc401576e8748248407109c1dbb914b25910930a668c107.js" integrity="sha256-THuCK1LCfkXcxAFXbodIJIQHEJwdu5FLJZEJMKZowQc=" crossorigin="anonymous"></script>
+
+  <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
+
+
+
+  <style>
+  pre {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    border: 1px solid var(--gray-600, #999);
+    background: var(--body-background, #fff);
+    color: var(--body-font-color, #333);
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  pre:hover .copy-btn {
+    opacity: 1;
+  }
+  .copy-btn.copied {
+    color: #2a9d5c;
+    border-color: #2a9d5c;
+  }
+</style>
+
+</head>
+<body dir="ltr" class="book-kind-page book-type-page">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>ACME Proxy</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+<ul><li><a href="/">Home</a></li></ul>
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/install/" class="">
+      Install</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/user/" class="active">
+      User Guide</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/client/" class="">
+      ACME Clients</a>
+  
+
+        </li>
+      
+    
+      
+    
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>User Guide</h3>
+
+  <label for="toc-control">
+    
+    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#user-guide">User Guide</a>
+      <ul>
+        <li><a href="#table-of-contents">Table of Contents</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#1-nginx-on-linux-vm--baremetal">1. NGINX on Linux VM / Baremetal</a>
+          <ul>
+            <li><a href="#1a-acmesh">1a. acme.sh</a></li>
+            <li><a href="#1b-certbot">1b. Certbot</a></li>
+            <li><a href="#1c-lego">1c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#2-apache-on-linux-vm--baremetal">2. Apache on Linux VM / Baremetal</a>
+          <ul>
+            <li><a href="#2a-acmesh">2a. acme.sh</a></li>
+            <li><a href="#2b-certbot">2b. Certbot</a></li>
+            <li><a href="#2c-lego">2c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#3-standalone-mode-databases-redis-kafka-etc">3. Standalone Mode (Databases, Redis, Kafka, etc.)</a>
+          <ul>
+            <li><a href="#3a-acmesh">3a. acme.sh</a></li>
+            <li><a href="#3b-certbot">3b. Certbot</a></li>
+            <li><a href="#3c-lego">3c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#4-docker-and-docker-compose">4. Docker and Docker Compose</a>
+          <ul>
+            <li><a href="#port-80-and-running-containers">Port 80 and running containers</a></li>
+            <li><a href="#step-1--issue-the-initial-certificate-on-the-host">Step 1 — Issue the initial certificate on the host</a></li>
+            <li><a href="#step-2--mount-the-certificate-directory-into-your-containers">Step 2 — Mount the certificate directory into your containers</a></li>
+            <li><a href="#step-3--auto-renewal-with-container-reload-hook">Step 3 — Auto-renewal with container reload hook</a></li>
+          </ul>
+        </li>
+        <li><a href="#5-kubernetes-cert-manager">5. Kubernetes (cert-manager)</a>
+          <ul>
+            <li><a href="#prerequisites-1">Prerequisites</a></li>
+            <li><a href="#step-1--create-a-gateway">Step 1 — Create a Gateway</a></li>
+            <li><a href="#step-2--create-a-clusterissuer">Step 2 — Create a ClusterIssuer</a></li>
+            <li><a href="#step-3--issue-a-certificate">Step 3 — Issue a Certificate</a></li>
+            <li><a href="#step-4--verify">Step 4 — Verify</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li><a href="#pre-and-post-hooks">Pre and Post Hooks</a>
+          <ul>
+            <li><a href="#hook-phases">Hook phases</a></li>
+            <li><a href="#acmesh-1">acme.sh</a></li>
+            <li><a href="#certbot-1">Certbot</a></li>
+            <li><a href="#lego-1">Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#troubleshooting-1">Troubleshooting</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="user-guide">User Guide<a class="anchor" href="#user-guide">#</a></h1>
+<p>This guide covers how to obtain and automatically renew TLS certificates from <code>acme-proxy</code> using three common ACME clients: <a href="https://github.com/acmesh-official/acme.sh">acme.sh</a>, <a href="https://certbot.eff.org/">Certbot</a>, and <a href="https://go-acme.github.io/lego/">Lego</a>.</p>
+<p><strong>ACME directory URL:</strong></p>
+<pre tabindex="0"><code>https://acme-proxy.example.com/acme/acme/directory</code></pre><p>Replace <code>acme-proxy.example.com</code> with your organization&rsquo;s actual acme-proxy hostname.</p>
+<hr>
+<h2 id="table-of-contents">Table of Contents<a class="anchor" href="#table-of-contents">#</a></h2>
+<ul>
+<li><a href="#1-nginx-on-linux-vm--baremetal">1. NGINX on Linux VM / Baremetal</a></li>
+<li><a href="#2-apache-on-linux-vm--baremetal">2. Apache on Linux VM / Baremetal</a></li>
+<li><a href="#3-standalone-mode-databases-redis-kafka-etc">3. Standalone Mode</a></li>
+<li><a href="#4-docker-and-docker-compose">4. Docker and Docker Compose</a></li>
+<li><a href="#5-kubernetes-cert-manager">5. Kubernetes (cert-manager)</a></li>
+</ul>
+<hr>
+<h2 id="prerequisites">Prerequisites<a class="anchor" href="#prerequisites">#</a></h2>
+<ul>
+<li>The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See <a href="./admin.md">admin.md</a> for installation instructions and systemd renewal timer setup.</li>
+<li>Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation).</li>
+<li>Your domain&rsquo;s DNS must resolve to the host where the ACME client runs.</li>
+<li>Replace the following placeholders throughout this guide:
+<ul>
+<li><code>acme-proxy.example.com</code> — your acme-proxy hostname</li>
+<li><code>myserver.example.com</code> — the domain you want a certificate for</li>
+<li><code>admin@example.com</code> — your contact email</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="1-nginx-on-linux-vm--baremetal">1. NGINX on Linux VM / Baremetal<a class="anchor" href="#1-nginx-on-linux-vm--baremetal">#</a></h2>
+<h3 id="1a-acmesh">1a. acme.sh<a class="anchor" href="#1a-acmesh">#</a></h3>
+<p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --register-account <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --nginx <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --nginx <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com</span></span></code></pre></div><p><strong>Install the certificate and configure auto-reload:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --install-cert -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --cert-file     /etc/nginx/ssl/myserver.example.com.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --key-file      /etc/nginx/ssl/myserver.example.com.key <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --fullchain-file /etc/nginx/ssl/myserver.example.com-fullchain.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --reloadcmd     <span style="color:#5af78e">&#34;systemctl reload nginx&#34;</span></span></span></code></pre></div><p><strong>Auto-renewal:</strong> The systemd timer configured in <a href="./admin.md">admin.md</a> drives renewal. acme.sh executes the <code>--reloadcmd</code> above after each successful renewal.</p>
+<hr>
+<h3 id="1b-certbot">1b. Certbot<a class="anchor" href="#1b-certbot">#</a></h3>
+<p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot --nginx <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot --nginx <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com</span></span></code></pre></div><p><strong>Auto-renewal:</strong> Managed by the certbot systemd timer. See <a href="./admin.md">admin.md</a> for timer setup and log configuration.</p>
+<hr>
+<h3 id="1c-lego">1c. Lego<a class="anchor" href="#1c-lego">#</a></h3>
+<p>Lego uses webroot mode with NGINX — the ACME challenge files are written to NGINX&rsquo;s document root and served over port 80.</p>
+<p><strong>Ensure NGINX serves the challenge path</strong> — add this to your NGINX server block if not already present:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#ff6ac1">location</span> <span style="color:#5af78e">/.well-known/acme-challenge/</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">root</span> <span style="color:#5af78e">/var/www/html</span>;
+</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><p><strong>Issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http.webroot /var/www/html <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http.webroot /var/www/html <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p>Certificates are saved to <code>~/.lego/certificates/</code>.</p>
+<p><strong>Configure NGINX</strong> to use the issued certificate:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-nginx" data-lang="nginx"><span style="display:flex;"><span><span style="color:#ff6ac1">ssl_certificate</span>     <span style="color:#5af78e">/root/.lego/certificates/myserver.example.com.crt</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">ssl_certificate_key</span> <span style="color:#5af78e">/root/.lego/certificates/myserver.example.com.key</span>;</span></span></code></pre></div><p><strong>Auto-renewal:</strong> Managed by the systemd timer configured in <a href="./admin.md">admin.md</a>. Ask your admin to add <code>--renew-hook 'systemctl reload nginx'</code> to the lego renewal script for this domain.</p>
+<hr>
+<h2 id="2-apache-on-linux-vm--baremetal">2. Apache on Linux VM / Baremetal<a class="anchor" href="#2-apache-on-linux-vm--baremetal">#</a></h2>
+<h3 id="2a-acmesh">2a. acme.sh<a class="anchor" href="#2a-acmesh">#</a></h3>
+<p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --register-account <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --apache <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --apache <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com</span></span></code></pre></div><p><strong>Install the certificate and configure auto-reload:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --install-cert -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --cert-file     /etc/ssl/certs/myserver.example.com.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --key-file      /etc/ssl/private/myserver.example.com.key <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --fullchain-file /etc/ssl/certs/myserver.example.com-fullchain.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --reloadcmd     <span style="color:#5af78e">&#34;systemctl reload apache2&#34;</span></span></span></code></pre></div><blockquote class='book-hint '>
+<p>On RHEL-based systems use <code>httpd</code> instead of <code>apache2</code>.</p>
+</blockquote><p><strong>Auto-renewal:</strong> The systemd timer configured in <a href="./admin.md">admin.md</a> drives renewal. acme.sh executes the <code>--reloadcmd</code> above after each successful renewal.</p>
+<hr>
+<h3 id="2b-certbot">2b. Certbot<a class="anchor" href="#2b-certbot">#</a></h3>
+<p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot --apache <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot --apache <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com</span></span></code></pre></div><p><strong>Auto-renewal:</strong> Managed by the certbot systemd timer. See <a href="./admin.md">admin.md</a> for timer setup and log configuration.</p>
+<hr>
+<h3 id="2c-lego">2c. Lego<a class="anchor" href="#2c-lego">#</a></h3>
+<p>Ensure Apache serves the challenge path. Add this to your VirtualHost configuration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span><span style="color:#ff5c57">Alias</span> /.well-known/acme-challenge/ <span style="color:#5af78e">/var/www/html/.well-known/acme-challenge/</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">&lt;Directory</span> <span style="color:#5af78e">/var/www/html/.well-known/acme-challenge/</span><span style="color:#ff6ac1">&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff5c57">Options</span> <span style="color:#ff6ac1">None</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff5c57">AllowOverride</span> <span style="color:#ff6ac1">None</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff5c57">Require</span> <span style="color:#ff6ac1">all</span> granted
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">&lt;/Directory&gt;</span></span></span></code></pre></div><p><strong>Issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http.webroot /var/www/html <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http.webroot /var/www/html <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d www.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d api.myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p><strong>Configure Apache</strong> to reference the certificates:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-apache" data-lang="apache"><span style="display:flex;"><span><span style="color:#ff5c57">SSLCertificateFile</span>    <span style="color:#5af78e">/root/.lego/certificates/myserver.example.com.crt</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff5c57">SSLCertificateKeyFile</span> <span style="color:#5af78e">/root/.lego/certificates/myserver.example.com.key</span></span></span></code></pre></div><p><strong>Auto-renewal:</strong> Managed by the systemd timer configured in <a href="./admin.md">admin.md</a>. Ask your admin to add <code>--renew-hook 'systemctl reload apache2'</code> (or <code>httpd</code> on RHEL-based systems) to the lego renewal script for this domain.</p>
+<hr>
+<h2 id="3-standalone-mode-databases-redis-kafka-etc">3. Standalone Mode (Databases, Redis, Kafka, etc.)<a class="anchor" href="#3-standalone-mode-databases-redis-kafka-etc">#</a></h2>
+<p>Standalone mode runs a temporary HTTP server on port 80 to answer the ACME challenge. Use this when there is no existing web server — typical for backend services such as Databases, Redis, Kafka, etc.</p>
+<blockquote class='book-hint '>
+<p>Port 80 must be temporarily available on the host. If IPtables or network firewall is in place, they must allow incoming http traffic from acme-proxy to the host.</p>
+</blockquote><h3 id="3a-acmesh">3a. acme.sh<a class="anchor" href="#3a-acmesh">#</a></h3>
+<blockquote class='book-hint '>
+<p>acme.sh&rsquo;s standalone mode requires <code>socat</code>. The deb/rpm package may not install it on all distributions. Verify it is present before proceeding:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>socat -V 2&gt;/dev/null <span style="color:#ff6ac1">||</span> <span style="color:#ff5c57">echo</span> <span style="color:#5af78e">&#34;socat not found — install with: apt-get install socat / dnf install socat&#34;</span></span></span></code></pre></div><p>Certbot and lego (sections 3b and 3c) use their own built-in HTTP servers and do not require socat.</p>
+</blockquote><p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --register-account <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver-alt.example.com</span></span></code></pre></div><p><strong>Install the certificate to a standard location:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --install-cert -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --cert-file      /etc/ssl/certs/myserver.example.com.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --key-file       /etc/ssl/private/myserver.example.com.key <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --fullchain-file /etc/ssl/certs/myserver.example.com-fullchain.crt <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --reloadcmd      <span style="color:#5af78e">&#34;systemctl reload &lt;your-service&gt;&#34;</span></span></span></code></pre></div><p><strong>Auto-renewal:</strong> The systemd timer configured in <a href="./admin.md">admin.md</a> drives renewal. During each renewal attempt, acme.sh will again bind port 80 briefly — ensure no other process occupies it at the scheduled renewal time.</p>
+<hr>
+<h3 id="3b-certbot">3b. Certbot<a class="anchor" href="#3b-certbot">#</a></h3>
+<p><strong>Register and issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot certonly <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot certonly <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --non-interactive <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --agree-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver-alt.example.com</span></span></code></pre></div><p>Certificates are stored in <code>/etc/letsencrypt/live/myserver.example.com/</code>.</p>
+<p><strong>Configure your service</strong> to load certificates from:</p>
+<pre tabindex="0"><code>/etc/letsencrypt/live/myserver.example.com/fullchain.pem
+/etc/letsencrypt/live/myserver.example.com/privkey.pem</code></pre><p><strong>Configure the service reload hook:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo mkdir -p /etc/letsencrypt/renewal-hooks/deploy
+</span></span><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-service.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">systemctl reload &lt;your-service&gt;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-service.sh</span></span></code></pre></div><p>Certbot executes this script after each successful renewal. The systemd timer that triggers renewal is configured in <a href="./admin.md">admin.md</a>.</p>
+<hr>
+<h3 id="3c-lego">3c. Lego<a class="anchor" href="#3c-lego">#</a></h3>
+<p><strong>Issue a certificate (single domain):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p><strong>Issue for multiple domains (SAN certificate):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver-alt.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run</span></span></code></pre></div><p>Certificates are saved to <code>~/.lego/certificates/</code>.</p>
+<p><strong>Auto-renewal:</strong> Managed by the systemd timer configured in <a href="./admin.md">admin.md</a>. Ask your admin to add <code>--renew-hook 'systemctl reload &lt;your-service&gt;'</code> to the lego renewal script for this domain.</p>
+<hr>
+<h2 id="4-docker-and-docker-compose">4. Docker and Docker Compose<a class="anchor" href="#4-docker-and-docker-compose">#</a></h2>
+<p>This section covers the pattern for services already running as Docker containers or Docker Compose stacks. The ACME client runs on the <strong>host</strong> — not inside a container. Certificates are stored on the host filesystem and projected into running containers as read-only volume mounts. After renewal, the host-side renewal hook signals the affected containers to reload or restart.</p>
+<pre tabindex="0"><code>Host ACME client  →  /etc/ssl/acme/&lt;domain&gt;/  →  volume mount  →  container
+       ↓
+  renewal hook  →  docker compose exec / docker compose restart</code></pre><h3 id="port-80-and-running-containers">Port 80 and running containers<a class="anchor" href="#port-80-and-running-containers">#</a></h3>
+<p>The HTTP-01 challenge requires port 80 to be reachable. If a container already binds port 80 on the host, standalone mode cannot be used directly. Two approaches:</p>
+<p><strong>Option A — stop the container briefly (standalone mode):</strong>
+Use pre- and post-hooks to stop the container before the challenge and restart it after. This causes a brief downtime window and is suitable for backend services where a short gap is acceptable.</p>
+<p><strong>Option B — webroot via a shared bind mount:</strong>
+Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the container at the path it serves for HTTP. The ACME client writes challenge files to that host directory; the container serves them. No downtime required. Use this when continuous availability on port 80 is required.</p>
+<p>The examples below use Option A (standalone) for simplicity. Substitute webroot flags if you need Option B.</p>
+<hr>
+<h3 id="step-1--issue-the-initial-certificate-on-the-host">Step 1 — Issue the initial certificate on the host<a class="anchor" href="#step-1--issue-the-initial-certificate-on-the-host">#</a></h3>
+<p>Use any of the client commands from the <a href="#3-standalone-mode-databases-redis-kafka-etc">Standalone Mode</a> section, substituting a <code>--reloadcmd</code> / deploy hook that operates on Docker instead of systemd. For example, with acme.sh:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#78787e"># Stop the container so port 80 is free for the challenge</span>
+</span></span><span style="display:flex;"><span>docker compose -f /path/to/docker-compose.yml stop myapp
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#78787e"># Start the container again</span>
+</span></span><span style="display:flex;"><span>docker compose -f /path/to/docker-compose.yml start myapp</span></span></code></pre></div><p>Install the certificate to a fixed host path:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo mkdir -p /etc/ssl/acme/myserver.example.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>acme.sh --install-cert -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --cert-file      /etc/ssl/acme/myserver.example.com/cert.pem <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --key-file       /etc/ssl/acme/myserver.example.com/key.pem <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --fullchain-file /etc/ssl/acme/myserver.example.com/fullchain.pem</span></span></code></pre></div><hr>
+<h3 id="step-2--mount-the-certificate-directory-into-your-containers">Step 2 — Mount the certificate directory into your containers<a class="anchor" href="#step-2--mount-the-certificate-directory-into-your-containers">#</a></h3>
+<p>Add a read-only bind mount for the host certificate path in your <code>docker-compose.yml</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">myapp</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">image</span>: your-app-image
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">ports</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#5af78e">&#34;443:443&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">volumes</span>:
+</span></span><span style="display:flex;"><span>      - /etc/ssl/acme/myserver.example.com:/etc/ssl/app:ro
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">environment</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">TLS_CERT</span>: /etc/ssl/app/fullchain.pem
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">TLS_KEY</span>:  /etc/ssl/app/key.pem
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">restart</span>: unless-stopped</span></span></code></pre></div><p>Configure your application to load the TLS certificate from <code>/etc/ssl/app/</code> inside the container. The exact configuration depends on the application.</p>
+<hr>
+<h3 id="step-3--auto-renewal-with-container-reload-hook">Step 3 — Auto-renewal with container reload hook<a class="anchor" href="#step-3--auto-renewal-with-container-reload-hook">#</a></h3>
+<p>After each renewal, the certificate files on the host are updated. The container must either reload its TLS configuration or restart to pick them up. Configure the appropriate hook for each ACME client.</p>
+<h4 id="acmesh">acme.sh<a class="anchor" href="#acmesh">#</a></h4>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --install-cert -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --cert-file      /etc/ssl/acme/myserver.example.com/cert.pem <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --key-file       /etc/ssl/acme/myserver.example.com/key.pem <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --fullchain-file /etc/ssl/acme/myserver.example.com/fullchain.pem <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --reloadcmd      <span style="color:#5af78e">&#34;docker compose -f /path/to/docker-compose.yml restart myapp&#34;</span></span></span></code></pre></div><p>acme.sh&rsquo;s cron job runs <code>--reloadcmd</code> automatically after each successful renewal. If your container supports graceful config reload (e.g., NGINX via <code>nginx -s reload</code>), use <code>exec</code> instead of <code>restart</code> to avoid downtime:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>  --reloadcmd <span style="color:#5af78e">&#34;docker compose -f /path/to/docker-compose.yml exec myapp nginx -s reload&#34;</span></span></span></code></pre></div><p>If port 80 is held by a container during renewal, add pre- and post-hooks:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ff5c57">export</span> <span style="color:#ff5c57">Le_PreHook</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#34;docker compose -f /path/to/docker-compose.yml stop myapp&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff5c57">export</span> <span style="color:#ff5c57">Le_PostHook</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#34;docker compose -f /path/to/docker-compose.yml start myapp&#34;</span>
+</span></span><span style="display:flex;"><span>acme.sh --renew -d myserver.example.com</span></span></code></pre></div><h4 id="certbot">Certbot<a class="anchor" href="#certbot">#</a></h4>
+<p>Create a deploy hook script that restarts the container after renewal:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/deploy/docker-reload.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">docker compose -f /path/to/docker-compose.yml restart myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/docker-reload.sh</span></span></code></pre></div><p>If you need to stop the container for the challenge, use pre and post hooks:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/pre/docker-stop.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">docker compose -f /path/to/docker-compose.yml stop myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/post/docker-start.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">docker compose -f /path/to/docker-compose.yml start myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/pre/docker-stop.sh <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>              /etc/letsencrypt/renewal-hooks/post/docker-start.sh</span></span></code></pre></div><p>Enable the systemd timer as usual:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo systemctl <span style="color:#ff5c57">enable</span> --now certbot.timer</span></span></code></pre></div><h4 id="lego">Lego<a class="anchor" href="#lego">#</a></h4>
+<p>Use <code>--renew-hook</code> to restart the container after each successful renewal. Wrap the stop/start around the <code>renew</code> call in your cron entry:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/cron.d/lego-docker-renewal <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">17 2 * * * root \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  docker compose -f /path/to/docker-compose.yml stop myapp &amp;&amp; \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  lego \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    --server https://acme-proxy.example.com/acme/acme/directory \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    --accept-tos \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    --email admin@example.com \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    --http \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    -d myserver.example.com \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    renew \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    --renew-hook &#34;docker compose -f /path/to/docker-compose.yml start myapp&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span></span></span></code></pre></div><hr>
+<h2 id="5-kubernetes-cert-manager">5. Kubernetes (cert-manager)<a class="anchor" href="#5-kubernetes-cert-manager">#</a></h2>
+<p>cert-manager is a Kubernetes-native certificate controller that speaks ACME natively. It handles account registration, order submission, challenge validation, and automatic renewal without any per-host tooling.</p>
+<p><strong>How HTTP-01 works with cert-manager:</strong></p>
+<ol>
+<li>cert-manager creates a temporary solver Pod and an <code>HTTPRoute</code> for <code>/.well-known/acme-challenge/&lt;token&gt;</code> attached to your Gateway</li>
+<li>acme-proxy makes an HTTP request to <code>http://&lt;domain&gt;/.well-known/acme-challenge/&lt;token&gt;</code> to validate domain ownership</li>
+<li>On success, cert-manager submits the CSR and retrieves the signed certificate</li>
+<li>The certificate is stored in a Kubernetes Secret and renewed automatically before expiry</li>
+</ol>
+<p><strong>Network requirement:</strong> acme-proxy must be able to reach <strong>port 80</strong> on the cluster&rsquo;s Gateway. The domain must resolve to the Gateway&rsquo;s external IP.</p>
+<h3 id="prerequisites-1">Prerequisites<a class="anchor" href="#prerequisites-1">#</a></h3>
+<ul>
+<li>cert-manager v1.15+ — Gateway API support is enabled by default; earlier versions require <code>--feature-gates=ExperimentalGatewayAPISupport=true</code></li>
+<li>Gateway API CRDs installed (<code>gateway.networking.k8s.io/v1</code>)</li>
+<li>A conformant Gateway implementation deployed (examples use <code>nginx</code> as the <code>gatewayClassName</code>; any v1-conformant implementation works)</li>
+<li>acme-proxy reachable from cert-manager pods on port 443 (for account registration and order submission)</li>
+<li>Port 80 of the Gateway reachable from acme-proxy (for HTTP-01 challenge validation)</li>
+</ul>
+<hr>
+<h3 id="step-1--create-a-gateway">Step 1 — Create a Gateway<a class="anchor" href="#step-1--create-a-gateway">#</a></h3>
+<p>The Gateway must have an HTTP listener on port 80 to serve ACME challenges. cert-manager creates <code>HTTPRoute</code> objects in the same namespace as the <code>Certificate</code> (not the cert-manager namespace), so <code>allowedRoutes.namespaces.from: All</code> is required on the HTTP listener unless you restrict it to the specific namespaces where certificates are issued.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">apiVersion</span>: gateway.networking.k8s.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">kind</span>: Gateway
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">name</span>: my-gateway
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">gatewayClassName</span>: nginx
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">listeners</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: http
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">port</span>: <span style="color:#ff9f43">80</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">protocol</span>: HTTP
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">allowedRoutes</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">namespaces</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">from</span>: All        <span style="color:#78787e"># cert-manager HTTPRoutes can originate from any namespace</span>
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: https
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">port</span>: <span style="color:#ff9f43">443</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">protocol</span>: HTTPS
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">tls</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">mode</span>: Terminate
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">certificateRefs</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff6ac1">name</span>: myserver-tls
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">allowedRoutes</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">namespaces</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">from</span>: Same</span></span></code></pre></div><hr>
+<h3 id="step-2--create-a-clusterissuer">Step 2 — Create a ClusterIssuer<a class="anchor" href="#step-2--create-a-clusterissuer">#</a></h3>
+<p>The <code>gatewayHTTPRoute</code> solver tells cert-manager which Gateway to attach challenge <code>HTTPRoute</code>s to.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">apiVersion</span>: cert-manager.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">kind</span>: ClusterIssuer
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">name</span>: acme-proxy
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">acme</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">server</span>: https://acme-proxy.example.com/acme/acme/directory
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">email</span>: admin@example.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">privateKeySecretRef</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">name</span>: acme-proxy-account-key
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">solvers</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff6ac1">http01</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">gatewayHTTPRoute</span>:
+</span></span><span style="display:flex;"><span>          <span style="color:#ff6ac1">parentRefs</span>:
+</span></span><span style="display:flex;"><span>          - <span style="color:#ff6ac1">name</span>: my-gateway
+</span></span><span style="display:flex;"><span>            <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span>            <span style="color:#ff6ac1">kind</span>: Gateway
+</span></span><span style="display:flex;"><span>            <span style="color:#ff6ac1">group</span>: gateway.networking.k8s.io</span></span></code></pre></div><p>Apply and verify:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl apply -f clusterissuer.yaml
+</span></span><span style="display:flex;"><span>kubectl get clusterissuer acme-proxy</span></span></code></pre></div><p>Expected output:</p>
+<pre tabindex="0"><code>NAME         READY   AGE
+acme-proxy   True    30s</code></pre><p>If <code>READY</code> is <code>False</code>, inspect the status conditions:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl describe clusterissuer acme-proxy</span></span></code></pre></div><p>A <code>False</code> state at this stage means account registration failed — check that acme-proxy is reachable from cert-manager pods and that the ACME directory URL is correct.</p>
+<blockquote class='book-hint '>
+<p><strong>Do not delete the <code>acme-proxy-account-key</code> Secret.</strong> It contains the private key for the registered ACME account. Deleting it forces re-registration and may orphan any in-flight orders.</p>
+</blockquote><hr>
+<h3 id="step-3--issue-a-certificate">Step 3 — Issue a Certificate<a class="anchor" href="#step-3--issue-a-certificate">#</a></h3>
+<p>Two approaches are supported depending on your workload type.</p>
+<h4 id="option-a--gateway-annotation-web-workloads">Option A — Gateway annotation (web workloads)<a class="anchor" href="#option-a--gateway-annotation-web-workloads">#</a></h4>
+<p>Add <code>cert-manager.io/cluster-issuer</code> to the <code>Gateway</code>. cert-manager detects the annotation and automatically creates a <code>Certificate</code> for each HTTPS listener that has a <code>hostname</code> set, storing the result in the listener&rsquo;s <code>certificateRefs</code> Secret.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">apiVersion</span>: gateway.networking.k8s.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">kind</span>: Gateway
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">name</span>: my-gateway
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">annotations</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">cert-manager.io/cluster-issuer</span>: <span style="color:#5af78e">&#34;acme-proxy&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">gatewayClassName</span>: nginx
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">listeners</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: http
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">port</span>: <span style="color:#ff9f43">80</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">protocol</span>: HTTP
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">allowedRoutes</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">namespaces</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">from</span>: All
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: https
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">hostname</span>: myserver.example.com
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">port</span>: <span style="color:#ff9f43">443</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">protocol</span>: HTTPS
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">tls</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">mode</span>: Terminate
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">certificateRefs</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#ff6ac1">name</span>: myserver-tls
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">allowedRoutes</span>:
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">namespaces</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">from</span>: Same</span></span></code></pre></div><p>Route application traffic with an <code>HTTPRoute</code> attached to the same Gateway:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">apiVersion</span>: gateway.networking.k8s.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">kind</span>: HTTPRoute
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">name</span>: myapp
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">namespace</span>: default
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">parentRefs</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: my-gateway
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">namespace</span>: infra
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">hostnames</span>:
+</span></span><span style="display:flex;"><span>  - myserver.example.com
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">rules</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">matches</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff6ac1">path</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">type</span>: PathPrefix
+</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">value</span>: /
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">backendRefs</span>:
+</span></span><span style="display:flex;"><span>    - <span style="color:#ff6ac1">name</span>: myapp
+</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">port</span>: <span style="color:#ff9f43">80</span></span></span></code></pre></div><h4 id="option-b--certificate-resource-non-http-workloads">Option B — Certificate resource (non-HTTP workloads)<a class="anchor" href="#option-b--certificate-resource-non-http-workloads">#</a></h4>
+<p>Use this for workloads that consume TLS directly — gRPC services, databases, message brokers. cert-manager uses the Gateway to serve the HTTP-01 challenge but delivers the certificate into an arbitrary Secret.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">apiVersion</span>: cert-manager.io/v1
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">kind</span>: Certificate
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">metadata</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">name</span>: myserver-tls
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">namespace</span>: default
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">spec</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">secretName</span>: myserver-tls
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">issuerRef</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">name</span>: acme-proxy
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">kind</span>: ClusterIssuer
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">dnsNames</span>:
+</span></span><span style="display:flex;"><span>  - myserver.example.com</span></span></code></pre></div><p>Mount the resulting Secret into your Pod:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">volumes</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#ff6ac1">name</span>: tls
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">secret</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">secretName</span>: myserver-tls
+</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">containers</span>:
+</span></span><span style="display:flex;"><span>- <span style="color:#ff6ac1">name</span>: myapp
+</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">volumeMounts</span>:
+</span></span><span style="display:flex;"><span>  - <span style="color:#ff6ac1">name</span>: tls
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">mountPath</span>: /etc/tls
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">readOnly</span>: <span style="color:#ff6ac1">true</span></span></span></code></pre></div><p>The Secret contains <code>tls.crt</code> (full chain) and <code>tls.key</code>.</p>
+<hr>
+<h3 id="step-4--verify">Step 4 — Verify<a class="anchor" href="#step-4--verify">#</a></h3>
+<p>Watch the certificate reach <code>Ready</code> state:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl get certificate myserver-tls -w</span></span></code></pre></div><p>Once <code>READY=True</code>, inspect the issued certificate:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl get secret myserver-tls <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -o <span style="color:#ff5c57">jsonpath</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#39;{.data.tls\.crt}&#39;</span> <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  | base64 -d <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  | openssl x509 -noout -issuer -subject -dates</span></span></code></pre></div><hr>
+<h3 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting">#</a></h3>
+<p>If the certificate stays in <code>False</code> or <code>Issuing</code> state, follow the cert-manager object chain — each level narrows down where the failure occurred:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl describe certificate myserver-tls -n default
+</span></span><span style="display:flex;"><span>kubectl get certificaterequest -n default
+</span></span><span style="display:flex;"><span>kubectl describe certificaterequest &lt;name&gt; -n default
+</span></span><span style="display:flex;"><span>kubectl get order -n default
+</span></span><span style="display:flex;"><span>kubectl describe order &lt;name&gt; -n default
+</span></span><span style="display:flex;"><span>kubectl get challenge -n default
+</span></span><span style="display:flex;"><span>kubectl describe challenge &lt;name&gt; -n default</span></span></code></pre></div><p>The <code>Challenge</code> object&rsquo;s status message identifies the exact failure:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Likely cause</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>ClusterIssuer</code> not ready</td>
+          <td>acme-proxy unreachable from cert-manager pods; wrong ACME directory URL</td>
+      </tr>
+      <tr>
+          <td>Challenge stays <code>pending</code></td>
+          <td>acme-proxy cannot reach the Gateway on port 80; domain DNS not pointing at the Gateway&rsquo;s external IP</td>
+      </tr>
+      <tr>
+          <td>Challenge <code>HTTPRoute</code> not attached</td>
+          <td>Gateway HTTP listener <code>allowedRoutes</code> does not include the namespace where the <code>Certificate</code> lives</td>
+      </tr>
+      <tr>
+          <td>Challenge fails with <code>connection refused</code></td>
+          <td>HTTP listener missing on Gateway, or <code>parentRefs</code> in <code>ClusterIssuer</code> pointing to wrong Gateway name or namespace</td>
+      </tr>
+      <tr>
+          <td><code>unauthorized</code> from ACME server</td>
+          <td>The <code>acme-proxy-account-key</code> Secret was deleted; recreate the <code>ClusterIssuer</code> to re-register</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="pre-and-post-hooks">Pre and Post Hooks<a class="anchor" href="#pre-and-post-hooks">#</a></h2>
+<p>Hooks let you run shell commands at specific points in the certificate lifecycle. The primary use cases are:</p>
+<ul>
+<li><strong>Freeing port 80</strong> — standalone mode requires port 80 for the HTTP-01 challenge. If another process occupies it, use a pre-hook to stop it and a post-hook to restart it.</li>
+<li><strong>Reloading services after renewal</strong> — so the renewed certificate is picked up without a full service restart.</li>
+</ul>
+<p>The three clients use different hook mechanisms.</p>
+<h3 id="hook-phases">Hook phases<a class="anchor" href="#hook-phases">#</a></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Phase</th>
+          <th>When it runs</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Pre-hook</td>
+          <td>Before the challenge attempt</td>
+          <td>Free port 80, drain connections</td>
+      </tr>
+      <tr>
+          <td>Post-hook</td>
+          <td>After the challenge, regardless of outcome</td>
+          <td>Restore services stopped by pre-hook</td>
+      </tr>
+      <tr>
+          <td>Deploy / renew hook</td>
+          <td>Only on successful issuance or renewal</td>
+          <td>Reload or restart the service using the certificate</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h3 id="acmesh-1">acme.sh<a class="anchor" href="#acmesh-1">#</a></h3>
+<p>acme.sh supports hooks via command-line flags or by setting environment variables that it persists in the per-domain config file (<code>~/.acme.sh/&lt;domain&gt;/&lt;domain&gt;.conf</code>).</p>
+<p><strong>Command-line flags (apply once, persisted):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>acme.sh --issue <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --standalone <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --pre-hook  <span style="color:#5af78e">&#34;systemctl stop myapp&#34;</span> <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --post-hook <span style="color:#5af78e">&#34;systemctl start myapp&#34;</span> <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --renew-hook <span style="color:#5af78e">&#34;systemctl reload myapp&#34;</span></span></span></code></pre></div><p>These flags are written to the domain config and reused on every subsequent <code>--renew</code> run. You do not need to repeat them.</p>
+<p><strong>Environment variables (equivalent to the flags above):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#ff5c57">export</span> <span style="color:#ff5c57">Le_PreHook</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#34;systemctl stop myapp&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff5c57">export</span> <span style="color:#ff5c57">Le_PostHook</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#34;systemctl start myapp&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff5c57">export</span> <span style="color:#ff5c57">Le_ReloadCmd</span><span style="color:#ff6ac1">=</span><span style="color:#5af78e">&#34;systemctl reload myapp&#34;</span>
+</span></span><span style="display:flex;"><span>acme.sh --renew -d myserver.example.com</span></span></code></pre></div><p><strong>Verify hooks are saved:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>grep -E <span style="color:#5af78e">&#39;Le_PreHook|Le_PostHook|Le_ReloadCmd&#39;</span> ~/.acme.sh/myserver.example.com/myserver.example.com.conf</span></span></code></pre></div><hr>
+<h3 id="certbot-1">Certbot<a class="anchor" href="#certbot-1">#</a></h3>
+<p>Certbot uses a directory-based hook model. Any executable script placed in these directories runs for all certificates:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Directory</th>
+          <th>Phase</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>/etc/letsencrypt/renewal-hooks/pre/</code></td>
+          <td>Before challenge</td>
+      </tr>
+      <tr>
+          <td><code>/etc/letsencrypt/renewal-hooks/post/</code></td>
+          <td>After challenge, regardless of outcome</td>
+      </tr>
+      <tr>
+          <td><code>/etc/letsencrypt/renewal-hooks/deploy/</code></td>
+          <td>On successful renewal only</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Pre and post hooks (port 80 management):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/pre/stop-myapp.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">systemctl stop myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/post/start-myapp.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">systemctl start myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/pre/stop-myapp.sh <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>              /etc/letsencrypt/renewal-hooks/post/start-myapp.sh</span></span></code></pre></div><p><strong>Deploy hook (reload after renewal):</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-myapp.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">systemctl reload myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-myapp.sh</span></span></code></pre></div><p>Certbot passes <code>$RENEWED_DOMAINS</code> and <code>$RENEWED_LINEAGE</code> to deploy hooks, which lets you target specific certificates if multiple are managed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/deploy/selective-reload.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">if echo &#34;$RENEWED_DOMAINS&#34; | grep -q &#34;myserver.example.com&#34;; then
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    systemctl reload nginx
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">fi
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/selective-reload.sh</span></span></code></pre></div><p>Hooks can also be passed as one-shot flags to <code>certbot renew</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo certbot renew <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --pre-hook <span style="color:#5af78e">&#34;systemctl stop myapp&#34;</span> <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --post-hook <span style="color:#5af78e">&#34;systemctl start myapp&#34;</span> <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --deploy-hook <span style="color:#5af78e">&#34;systemctl reload myapp&#34;</span></span></span></code></pre></div><hr>
+<h3 id="lego-1">Lego<a class="anchor" href="#lego-1">#</a></h3>
+<p>Lego supports hooks via <code>--run-hook</code> (runs after successful initial issuance) and <code>--renew-hook</code> (runs after successful renewal). There is no persistent hook state — you must pass hooks in every invocation or via a wrapper script.</p>
+<p><strong>Issue with hooks:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  run <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --run-hook <span style="color:#5af78e">&#34;systemctl reload myapp&#34;</span></span></span></code></pre></div><p><strong>Renew with hooks:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>lego <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --server https://acme-proxy.example.com/acme/acme/directory <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --accept-tos <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --email admin@example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --http <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -d myserver.example.com <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  renew <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --renew-hook <span style="color:#5af78e">&#34;systemctl reload myapp&#34;</span></span></span></code></pre></div><p>For port 80 management, wrap the lego call in a script:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /usr/local/sbin/lego-renew-myserver.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">#!/bin/bash
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">set -euo pipefail
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">systemctl stop myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">lego \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  --server https://acme-proxy.example.com/acme/acme/directory \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  --accept-tos \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  --email admin@example.com \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  --http \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  -d myserver.example.com \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  renew \
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">  --renew-hook &#34;systemctl start myapp &amp;&amp; systemctl reload myapp&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e"># Ensure myapp is always restarted even on failure
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">if ! systemctl is-active --quiet myapp; then
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">    systemctl start myapp
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">fi
+</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
+</span></span><span style="display:flex;"><span>sudo chmod <span style="color:#ff9f43">0700</span> /usr/local/sbin/lego-renew-myserver.sh</span></span></code></pre></div><p>Lego passes the following environment variables to hook scripts:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Variable</th>
+          <th>Value</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>LEGO_ACCOUNT_EMAIL</code></td>
+          <td>Account email</td>
+      </tr>
+      <tr>
+          <td><code>LEGO_CERT_PATH</code></td>
+          <td>Path to the certificate file</td>
+      </tr>
+      <tr>
+          <td><code>LEGO_CERT_KEY_PATH</code></td>
+          <td>Path to the private key file</td>
+      </tr>
+      <tr>
+          <td><code>LEGO_CERT_DOMAIN</code></td>
+          <td>Primary domain on the certificate</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="troubleshooting-1">Troubleshooting<a class="anchor" href="#troubleshooting-1">#</a></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Symptom</th>
+          <th>Likely cause</th>
+          <th>Fix</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>connection refused</code> on port 80</td>
+          <td>Firewall blocking challenge traffic</td>
+          <td>Open port 80 from acme-proxy host</td>
+      </tr>
+      <tr>
+          <td><code>no route to host</code> to acme-proxy</td>
+          <td>DNS not resolving or network ACL</td>
+          <td>Confirm the proxy hostname resolves and port 443 is reachable</td>
+      </tr>
+      <tr>
+          <td>Certificate issued but service won&rsquo;t reload</td>
+          <td><code>--reloadcmd</code> / deploy hook misconfigured</td>
+          <td>Run the reload command manually; check service name</td>
+      </tr>
+      <tr>
+          <td>Renewal fails in standalone mode</td>
+          <td>Port 80 occupied during renewal window</td>
+          <td>Stop the process holding port 80 before renewal, or switch to webroot mode</td>
+      </tr>
+      <tr>
+          <td><code>unauthorized</code> from ACME server</td>
+          <td>Account not registered with this server</td>
+          <td>Re-run <code>--register-account</code> against the correct <code>--server</code> URL</td>
+      </tr>
+  </tbody>
+</table>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/user.md" target="_blank" rel="noopener edit">
+    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+    <span>Edit this page</span>
+  </a>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+  <div class="flex flex-wrap justify-between">
+    <span>
+    
+      <a href="/install/" class="flex align-center">
+        <img src="/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>Install</span>
+      </a>
+    
+    </span>
+    <span>
+    
+      <a href="/client/" class="flex align-center">
+        <span>ACME Clients</span>
+        <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+    
+    </span>
+  </div>
+  
+
+
+ 
+        
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#user-guide">User Guide</a>
+      <ul>
+        <li><a href="#table-of-contents">Table of Contents</a></li>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#1-nginx-on-linux-vm--baremetal">1. NGINX on Linux VM / Baremetal</a>
+          <ul>
+            <li><a href="#1a-acmesh">1a. acme.sh</a></li>
+            <li><a href="#1b-certbot">1b. Certbot</a></li>
+            <li><a href="#1c-lego">1c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#2-apache-on-linux-vm--baremetal">2. Apache on Linux VM / Baremetal</a>
+          <ul>
+            <li><a href="#2a-acmesh">2a. acme.sh</a></li>
+            <li><a href="#2b-certbot">2b. Certbot</a></li>
+            <li><a href="#2c-lego">2c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#3-standalone-mode-databases-redis-kafka-etc">3. Standalone Mode (Databases, Redis, Kafka, etc.)</a>
+          <ul>
+            <li><a href="#3a-acmesh">3a. acme.sh</a></li>
+            <li><a href="#3b-certbot">3b. Certbot</a></li>
+            <li><a href="#3c-lego">3c. Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#4-docker-and-docker-compose">4. Docker and Docker Compose</a>
+          <ul>
+            <li><a href="#port-80-and-running-containers">Port 80 and running containers</a></li>
+            <li><a href="#step-1--issue-the-initial-certificate-on-the-host">Step 1 — Issue the initial certificate on the host</a></li>
+            <li><a href="#step-2--mount-the-certificate-directory-into-your-containers">Step 2 — Mount the certificate directory into your containers</a></li>
+            <li><a href="#step-3--auto-renewal-with-container-reload-hook">Step 3 — Auto-renewal with container reload hook</a></li>
+          </ul>
+        </li>
+        <li><a href="#5-kubernetes-cert-manager">5. Kubernetes (cert-manager)</a>
+          <ul>
+            <li><a href="#prerequisites-1">Prerequisites</a></li>
+            <li><a href="#step-1--create-a-gateway">Step 1 — Create a Gateway</a></li>
+            <li><a href="#step-2--create-a-clusterissuer">Step 2 — Create a ClusterIssuer</a></li>
+            <li><a href="#step-3--issue-a-certificate">Step 3 — Issue a Certificate</a></li>
+            <li><a href="#step-4--verify">Step 4 — Verify</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+          </ul>
+        </li>
+        <li><a href="#pre-and-post-hooks">Pre and Post Hooks</a>
+          <ul>
+            <li><a href="#hook-phases">Hook phases</a></li>
+            <li><a href="#acmesh-1">acme.sh</a></li>
+            <li><a href="#certbot-1">Certbot</a></li>
+            <li><a href="#lego-1">Lego</a></li>
+          </ul>
+        </li>
+        <li><a href="#troubleshooting-1">Troubleshooting</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  <script>
+  document.querySelectorAll("pre:has(code)").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      navigator.clipboard.writeText(code.innerText).then(function () {
+        btn.textContent = "copied!";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "copy";
+          btn.classList.remove("copied");
+        }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

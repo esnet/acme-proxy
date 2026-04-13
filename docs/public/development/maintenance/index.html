@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Guide to patching upstream related changes# While smallstep/certifiates is meant to serve as the upstream Go module for acme-proxy, we have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo esnet/certificates.
+The branch naming scheme for our patches follow a pattern patch/upstream-version. For example: patches made against smallstep/certificates v0.30.2 are in a branch called patch/v0.30.2.
+Once the patches have been applied and tested, we tag the commit using a naming scheme [upstream version]-patch.count. So if the patches have been applied against upstream v0.30.2 our go.mod in acme-proxy should contain
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/development/maintenance/">
+  <meta property="og:site_name" content="ACME Proxy">
+  <meta property="og:title" content="Maintenance">
+  <meta property="og:description" content="Guide to patching upstream related changes# While smallstep/certifiates is meant to serve as the upstream Go module for acme-proxy, we have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo esnet/certificates.
+The branch naming scheme for our patches follow a pattern patch/upstream-version. For example: patches made against smallstep/certificates v0.30.2 are in a branch called patch/v0.30.2.
+Once the patches have been applied and tested, we tag the commit using a naming scheme [upstream version]-patch.count. So if the patches have been applied against upstream v0.30.2 our go.mod in acme-proxy should contain">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="development">
+
+
+  <meta itemprop="name" content="Maintenance">
+  <meta itemprop="description" content="Guide to patching upstream related changes# While smallstep/certifiates is meant to serve as the upstream Go module for acme-proxy, we have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo esnet/certificates.
+The branch naming scheme for our patches follow a pattern patch/upstream-version. For example: patches made against smallstep/certificates v0.30.2 are in a branch called patch/v0.30.2.
+Once the patches have been applied and tested, we tag the commit using a naming scheme [upstream version]-patch.count. So if the patches have been applied against upstream v0.30.2 our go.mod in acme-proxy should contain">
+  <meta itemprop="wordCount" content="197">
+
+<title>Maintenance | ACME Proxy</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="http://localhost:1313/development/maintenance/">
+<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.4110d568457ca8c8befc6294cd7ee24d2e995833d91f04bd75abd16b0bfe61e7.js" integrity="sha256-QRDVaEV8qMi&#43;/GKUzX7iTS6ZWDPZHwS9davRawv&#43;Yec=" crossorigin="anonymous"></script>
+
+  <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
+
+
+
+
+</head>
+<body dir="ltr" class="book-kind-page book-type-development">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+
+<aside class="book-menu">
+  <div class="book-menu-content">
+
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>ACME Proxy</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text"
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <ul>
+
+
+        <li>
+
+
+
+
+
+    <a href="/quickstart/" class="">
+      Quickstart</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/install/" class="">
+      Install</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/admin/" class="">
+      Administration Guide</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/user/" class="">
+      User Guide</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a>
+      Developments</a>
+
+
+
+  <ul>
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/externalcas/" class="">
+      External CAs</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/maintenance/" class="active">
+      Maintenance</a>
+
+
+        </li>
+
+
+
+        <li>
+
+
+
+
+
+    <a href="/development/contribute/" class="">
+      Contributing</a>
+
+
+        </li>
+
+
+  </ul>
+
+        </li>
+
+
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+
+
+    <div class="book-page">
+      <header class="book-header hidden">
+
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Maintenance</h3>
+
+  <label for="toc-control">
+
+    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+
+  </label>
+</div>
+
+
+
+  <aside class="hidden">
+
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#guide-to-patching-upstream-related-changes">Guide to patching upstream related changes</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+
+
+      </header>
+
+
+
+  <article class="markdown book-article"><h1 id="guide-to-patching-upstream-related-changes">Guide to patching upstream related changes<a class="anchor" href="#guide-to-patching-upstream-related-changes">#</a></h1>
+<ul>
+<li>
+<p>While smallstep/certifiates is meant to serve as the upstream Go module for acme-proxy, we have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo <a href="https://github.com/esnet/certificates">esnet/certificates</a>.</p>
+</li>
+<li>
+<p>The branch naming scheme for our patches follow a pattern <code>patch/upstream-version</code>. For example: patches made against smallstep/certificates <code>v0.30.2</code> are in a branch called <code>patch/v0.30.2</code>.</p>
+</li>
+<li>
+<p>Once the patches have been applied and tested, we tag the commit using a naming scheme <code>[upstream version]-patch.count</code>. So if the patches have been applied against upstream <code>v0.30.2</code> our go.mod in acme-proxy should contain</p>
+</li>
+</ul>
+<pre tabindex="0"><code>replace github.com/smallstep/certificates =&gt; github.com/esnet/certificates v0.30.2-patch.2</code></pre><p>Where the trailing patch.2 indicates <em>total count of patches applied</em> so far i.e two. Should we encounter another another bug in upstream v0.30.2 &amp; have to maintain a third patch then we add our fix to github.com/esnet/certificates under branch patch/v0.30.2, test it &amp; create a commit tag with v0.30.2-patch.3.</p>
+<pre tabindex="0"><code>git tag -a v0.30.2-patch.3 -m &#34;detailed commit message&#34;
+git push --tags v0.30.2-patch.3</code></pre><ul>
+<li>Update the go.mod in acme-proxy repo to point to the new tag</li>
+</ul>
+<pre tabindex="0"><code>replace github.com/smallstep/certificates =&gt; github.com/esnet/certificates v0.30.2-patch.3</code></pre><p>As a best practice, use <a href="https://github.com/smallstep/certificates/compare/master...esnet:certificates:patch/v0.30.2">atomic commits for each patch</a> with detailed commit message.</p>
+</article>
+
+
+
+      <footer class="book-footer">
+
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/development/maintenance.md" target="_blank" rel="noopener edit">
+    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+    <span>Edit this page</span>
+  </a>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+  <div class="flex flex-wrap justify-between">
+    <span>
+
+      <a href="/development/externalcas/" class="flex align-center">
+        <img src="/icons/backward.svg" class="book-icon" alt="Backward" />
+        <span>External CAs</span>
+      </a>
+
+    </span>
+    <span>
+
+      <a href="/development/contribute/" class="flex align-center">
+        <span>Contributing</span>
+        <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
+      </a>
+
+    </span>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+
+
+  <aside class="book-toc">
+    <div class="book-toc-content">
+
+
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#guide-to-patching-upstream-related-changes">Guide to patching upstream related changes</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+
+
+  </main>
+
+
+</body>
+</html>

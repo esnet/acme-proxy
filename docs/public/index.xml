@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ACME Proxy</title>
+    <link>http://localhost:1313/</link>
+    <description>Recent content on ACME Proxy</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Quickstart</title>
+      <link>http://localhost:1313/quickstart/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/quickstart/</guid>
+      <description>&lt;h1 id=&#34;quickstart&#34;&gt;Quickstart&lt;a class=&#34;anchor&#34; href=&#34;#quickstart&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;This is the fastest path to a running acme-proxy. It uses a one-line installer script that sets up the service with sane defaults, requires only five config fields, and is ready to issue certificates in under five minutes.&lt;/p&gt;&#xA;&lt;p&gt;For production deployments with custom install paths, build-from-source, or Docker, see &lt;a href=&#34;http://localhost:1313/install/&#34;&gt;install.md&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;step-1--install&#34;&gt;Step 1 — Install&lt;a class=&#34;anchor&#34; href=&#34;#step-1--install&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-sh&#34; data-lang=&#34;sh&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The script:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Installs the &lt;code&gt;step-ca&lt;/code&gt; binary to &lt;code&gt;/opt/acme-proxy/&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Writes a &lt;code&gt;ca.json&lt;/code&gt; config template to &lt;code&gt;/opt/acme-proxy/ca.json&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Creates a dedicated &lt;code&gt;acme-proxy&lt;/code&gt; service user&lt;/li&gt;&#xA;&lt;li&gt;Registers and enables an &lt;code&gt;acme-proxy.service&lt;/code&gt; systemd unit&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;The service is &lt;strong&gt;enabled but not started&lt;/strong&gt; — configure &lt;code&gt;ca.json&lt;/code&gt; first.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Install</title>
+      <link>http://localhost:1313/install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/install/</guid>
+      <description>&lt;h1 id=&#34;install&#34;&gt;Install&lt;a class=&#34;anchor&#34; href=&#34;#install&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;Three methods are available. The install script is recommended for most deployments.&lt;/p&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Method&lt;/th&gt;&#xA;          &lt;th&gt;Best for&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#install-script-recommended&#34;&gt;Install script&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Standard Linux servers, systemd environments&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#pre-built-binary&#34;&gt;Pre-built binary&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Environments where curl-pipe-to-shell is prohibited&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#build-from-source&#34;&gt;Build from source&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Development, or architectures not covered by releases&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#docker&#34;&gt;Docker&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Container-based deployments&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;install-script-recommended&#34;&gt;Install Script (Recommended)&lt;a class=&#34;anchor&#34; href=&#34;#install-script-recommended&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;The install script downloads the appropriate release binary, creates a dedicated service user, installs a &lt;code&gt;ca.json&lt;/code&gt; template, and registers a hardened &lt;code&gt;systemd&lt;/code&gt; service unit.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>User Guide</title>
+      <link>http://localhost:1313/user/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/user/</guid>
+      <description>&lt;h1 id=&#34;user-guide&#34;&gt;User Guide&lt;a class=&#34;anchor&#34; href=&#34;#user-guide&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;This guide covers how to obtain and automatically renew TLS certificates from &lt;code&gt;acme-proxy&lt;/code&gt; using three common ACME clients: &lt;a href=&#34;https://github.com/acmesh-official/acme.sh&#34;&gt;acme.sh&lt;/a&gt;, &lt;a href=&#34;https://certbot.eff.org/&#34;&gt;Certbot&lt;/a&gt;, and &lt;a href=&#34;https://go-acme.github.io/lego/&#34;&gt;Lego&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;p&gt;&lt;strong&gt;ACME directory URL:&lt;/strong&gt;&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://acme-proxy.example.com/acme/acme/directory&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Replace &lt;code&gt;acme-proxy.example.com&lt;/code&gt; with your organization&amp;rsquo;s actual acme-proxy hostname.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;a class=&#34;anchor&#34; href=&#34;#table-of-contents&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#1-nginx-on-linux-vm--baremetal&#34;&gt;1. NGINX on Linux VM / Baremetal&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#2-apache-on-linux-vm--baremetal&#34;&gt;2. Apache on Linux VM / Baremetal&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#3-standalone-mode-databases-redis-kafka-etc&#34;&gt;3. Standalone Mode&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#4-docker-and-docker-compose&#34;&gt;4. Docker and Docker Compose&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#5-kubernetes-cert-manager&#34;&gt;5. Kubernetes (cert-manager)&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;a class=&#34;anchor&#34; href=&#34;#prerequisites&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See &lt;a href=&#34;./admin.md&#34;&gt;admin.md&lt;/a&gt; for installation instructions and systemd renewal timer setup.&lt;/li&gt;&#xA;&lt;li&gt;Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation).&lt;/li&gt;&#xA;&lt;li&gt;Your domain&amp;rsquo;s DNS must resolve to the host where the ACME client runs.&lt;/li&gt;&#xA;&lt;li&gt;Replace the following placeholders throughout this guide:&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;code&gt;acme-proxy.example.com&lt;/code&gt; — your acme-proxy hostname&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;myserver.example.com&lt;/code&gt; — the domain you want a certificate for&lt;/li&gt;&#xA;&lt;li&gt;&lt;code&gt;admin@example.com&lt;/code&gt; — your contact email&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;1-nginx-on-linux-vm--baremetal&#34;&gt;1. NGINX on Linux VM / Baremetal&lt;a class=&#34;anchor&#34; href=&#34;#1-nginx-on-linux-vm--baremetal&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;h3 id=&#34;1a-acmesh&#34;&gt;1a. acme.sh&lt;a class=&#34;anchor&#34; href=&#34;#1a-acmesh&#34;&gt;#&lt;/a&gt;&lt;/h3&gt;&#xA;&lt;p&gt;&lt;strong&gt;Register and issue a certificate (single domain):&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>ACME Clients</title>
+      <link>http://localhost:1313/client/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/client/</guid>
+      <description>&lt;h1 id=&#34;acme-clients&#34;&gt;ACME Clients&lt;a class=&#34;anchor&#34; href=&#34;#acme-clients&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;This guide covers installation and system-level configuration of ACME clients for use with acme-proxy. It is intended for system administrators deploying certificate automation on behalf of end users.&lt;/p&gt;&#xA;&lt;p&gt;For certificate issuance commands and per-scenario usage, see &lt;a href=&#34;http://localhost:1313/user/&#34;&gt;user.md&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;a class=&#34;anchor&#34; href=&#34;#table-of-contents&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#installing-acme-clients&#34;&gt;Installing ACME Clients&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#account-registration&#34;&gt;Account Registration&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#configuring-auto-renewal-via-systemd&#34;&gt;Configuring Auto-Renewal via Systemd&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#log-management&#34;&gt;Log Management&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;installing-acme-clients&#34;&gt;Installing ACME Clients&lt;a class=&#34;anchor&#34; href=&#34;#installing-acme-clients&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;h3 id=&#34;certbot&#34;&gt;Certbot&lt;a class=&#34;anchor&#34; href=&#34;#certbot&#34;&gt;#&lt;/a&gt;&lt;/h3&gt;&#xA;&lt;blockquote class=&#39;book-hint &#39;&gt;&#xA;&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; Certbot&amp;rsquo;s actively maintained distribution is via Snap. The &lt;code&gt;.deb&lt;/code&gt; packages available in apt repositories are no longer maintained by the Certbot project and ship outdated versions.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Examples</title>
+      <link>http://localhost:1313/examples/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/examples/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Port Requirements</title>
+      <link>http://localhost:1313/firewall/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/firewall/</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

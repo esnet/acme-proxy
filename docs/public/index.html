@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+	<meta name="generator" content="Hugo 0.160.1"><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
+It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).
+Certificate Request Flow:
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/">
+  <meta property="og:site_name" content="ACME Proxy">
+  <meta property="og:title" content="ACME Proxy">
+  <meta property="og:description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
+It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).
+Certificate Request Flow:">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
+
+
+  <meta itemprop="name" content="ACME Proxy">
+  <meta itemprop="description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
+It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).
+Certificate Request Flow:">
+  <meta itemprop="wordCount" content="141">
+
+<title>ACME Proxy | ACME Proxy</title>
+<link rel="icon" href="/favicon.png" >
+<link rel="manifest" href="/manifest.json">
+<link rel="canonical" href="http://localhost:1313/">
+<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+
+
+  <script defer src="/fuse.min.js"></script>
+  <script defer src="/en.search.min.4c7b822b52c27e45dcc401576e8748248407109c1dbb914b25910930a668c107.js" integrity="sha256-THuCK1LCfkXcxAFXbodIJIQHEJwdu5FLJZEJMKZowQc=" crossorigin="anonymous"></script>
+
+  <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
+
+
+<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/index.xml" title="ACME Proxy" />
+
+  <style>
+  pre {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    border: 1px solid var(--gray-600, #999);
+    background: var(--body-background, #fff);
+    color: var(--body-font-color, #333);
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  pre:hover .copy-btn {
+    opacity: 1;
+  }
+  .copy-btn.copied {
+    color: #2a9d5c;
+    border-color: #2a9d5c;
+  }
+</style>
+
+</head>
+<body dir="ltr" class="book-kind-home book-type-page">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    
+<aside class="book-menu">
+  <div class="book-menu-content">
+    
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><span>ACME Proxy</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input id="book-search-input" type="text" 
+    placeholder="Search"
+    aria-label="Search"
+    maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+<ul><li><a href="/">Home</a></li></ul>
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/quickstart/" class="">
+      Quickstart</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/install/" class="">
+      Install</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/user/" class="">
+      User Guide</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/client/" class="">
+      ACME Clients</a>
+  
+
+        </li>
+      
+    
+      
+    
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+
+  </div>
+</aside>
+ 
+
+    <div class="book-page">
+      <header class="book-header hidden">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ACME Proxy</h3>
+
+  <label for="toc-control">
+    
+    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-is-acme-proxy">What is ACME Proxy?</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="what-is-acme-proxy">What is ACME Proxy?<a class="anchor" href="#what-is-acme-proxy">#</a></h1>
+<p><code>acme-proxy</code> is a standalone ACME server built on <a href="https://github.com/smallstep/certificates">step-ca</a> that operates in <a href="https://smallstep.com/docs/registration-authorities/">registration authority (RA)</a> mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does <strong>NOT</strong> sign certificates or store private keys.</p>
+<p>It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).</p>
+<p><strong>Certificate Request Flow:</strong></p>
+<ol>
+<li>Your internal server (behind a firewall perimeter) requests a certificate from <code>acme-proxy</code> using standard ACME clients like certbot, acme.sh or cert-manager.io if you&rsquo;re using Kubernetes.</li>
+<li><code>acme-proxy</code> presents cryptographic challenges to verify domain ownership</li>
+<li>Once validation succeeds, <code>acme-proxy</code> forwards the certificate signing request to your external CA using External Account Binding (EAB)</li>
+<li>The external CA signs the certificate</li>
+<li><code>acme-proxy</code> retrieves the certificate bundle and returns it to your server</li>
+</ol>
+<label class="book-image" for="book-image-toggle-0">
+  <input class="hidden toggle" type="checkbox" id="book-image-toggle-0" />
+  <img src="/../assets/sequence.png" alt="sequence" />
+</label>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+<div>
+
+</div>
+
+<div>
+
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/_index.md" target="_blank" rel="noopener edit">
+    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+    <span>Edit this page</span>
+  </a>
+
+</div>
+
+</div>
+
+
+
+
+
+  
+  
+  
+
+
+ 
+        
+  
+ 
+        
+        
+  
+ 
+        
+  
+  
+    <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
+  
+
+      </footer>
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+  
+  <aside class="book-toc">
+    <div class="book-toc-content">
+      
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#what-is-acme-proxy">What is ACME Proxy?</a></li>
+  </ul>
+</nav>
+
+
+
+    </div>
+  </aside>
+  
+ 
+  </main>
+
+  <script>
+  document.querySelectorAll("pre:has(code)").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "copy";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      navigator.clipboard.writeText(code.innerText).then(function () {
+        btn.textContent = "copied!";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "copy";
+          btn.classList.remove("copied");
+        }, 2000);
+      });
+    });
+    pre.appendChild(btn);
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

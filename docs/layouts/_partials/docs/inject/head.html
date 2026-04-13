@@ -1,0 +1,28 @@
+<style>
+  pre {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.7rem;
+    border: 1px solid var(--gray-600, #999);
+    background: var(--body-background, #fff);
+    color: var(--body-font-color, #333);
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  pre:hover .copy-btn {
+    opacity: 1;
+  }
+  .copy-btn.copied {
+    color: #2a9d5c;
+    border-color: #2a9d5c;
+  }
+</style>
