@@ -3,9 +3,9 @@ const pages = [
 
   "/quickstart/",
   "/install/",
+  "/troubleshoot/",
   "/user/",
   "/client/",
-  "/examples/",
   "/firewall/",
   "/",
   "/categories/",

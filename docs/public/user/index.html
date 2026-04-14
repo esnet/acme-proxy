@@ -24,6 +24,7 @@ https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com
 Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See admin.md for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# 1a. acme.sh# Register and issue a certificate (single domain):">
   <meta property="og:locale" content="en">
   <meta property="og:type" content="article">
+    <meta property="article:modified_time" content="2026-04-12T20:08:41-05:00">
 
 
   <meta itemprop="name" content="User Guide">
@@ -31,6 +32,7 @@ Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Bare
 ACME directory URL:
 https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
 Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See admin.md for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# 1a. acme.sh# Register and issue a certificate (single domain):">
+  <meta itemprop="dateModified" content="2026-04-12T20:08:41-05:00">
   <meta itemprop="wordCount" content="3307">
 
 <title>User Guide | ACME Proxy</title>
@@ -148,6 +150,8 @@ Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Bare
       
     
       
+    
+      
         <li>
           
   
@@ -173,8 +177,6 @@ Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Bare
   
 
         </li>
-      
-    
       
     
       
@@ -1038,6 +1040,10 @@ acme-proxy   True    30s</code></pre><p>If <code>READY</code> is <code>False</co
   <div class="flex flex-wrap justify-between">
 
 <div>
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/bddb8b9e27907357bb040d99257d2cae683cb5bb" title='Last modified by Kapil Agrawal | April 12, 2026' target="_blank" rel="noopener">
+    <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
+    <span>April 12, 2026</span>
+  </a>
 
 </div>
 

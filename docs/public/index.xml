@@ -22,6 +22,13 @@
       <description>&lt;h1 id=&#34;install&#34;&gt;Install&lt;a class=&#34;anchor&#34; href=&#34;#install&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;Three methods are available. The install script is recommended for most deployments.&lt;/p&gt;&#xA;&lt;table&gt;&#xA;  &lt;thead&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;th&gt;Method&lt;/th&gt;&#xA;          &lt;th&gt;Best for&lt;/th&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/thead&gt;&#xA;  &lt;tbody&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#install-script-recommended&#34;&gt;Install script&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Standard Linux servers, systemd environments&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#pre-built-binary&#34;&gt;Pre-built binary&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Environments where curl-pipe-to-shell is prohibited&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#build-from-source&#34;&gt;Build from source&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Development, or architectures not covered by releases&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;      &lt;tr&gt;&#xA;          &lt;td&gt;&lt;a href=&#34;#docker&#34;&gt;Docker&lt;/a&gt;&lt;/td&gt;&#xA;          &lt;td&gt;Container-based deployments&lt;/td&gt;&#xA;      &lt;/tr&gt;&#xA;  &lt;/tbody&gt;&#xA;&lt;/table&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;install-script-recommended&#34;&gt;Install Script (Recommended)&lt;a class=&#34;anchor&#34; href=&#34;#install-script-recommended&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;p&gt;The install script downloads the appropriate release binary, creates a dedicated service user, installs a &lt;code&gt;ca.json&lt;/code&gt; template, and registers a hardened &lt;code&gt;systemd&lt;/code&gt; service unit.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>Troubleshoot</title>
+      <link>http://localhost:1313/troubleshoot/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/troubleshoot/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>User Guide</title>
       <link>http://localhost:1313/user/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -34,13 +41,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/client/</guid>
       <description>&lt;h1 id=&#34;acme-clients&#34;&gt;ACME Clients&lt;a class=&#34;anchor&#34; href=&#34;#acme-clients&#34;&gt;#&lt;/a&gt;&lt;/h1&gt;&#xA;&lt;p&gt;This guide covers installation and system-level configuration of ACME clients for use with acme-proxy. It is intended for system administrators deploying certificate automation on behalf of end users.&lt;/p&gt;&#xA;&lt;p&gt;For certificate issuance commands and per-scenario usage, see &lt;a href=&#34;http://localhost:1313/user/&#34;&gt;user.md&lt;/a&gt;.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;table-of-contents&#34;&gt;Table of Contents&lt;a class=&#34;anchor&#34; href=&#34;#table-of-contents&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#installing-acme-clients&#34;&gt;Installing ACME Clients&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#account-registration&#34;&gt;Account Registration&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#configuring-auto-renewal-via-systemd&#34;&gt;Configuring Auto-Renewal via Systemd&lt;/a&gt;&lt;/li&gt;&#xA;&lt;li&gt;&lt;a href=&#34;#log-management&#34;&gt;Log Management&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;installing-acme-clients&#34;&gt;Installing ACME Clients&lt;a class=&#34;anchor&#34; href=&#34;#installing-acme-clients&#34;&gt;#&lt;/a&gt;&lt;/h2&gt;&#xA;&lt;h3 id=&#34;certbot&#34;&gt;Certbot&lt;a class=&#34;anchor&#34; href=&#34;#certbot&#34;&gt;#&lt;/a&gt;&lt;/h3&gt;&#xA;&lt;blockquote class=&#39;book-hint &#39;&gt;&#xA;&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; Certbot&amp;rsquo;s actively maintained distribution is via Snap. The &lt;code&gt;.deb&lt;/code&gt; packages available in apt repositories are no longer maintained by the Certbot project and ship outdated versions.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>Examples</title>
-      <link>http://localhost:1313/examples/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/examples/</guid>
-      <description></description>
     </item>
     <item>
       <title>Port Requirements</title>
