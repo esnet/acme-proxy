@@ -4,7 +4,17 @@
 
 ## How It Works
 
-When a client successfully completes an ACME challenge, `acme-proxy` forwards the certificate signing request to an external certificate authority (CA) that supports External Account Binding (EAB). The external CA signs the certificate and returns it to the client through `acme-proxy`.
+`acme-proxy` runs as an ACME server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). When a client successfully completes an ACME challenge, `acme-proxy` forwards the certificate signing request to an external certificate authority (CA) that supports External Account Binding (EAB). The external CA signs the certificate and returns it to the client through `acme-proxy`.
+
+**Certificate Request Flow:**
+
+1. Your internal server (behind a firewall perimeter) requests a certificate from `acme-proxy` using standard ACME clients like certbot, acme.sh or cert-manager.io if you're using Kubernetes.
+2. `acme-proxy` presents cryptographic challenges to verify domain ownership
+3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to your external CA using External Account Binding (EAB)
+4. The external CA signs the certificate
+5. `acme-proxy` retrieves the certificate bundle and returns it to your server
+
+![sequence diagram](docs/assets/highlevel-flow.png)
 
 **Note:** LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo and ZeroSSL do.
 
@@ -39,20 +49,6 @@ Using ACME with commercial CAs in enterprise environments provides several advan
 
 - Leverage standard ACME clients (Certbot, acme.sh, cert-manager.io) for certificate issuance, automatic renewals.
 - Enable self-service certificate requests for development teams
-
-## ACME Proxy Workflow
-
-`acme-proxy` runs as an ACME server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo).
-
-**Certificate Request Flow:**
-
-1. Your internal server (behind a firewall perimeter) requests a certificate from `acme-proxy` using standard ACME clients like certbot, acme.sh or cert-manager.io if you're using Kubernetes.
-2. `acme-proxy` presents cryptographic challenges to verify domain ownership
-3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to your external CA using External Account Binding (EAB)
-4. The external CA signs the certificate
-5. `acme-proxy` retrieves the certificate bundle and returns it to your server
-
-![sequence diagram](docs/sequence.png)
 
 ## Quick Start
 
@@ -118,7 +114,6 @@ The most important parts of the config are -
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
-      "certlifetime": 30,
       "metrics": {
         "enabled": true,
         "port": 9234,
