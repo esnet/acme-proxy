@@ -25,7 +25,7 @@ Certificate Request Flow# Your internal server (behind a firewall perimeter) req
   <meta itemprop="name" content="ACME Proxy">
   <meta itemprop="description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
 Certificate Request Flow# Your internal server (behind a firewall perimeter) requests a certificate from acme-proxy using standard ACME clients like certbot, acme.sh or cert-manager.io if you’re using Kubernetes. acme-proxy presents cryptographic challenges to verify domain ownership Once validation succeeds, acme-proxy forwards the certificate signing request to your external CA using External Account Binding (EAB) The external CA signs the certificate acme-proxy retrieves the certificate bundle and returns it to your server">
-  <meta itemprop="dateModified" content="2026-04-16T18:55:01-05:00">
+  <meta itemprop="dateModified" content="2026-04-16T19:31:05-05:00">
   <meta itemprop="wordCount" content="141">
 
 <title>ACME Proxy | ACME Proxy</title>
@@ -186,6 +186,8 @@ Certificate Request Flow# Your internal server (behind a firewall perimeter) req
 
 
 
+<ul><li><a href="https://github.com/esnet/acme-proxy" target="_blank" rel="noopener">GitHub</a></li></ul>
+
 
 
 
@@ -267,7 +269,7 @@ Certificate Request Flow# Your internal server (behind a firewall perimeter) req
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/ffeaecc1fb1831d12b2115670320f03bf7692f71" title='Last modified by Kapil Agrawal | April 16, 2026' target="_blank" rel="noopener">
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/e2826c1c67bab707f0b824000e9e95df9439e641" title='Last modified by Kapil Agrawal | April 16, 2026' target="_blank" rel="noopener">
     <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
     <span>April 16, 2026</span>
   </a>
