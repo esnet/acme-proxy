@@ -10,23 +10,22 @@ https://github.com/alex-shpak/hugo-book
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
-Certificate Request Flow:
-">
+Certificate Request Flow# Your internal server (behind a firewall perimeter) requests a certificate from acme-proxy using standard ACME clients like certbot, acme.sh or cert-manager.io if you’re using Kubernetes. acme-proxy presents cryptographic challenges to verify domain ownership Once validation succeeds, acme-proxy forwards the certificate signing request to your external CA using External Account Binding (EAB) The external CA signs the certificate acme-proxy retrieves the certificate bundle and returns it to your server ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
 <meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/">
   <meta property="og:site_name" content="ACME Proxy">
   <meta property="og:title" content="ACME Proxy">
   <meta property="og:description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
-Certificate Request Flow:">
+Certificate Request Flow# Your internal server (behind a firewall perimeter) requests a certificate from acme-proxy using standard ACME clients like certbot, acme.sh or cert-manager.io if you’re using Kubernetes. acme-proxy presents cryptographic challenges to verify domain ownership Once validation succeeds, acme-proxy forwards the certificate signing request to your external CA using External Account Binding (EAB) The external CA signs the certificate acme-proxy retrieves the certificate bundle and returns it to your server">
   <meta property="og:locale" content="en">
   <meta property="og:type" content="website">
 
 
   <meta itemprop="name" content="ACME Proxy">
   <meta itemprop="description" content="What is ACME Proxy?# acme-proxy is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.
-Certificate Request Flow:">
-  <meta itemprop="dateModified" content="2026-04-12T20:08:41-05:00">
+Certificate Request Flow# Your internal server (behind a firewall perimeter) requests a certificate from acme-proxy using standard ACME clients like certbot, acme.sh or cert-manager.io if you’re using Kubernetes. acme-proxy presents cryptographic challenges to verify domain ownership Once validation succeeds, acme-proxy forwards the certificate signing request to your external CA using External Account Binding (EAB) The external CA signs the certificate acme-proxy retrieves the certificate bundle and returns it to your server">
+  <meta itemprop="dateModified" content="2026-04-16T18:55:01-05:00">
   <meta itemprop="wordCount" content="141">
 
 <title>ACME Proxy | ACME Proxy</title>
@@ -228,6 +227,7 @@ Certificate Request Flow:">
 <nav id="TableOfContents">
   <ul>
     <li><a href="#what-is-acme-proxy">What is ACME Proxy?</a></li>
+    <li><a href="#certificate-request-flow">Certificate Request Flow</a></li>
   </ul>
 </nav>
 
@@ -242,7 +242,11 @@ Certificate Request Flow:">
       
   <article class="markdown book-article"><h1 id="what-is-acme-proxy">What is ACME Proxy?<a class="anchor" href="#what-is-acme-proxy">#</a></h1>
 <p><code>acme-proxy</code> is a standalone ACME server built on <a href="https://github.com/smallstep/certificates">step-ca</a> that operates in <a href="https://smallstep.com/docs/registration-authorities/">registration authority (RA)</a> mode. It runs as a standalone server inside your enterprise environment, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does <strong>NOT</strong> sign certificates or store private keys.</p>
-<p><strong>Certificate Request Flow:</strong></p>
+<label class="book-image" for="book-image-toggle-0">
+  <input class="hidden toggle" type="checkbox" id="book-image-toggle-0" />
+  <img src="/highlevel-flow.png" alt="sequence" />
+</label>
+<h1 id="certificate-request-flow">Certificate Request Flow<a class="anchor" href="#certificate-request-flow">#</a></h1>
 <ol>
 <li>Your internal server (behind a firewall perimeter) requests a certificate from <code>acme-proxy</code> using standard ACME clients like certbot, acme.sh or cert-manager.io if you&rsquo;re using Kubernetes.</li>
 <li><code>acme-proxy</code> presents cryptographic challenges to verify domain ownership</li>
@@ -250,9 +254,9 @@ Certificate Request Flow:">
 <li>The external CA signs the certificate</li>
 <li><code>acme-proxy</code> retrieves the certificate bundle and returns it to your server</li>
 </ol>
-<label class="book-image" for="book-image-toggle-0">
-  <input class="hidden toggle" type="checkbox" id="book-image-toggle-0" />
-  <img src="/../assets/highlevel-flow.png" alt="sequence" />
+<label class="book-image" for="book-image-toggle-1">
+  <input class="hidden toggle" type="checkbox" id="book-image-toggle-1" />
+  <img src="/sequence.png" alt="sequence" />
 </label>
 </article>
  
@@ -263,9 +267,9 @@ Certificate Request Flow:">
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/bddb8b9e27907357bb040d99257d2cae683cb5bb" title='Last modified by Kapil Agrawal | April 12, 2026' target="_blank" rel="noopener">
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/ffeaecc1fb1831d12b2115670320f03bf7692f71" title='Last modified by Kapil Agrawal | April 16, 2026' target="_blank" rel="noopener">
     <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
-    <span>April 12, 2026</span>
+    <span>April 16, 2026</span>
   </a>
 
 </div>
@@ -318,6 +322,7 @@ Certificate Request Flow:">
 <nav id="TableOfContents">
   <ul>
     <li><a href="#what-is-acme-proxy">What is ACME Proxy?</a></li>
+    <li><a href="#certificate-request-flow">Certificate Request Flow</a></li>
   </ul>
 </nav>
 
