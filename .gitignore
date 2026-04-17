@@ -1,3 +1,4 @@
+docs/public/
 .DS_Store
 .env
 .gitlab-ci-local
