@@ -621,6 +621,8 @@ kind: Gateway
 metadata:
   name: my-gateway
   namespace: infra
+  annotations:
+    cert-manager.io/cluster-issuer: acme-proxy
 spec:
   gatewayClassName: nginx
   listeners:
