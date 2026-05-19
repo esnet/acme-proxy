@@ -154,6 +154,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write  # required for keyless cosign signing via OIDC
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -182,6 +185,7 @@ jobs:
             type=sha
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -191,10 +195,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign container image
+        if: github.event_name != 'pull_request'
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "${REGISTRY}/${IMAGE_NAME}@${IMAGE_DIGEST}"
+
   release:
     name: Release
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build, container-build-and-push]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -213,9 +228,14 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
 
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum step-ca_linux_* > SHA256SUMS
+
       - name: Sign binaries
         run: |
-          for bin in dist/step-ca_*; do
+          for bin in dist/step-ca_linux_*; do
             cosign sign-blob --yes --bundle="${bin}.bundle" "$bin"
           done
 
@@ -229,6 +249,8 @@ jobs:
           name: Release ${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
           files: |
-            dist/step-ca_*
+            dist/step-ca_linux_*
+            dist/step-ca_linux_*.bundle
+            dist/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
