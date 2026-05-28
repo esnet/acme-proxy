@@ -1,0 +1,11 @@
+---
+- name: Create installation directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ acme_proxy_service_user }}"
+    group: "{{ acme_proxy_service_group }}"
+    mode: "0750"
+  loop:
+    - "{{ acme_proxy_install_dir }}"
+    - "{{ acme_proxy_db_dir }}"

@@ -1,0 +1,7 @@
+---
+- ansible.builtin.import_tasks: packages.yml
+- ansible.builtin.import_tasks: user.yml
+- ansible.builtin.import_tasks: directories.yml
+- ansible.builtin.import_tasks: binary.yml
+- ansible.builtin.import_tasks: configure.yml
+- ansible.builtin.import_tasks: service.yml

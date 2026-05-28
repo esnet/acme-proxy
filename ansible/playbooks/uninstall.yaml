@@ -1,0 +1,49 @@
+---
+- name: Uninstall acme-proxy
+  hosts: all
+  become: true
+
+  vars:
+    acme_proxy_install_dir: /opt/acme-proxy
+    acme_proxy_service_user: acme-proxy
+    acme_proxy_service_group: acme-proxy
+
+  tasks:
+    - name: Stop and disable acme-proxy service
+      ansible.builtin.systemd:
+        name: acme-proxy
+        state: stopped
+        enabled: false
+      ignore_errors: true
+
+    - name: Remove systemd service file
+      ansible.builtin.file:
+        path: /etc/systemd/system/acme-proxy.service
+        state: absent
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Clear failed state for acme-proxy
+      ansible.builtin.command:
+        cmd: systemctl reset-failed acme-proxy
+      register: reset_failed_result
+      failed_when: false
+      changed_when: reset_failed_result.rc == 0
+
+    - name: Remove installation directory
+      ansible.builtin.file:
+        path: "{{ acme_proxy_install_dir }}"
+        state: absent
+
+    - name: Remove service user
+      ansible.builtin.user:
+        name: "{{ acme_proxy_service_user }}"
+        state: absent
+
+    - name: Remove service group
+      ansible.builtin.group:
+        name: "{{ acme_proxy_service_group }}"
+        state: absent
+      when: acme_proxy_service_user != acme_proxy_service_group

@@ -1,0 +1,11 @@
+---
+_acme_proxy_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  arm64: arm64
+
+_acme_proxy_arch: "{{ _acme_proxy_arch_map[ansible_architecture] | default(ansible_architecture) }}"
+
+_acme_proxy_pcsc_packages:
+  Debian: libpcsclite-dev
+  RedHat: pcsc-lite-devel

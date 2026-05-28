@@ -1,0 +1,38 @@
+---
+# Installation paths
+acme_proxy_version: latest
+acme_proxy_install_dir: /opt/acme-proxy
+acme_proxy_db_dir: "{{ acme_proxy_install_dir }}/db"
+acme_proxy_config_file: "{{ acme_proxy_install_dir }}/ca.json"
+
+# Service account
+acme_proxy_service_user: acme-proxy
+acme_proxy_service_group: acme-proxy
+
+# Listener
+acme_proxy_address: ":443"
+acme_proxy_dns_names:
+  #- acme-proxy.example.com
+acme_proxy_common_name: "{{ acme_proxy_dns_names | first }}"
+
+# Logging
+acme_proxy_log_format: json
+
+# Upstream ACME CA — must be set for the service to function
+acme_proxy_ca_url: ""
+acme_proxy_account_email: ""
+acme_proxy_eab_kid: ""
+acme_proxy_eab_hmac_key: ""
+
+# Metrics
+acme_proxy_metrics_enabled: true
+acme_proxy_metrics_port: 9234
+
+# TLS
+acme_proxy_tls_min_version: 1.2
+acme_proxy_tls_max_version: 1.3
+acme_proxy_tls_renegotiation: false
+
+# Systemd service state
+acme_proxy_service_enabled: true
+acme_proxy_service_state: started

@@ -1,0 +1,9 @@
+---
+- name: Deploy ca.json configuration
+  ansible.builtin.template:
+    src: ca.json.j2
+    dest: "{{ acme_proxy_config_file }}"
+    owner: "{{ acme_proxy_service_user }}"
+    group: "{{ acme_proxy_service_group }}"
+    mode: "0640"
+  notify: restart acme-proxy

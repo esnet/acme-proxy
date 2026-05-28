@@ -1,0 +1,9 @@
+---
+- name: reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart acme-proxy
+  ansible.builtin.systemd:
+    name: acme-proxy
+    state: restarted

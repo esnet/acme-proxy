@@ -1,0 +1,41 @@
+---
+- name: Resolve latest release tag from GitHub
+  ansible.builtin.uri:
+    url: https://api.github.com/repos/esnet/acme-proxy/releases/latest
+    return_content: true
+  register: _acme_proxy_release_info
+  when: acme_proxy_version == 'latest'
+
+- name: Set resolved version fact
+  ansible.builtin.set_fact:
+    _acme_proxy_resolved_version: >-
+      {{ _acme_proxy_release_info.json.tag_name
+         if acme_proxy_version == 'latest'
+         else acme_proxy_version }}
+
+- name: Read installed version file
+  ansible.builtin.slurp:
+    src: "{{ acme_proxy_install_dir }}/.version"
+  register: _acme_proxy_version_file
+  ignore_errors: true
+
+- name: Download acme-proxy binary
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/esnet/acme-proxy/releases/download/{{ _acme_proxy_resolved_version }}/step-ca_{{ ansible_system | lower }}_{{ _acme_proxy_arch }}
+    dest: "{{ acme_proxy_install_dir }}/step-ca"
+    mode: "0755"
+    owner: "{{ acme_proxy_service_user }}"
+    group: "{{ acme_proxy_service_group }}"
+  when: >-
+    _acme_proxy_version_file.failed or
+    (_acme_proxy_version_file.content | b64decode | trim) != _acme_proxy_resolved_version
+  notify: restart acme-proxy
+
+- name: Record installed version
+  ansible.builtin.copy:
+    content: "{{ _acme_proxy_resolved_version }}"
+    dest: "{{ acme_proxy_install_dir }}/.version"
+    mode: "0644"
+    owner: "{{ acme_proxy_service_user }}"
+    group: "{{ acme_proxy_service_group }}"
