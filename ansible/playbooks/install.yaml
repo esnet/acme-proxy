@@ -1,0 +1,20 @@
+---
+- name: Install acme-proxy
+  hosts: all
+  become: true
+
+  # vars:
+    # Required — no functional defaults exist for these.
+    # Set them here, in group_vars/host_vars, or pass via -e at runtime.
+    # acme_proxy_ca_url: ""
+    # acme_proxy_account_email: ""
+    # acme_proxy_dns_names:
+    #  - ""
+
+    # Optional — override role defaults as needed.
+    # acme_proxy_version: latest
+    # acme_proxy_eab_kid: ""
+    # acme_proxy_eab_hmac_key: ""
+
+  roles:
+    - acme-proxy

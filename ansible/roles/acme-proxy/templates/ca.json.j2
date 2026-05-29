@@ -1,0 +1,49 @@
+{
+  "address": "{{ acme_proxy_address }}",
+  "dnsNames": {{ acme_proxy_dns_names | to_json }},
+  "logger": {
+    "format": "{{ acme_proxy_log_format }}"
+  },
+  "db": {
+    "type": "bbolt",
+    "dataSource": "{{ acme_proxy_db_dir }}/bbolt"
+  },
+  "authority": {
+    "type": "externalcas",
+    "config": {
+      "ca_url": "{{ acme_proxy_ca_url }}",
+      "account_email": "{{ acme_proxy_account_email }}",
+      "eab_kid": "{{ acme_proxy_eab_kid }}",
+      "eab_hmac_key": "{{ acme_proxy_eab_hmac_key }}",
+      "metrics": {
+        "enabled": {{ acme_proxy_metrics_enabled | lower }},
+        "port": {{ acme_proxy_metrics_port }},
+        "dataSource": "{{ acme_proxy_db_dir }}/metrics"
+      }
+    },
+    "provisioners": [
+      {
+        "type": "ACME",
+        "name": "acme",
+        "claims": {
+          "enableSSHCA": false,
+          "disableRenewal": false,
+          "allowRenewalAfterExpiry": false,
+          "disableSmallstepExtensions": true
+        },
+        "options": {
+          "x509": {},
+          "ssh": {}
+        }
+      }
+    ],
+    "template": {},
+    "backdate": "1m0s"
+  },
+  "tls": {
+    "minVersion": {{ acme_proxy_tls_min_version }},
+    "maxVersion": {{ acme_proxy_tls_max_version }},
+    "renegotiation": {{ acme_proxy_tls_renegotiation | lower }}
+  },
+  "commonName": "{{ acme_proxy_common_name }}"
+}

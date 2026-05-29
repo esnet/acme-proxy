@@ -11,3 +11,9 @@ db
 .gitlab-ci.yml
 CHANGES.md
 COMPARISON.md
+.venv
+*.lock
+*.log
+.python-version
+.ansible
+pyproject.toml

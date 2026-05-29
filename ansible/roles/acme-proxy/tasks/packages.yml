@@ -1,0 +1,6 @@
+---
+- name: Install libpcsclite dependency
+  ansible.builtin.package:
+    name: "{{ _acme_proxy_pcsc_packages[ansible_os_family] }}"
+    state: present
+  when: ansible_os_family in _acme_proxy_pcsc_packages
