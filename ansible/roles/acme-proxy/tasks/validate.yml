@@ -1,0 +1,21 @@
+---
+- name: Verify required acme-proxy variables
+  ansible.builtin.assert:
+    that:
+      - acme_proxy_ca_url | length > 0
+      - acme_proxy_account_email | length > 0
+      - acme_proxy_dns_names is defined
+      - acme_proxy_dns_names | length > 0
+    fail_msg: >-
+      Required variables are missing. You must define:
+      acme_proxy_ca_url, acme_proxy_account_email, and
+      acme_proxy_dns_names (with at least one entry).
+
+- name: Verify EAB credentials are paired
+  ansible.builtin.assert:
+    that:
+      - (acme_proxy_eab_kid | length > 0) == (acme_proxy_eab_hmac_key | length > 0)
+    fail_msg: >-
+      EAB credentials must be set together: both acme_proxy_eab_kid
+      and acme_proxy_eab_hmac_key, or neither.
+  when: acme_proxy_eab_kid | length > 0 or acme_proxy_eab_hmac_key | length > 0

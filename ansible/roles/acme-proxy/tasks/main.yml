@@ -1,4 +1,5 @@
 ---
+- ansible.builtin.import_tasks: validate.yml
 - ansible.builtin.import_tasks: packages.yml
 - ansible.builtin.import_tasks: user.yml
 - ansible.builtin.import_tasks: directories.yml
