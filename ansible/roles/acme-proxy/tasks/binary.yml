@@ -14,12 +14,16 @@
          else acme_proxy_version }}
 
 - name: Read installed version file
+  become: true
+  become_user: "{{ acme_proxy_service_user }}"
   ansible.builtin.slurp:
     src: "{{ acme_proxy_install_dir }}/.version"
   register: _acme_proxy_version_file
   ignore_errors: true
 
 - name: Download acme-proxy binary
+  become: true
+  become_user: "{{ acme_proxy_service_user }}"
   ansible.builtin.get_url:
     url: >-
       https://github.com/esnet/acme-proxy/releases/download/{{ _acme_proxy_resolved_version }}/step-ca_{{ ansible_system | lower }}_{{ _acme_proxy_arch }}
@@ -33,6 +37,8 @@
   notify: restart acme-proxy
 
 - name: Record installed version
+  become: true
+  become_user: "{{ acme_proxy_service_user }}"
   ansible.builtin.copy:
     content: "{{ _acme_proxy_resolved_version }}"
     dest: "{{ acme_proxy_install_dir }}/.version"

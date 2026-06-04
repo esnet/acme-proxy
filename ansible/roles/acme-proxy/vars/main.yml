@@ -7,5 +7,5 @@ _acme_proxy_arch_map:
 _acme_proxy_arch: "{{ _acme_proxy_arch_map[ansible_architecture] | default(ansible_architecture) }}"
 
 _acme_proxy_pcsc_packages:
-  Debian: libpcsclite-dev
-  RedHat: pcsc-lite-devel
+  Debian: libpcsclite1
+  RedHat: pcsc-lite

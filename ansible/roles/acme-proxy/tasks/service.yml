@@ -1,5 +1,6 @@
 ---
 - name: Deploy systemd unit
+  become: true
   ansible.builtin.template:
     src: acme-proxy.service.j2
     dest: /etc/systemd/system/acme-proxy.service
@@ -11,6 +12,7 @@
     - restart acme-proxy
 
 - name: Enable and manage acme-proxy service
+  become: true
   ansible.builtin.systemd:
     name: acme-proxy
     enabled: "{{ acme_proxy_service_enabled }}"
