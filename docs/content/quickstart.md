@@ -68,7 +68,7 @@ Set these five fields — everything else can stay at its default:
 ```json
 {
   "address": ":443",
-  "dnsNames": ["acmeproxy.example.com"],
+  "dnsNames": ["acme-proxy.example.com"],
   "authority": {
     "type": "externalcas",
     "config": {
@@ -78,7 +78,7 @@ Set these five fields — everything else can stay at its default:
       "eab_hmac_key": "your-hmac-key-here"
     }
   },
-  "commonName": "acmeproxy.example.com"
+  "commonName": "acme-proxy.example.com"
 }
 ```
 

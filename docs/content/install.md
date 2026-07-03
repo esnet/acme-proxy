@@ -149,46 +149,25 @@ Then follow the [pre-built binary](#pre-built-binary) instructions to create the
 
 ## Docker
 
-### Pre-built image
+Make sure to
 
-```sh
-docker pull ghcr.io/esnet/acme-proxy:latest
-```
-
-Run with a bind-mounted config file:
+- Configure the `ca.json` file 
+- Create a directory for `db`
 
 ```sh
 docker run -d \
   --name acme-proxy \
   -p 443:443 \
-  -v ./ca.json:/opt/acme-proxy/ca.json:ro \
-  -v acme-proxy-db:/opt/acme-proxy/db \
-  ghcr.io/esnet/acme-proxy:latest
+  -v "$(pwd)"/ca.json:/opt/acme-proxy/ca.json:ro \
+  -v "$(pwd)"/db:/opt/acme-proxy/db \
+  --restart unless-stopped \
+ghcr.io/esnet/acme-proxy:latest
 ```
 
 View logs:
 
 ```sh
 docker logs -f acme-proxy
-```
-
-### Build your own image
-
-```sh
-git clone https://github.com/esnet/acme-proxy.git
-cd acme-proxy
-docker build -t acme-proxy:latest .
-```
-
-Run:
-
-```sh
-docker run -d \
-  --name acme-proxy \
-  -p 443:443 \
-  -v ./ca.json:/opt/acme-proxy/ca.json:ro \
-  -v acme-proxy-db:/opt/acme-proxy/db \
-  acme-proxy:latest
 ```
 
 ### Docker Compose
@@ -201,11 +180,8 @@ services:
       - "443:443"
     volumes:
       - ./ca.json:/opt/acme-proxy/ca.json:ro
-      - acme-proxy-db:/opt/acme-proxy/db
+      - ./db:/opt/acme-proxy/db
     restart: unless-stopped
-
-volumes:
-  acme-proxy-db:
 ```
 
 ---
