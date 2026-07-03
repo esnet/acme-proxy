@@ -258,4 +258,4 @@ Using ACME with commercial CAs in enterprise environments provides several advan
 **Automation and Self-Service:**
 
 - Leverage standard ACME clients (Certbot, acme.sh, cert-manager.io) for certificate issuance, automatic renewals.
-- Enable self-service certificate requests for development teams
+- Enable self-service certificate requests for development and infrastructure teams
