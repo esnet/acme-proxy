@@ -147,12 +147,17 @@ Then follow the [pre-built binary](#pre-built-binary) instructions to create the
 
 ---
 
-## Docker
+## Install using Docker
 
-Make sure to
+Before starting the container on a linux distro
 
-- Configure the `ca.json` file 
-- Create a directory for `db`
+```sh
+mkdir -p /opt/acme-proxy/db
+touch /opt/acme-proxy/ca.json
+chown -R 65532:65532 /opt/acme-proxy
+```
+
+Make sure you have configured the `ca.json` file
 
 ```sh
 docker run -d \
