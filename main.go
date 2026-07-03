@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"time"
 
@@ -44,14 +45,32 @@ import (
 	_ "github.com/smallstep/certificates/cas/vaultcas"
 )
 
-// commit and buildTime are filled in during build by the Makefile
+// BuildTime and Version are filled in during build via -ldflags.
 var (
 	BuildTime = "N/A"
 	Version   = "N/A"
 )
 
+// stepCAVersion reads the compiled-in version of github.com/smallstep/certificates
+// from the binary's embedded module info (set by the Go toolchain at build time).
+func stepCAVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == "github.com/smallstep/certificates" {
+			if dep.Replace != nil {
+				return dep.Replace.Version
+			}
+			return dep.Version
+		}
+	}
+	return "unknown"
+}
+
 func init() {
-	step.Set("Smallstep CA", Version, BuildTime)
+	step.Set("Smallstep CA", stepCAVersion(), BuildTime)
 	authority.GlobalVersion.Version = Version
 	// Add support for asking passwords
 	pemutil.PromptPassword = func(msg string) ([]byte, error) {
@@ -113,6 +132,7 @@ func main() {
 
 	// Override global framework components
 	cli.VersionPrinter = func(c *cli.Context) {
+		fmt.Printf("ACME Proxy/%s\n", Version)
 		version.Command(c)
 	}
 	cli.AppHelpTemplate = appHelpTemplate
