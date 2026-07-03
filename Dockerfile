@@ -12,20 +12,17 @@ RUN make
 
 FROM chainguard/wolfi-base:latest
 
-WORKDIR /acme-proxy
-RUN chown -R nonroot:nonroot /acme-proxy/
+WORKDIR /opt/acme-proxy
+RUN chown -R nonroot:nonroot /opt/acme-proxy/
 
 COPY --from=build --chown=nonroot:nonroot /build/step-ca .
 RUN apk add --no-cache pcsc-lite
 
 # KV store mount point
-RUN mkdir /acme-proxy/db && chown nonroot:nonroot /acme-proxy/db
-
-# ca.json  mount point
-RUN mkdir /acme-proxy/config && chown nonroot:nonroot /acme-proxy/config
+RUN mkdir /opt/acme-proxy/db && chown nonroot:nonroot /opt/acme-proxy/db
 
 USER nonroot
 EXPOSE 443
 
-ENTRYPOINT [ "/acme-proxy/step-ca" ]
-CMD [ "/acme-proxy/config/ca.json" ]
+ENTRYPOINT [ "/opt/acme-proxy/step-ca" ]
+CMD [ "/opt/acme-proxy/ca.json" ]
