@@ -136,7 +136,9 @@ jobs:
           CGO_ENABLED: ${{ matrix.arch == 'arm64' && '0' || '1' }}
           MATRIX_OS: ${{ matrix.os }}
           MATRIX_ARCH: ${{ matrix.arch }}
+          VERSION: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
         run: |
+          export BUILD_TIME="$(date -u '+%Y-%m-%d %H:%M UTC')"
           make build
           mv step-ca "step-ca_${MATRIX_OS}_${MATRIX_ARCH}"
           echo "Built step-ca_${MATRIX_OS}_${MATRIX_ARCH}"

@@ -2,6 +2,9 @@ APP_NAME = step-ca
 
 SUDO := $(shell if [ $$(id -u) -ne 0 ]; then echo "$(SUDO)"; else echo ""; fi)
 
+VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+BUILD_TIME  ?= $(shell date -u '+%Y-%m-%d %H:%M UTC')
+
 # Targets
 .PHONY: all clean check-deps dev build
 
@@ -47,5 +50,5 @@ dev: clean check-deps
 build: clean check-deps
 	@echo "⚙️ Building ACME proxy with Step CA..."
 	mkdir db
-	go build -ldflags="-s -w" -v -o $(APP_NAME) .
+	go build -ldflags="-s -w -X main.Version=$(VERSION) -X 'main.BuildTime=$(BUILD_TIME)'" -v -o $(APP_NAME) .
 	@echo "✅ Done"
