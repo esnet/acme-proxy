@@ -70,7 +70,12 @@ jobs:
       - name: Run tests
         run: |
           make dev
-          go test -v -race ./...
+          go test -v -race -coverprofile=coverage.txt ./...
+
+      - name: Upload coverage results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   security-scan:
     name: Security Scan

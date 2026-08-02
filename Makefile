@@ -11,16 +11,16 @@ BUILD_TIME  ?= $(shell date -u '+%Y-%m-%d %H:%M UTC')
 default: build
 
 clean:
-	@echo "🧹 Cleaning build cache..."
+	@echo "Cleaning build cache..."
 	go clean -cache
 	rm -f step-ca
 	rm -rf db
 
 check-deps:
-	@echo "🔍 Checking for libpcsclite-dev dependency..."
+	@echo "Checking for libpcsclite-dev dependency..."
 	@OS_NAME=$$(uname -s); \
 	if [ "$$OS_NAME" = "Darwin" ]; then \
-		echo "🍏 macOS - Skipping dependency check"; \
+		echo "🍎 MacOS - Skipping dependency check"; \
 	elif [ -f /etc/os-release ]; then \
 		. /etc/os-release; \
 		if echo "$$ID" | grep -Eqi 'ubuntu|debian'; then \
@@ -42,13 +42,13 @@ check-deps:
 	fi
 
 dev: clean check-deps
-	@echo "⬇️ Downloading dependencies to create dev environment..."
+	@echo "Setting up dependencies for development..."
 	mkdir db
 	go mod tidy
-	@echo "✅ Ready"
+	@echo "✔ OK"
 
 build: clean check-deps
-	@echo "⚙️ Building ACME proxy with Step CA..."
+	@echo "Building acme-proxy with step-ca..."
 	mkdir db
 	go build -ldflags="-s -w -X main.Version=$(VERSION) -X 'main.BuildTime=$(BUILD_TIME)'" -v -o $(APP_NAME) .
-	@echo "✅ Done"
+	@echo "✔ OK"
