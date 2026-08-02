@@ -1,7 +1,10 @@
 package externalcas
 
 import (
+	"crypto"
+
 	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/registration"
 )
 
 // ACMEClient abstracts ACME certificate operations for testability.
@@ -32,4 +35,23 @@ func (a *legoClientAdapter) ObtainForCSR(req certificate.ObtainForCSRRequest) (*
 // Revoke implements ACMEClient.Revoke by delegating to the lego client
 func (a *legoClientAdapter) Revoke(pemBytes []byte) error {
 	return a.certClient.Revoke(pemBytes)
+}
+
+// User implements the lego registration.User interface
+type User struct {
+	Email        string
+	Registration *registration.Resource
+	key          crypto.PrivateKey
+}
+
+func (u *User) GetEmail() string {
+	return u.Email
+}
+
+func (u *User) GetRegistration() *registration.Resource {
+	return u.Registration
+}
+
+func (u *User) GetPrivateKey() crypto.PrivateKey {
+	return u.key
 }

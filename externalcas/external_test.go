@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/registration"
 	"github.com/smallstep/certificates/cas/apiv1"
 )
 
@@ -111,26 +112,6 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "ca_url is required",
-		},
-		{
-			name: "missing eab_kid",
-			config: AcmeProxyConfig{
-				CaURL:   "https://acme.example.com",
-				Email:   "test@example.com",
-				HmacKey: "test-hmac",
-			},
-			wantErr: true,
-			errMsg:  "eab_kid is required",
-		},
-		{
-			name: "missing eab_hmac_key",
-			config: AcmeProxyConfig{
-				CaURL: "https://acme.example.com",
-				Email: "test@example.com",
-				Kid:   "test-kid",
-			},
-			wantErr: true,
-			errMsg:  "eab_hmac_key is required",
 		},
 		{
 			name: "negative certlifetime",
@@ -241,12 +222,7 @@ func TestParseConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cas := &ExternalCAS{
-				ctx:    context.Background(),
-				config: []byte(tt.config),
-			}
-
-			cfg, err := cas.parseConfig()
+			cfg, err := parseConfig([]byte(tt.config))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -286,7 +262,7 @@ func Test_validateCreateCertificateRequest(t *testing.T) {
 				Template: &x509.Certificate{},
 			},
 			wantErr: true,
-			errMsg:  "CSR cannot be nil",
+			errMsg:  "csr cannot be nil",
 		},
 		{
 			name: "nil Template",
@@ -304,7 +280,7 @@ func Test_validateCreateCertificateRequest(t *testing.T) {
 				Template: nil,
 			},
 			wantErr: true,
-			errMsg:  "CSR cannot be nil",
+			errMsg:  "csr cannot be nil",
 		},
 	}
 
@@ -377,7 +353,7 @@ func TestCreateCertificate_Validation(t *testing.T) {
 		{
 			name:    "nil CSR returns error",
 			req:     &apiv1.CreateCertificateRequest{CSR: nil, Template: &x509.Certificate{}},
-			wantErr: "CSR cannot be nil",
+			wantErr: "csr cannot be nil",
 		},
 		{
 			name:    "nil Template returns error",
@@ -416,13 +392,13 @@ func TestCreateCertificate_WithMock(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			config: mustMarshalConfig(t, &AcmeProxyConfig{
+			cfg: &AcmeProxyConfig{
 				CaURL:        "https://acme.test.com",
 				Email:        "test@example.com",
 				Kid:          "test-kid",
 				HmacKey:      "test-hmac",
 				CertLifetime: 30,
-			}),
+			},
 		},
 		mockClient: mockClient,
 	}
@@ -464,12 +440,12 @@ func TestCreateCertificate_WithMock_Error(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			config: mustMarshalConfig(t, &AcmeProxyConfig{
+			cfg: &AcmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Email:   "test@example.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
-			}),
+			},
 		},
 		mockClient: mockClient,
 	}
@@ -504,12 +480,12 @@ func TestCreateCertificate_Timeout(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			config: mustMarshalConfig(t, &AcmeProxyConfig{
+			cfg: &AcmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Email:   "test@example.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
-			}),
+			},
 		},
 		mockClient:     mockClient,
 		requestTimeout: 100 * time.Millisecond, // Short timeout for testing
@@ -705,18 +681,13 @@ func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest)
 		return nil, err
 	}
 
-	cfg, err := t.parseConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	acmeClient, err := t.createLegoClient(cfg)
+	acmeClient, err := t.createLegoClient(t.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ACME client: %w", err)
 	}
 
 	// Use custom timeout if specified, otherwise use config timeout
-	timeout := cfg.RequestTimeout()
+	timeout := t.cfg.RequestTimeout()
 	if t.requestTimeout > 0 {
 		timeout = t.requestTimeout
 	}
@@ -729,8 +700,8 @@ func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest)
 		CSR:    req.CSR,
 		Bundle: true,
 	}
-	if cfg.CertLifetime > 0 {
-		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
+	if t.cfg.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(t.cfg.CertLifetime) * 24 * time.Hour)
 	}
 
 	// Request certificate with context timeout
@@ -813,4 +784,338 @@ func mustMarshalConfig(t *testing.T, cfg *AcmeProxyConfig) []byte {
 		t.Fatalf("failed to marshal config: %v", err)
 	}
 	return data
+}
+
+// --- Validate(): EAB / DNS01 / neither branching (gaps 1–8) ---
+
+func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      AcmeProxyConfig
+		wantErr     bool
+		errMsg      string
+		wantUseEAB  bool
+		wantUseDNS01 bool
+	}{
+		{
+			name: "neither EAB nor DNS01 configured",
+			config: AcmeProxyConfig{
+				CaURL: "https://acme.example.com",
+			},
+			wantErr: true,
+			errMsg:  "Missing eab or dns01 config",
+		},
+		{
+			name: "partial EAB - only Kid set",
+			config: AcmeProxyConfig{
+				CaURL: "https://acme.example.com",
+				Kid:   "test-kid",
+			},
+			wantErr: true,
+			errMsg:  "Missing eab or dns01 config",
+		},
+		{
+			name: "partial EAB - only HmacKey set",
+			config: AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				HmacKey: "test-hmac",
+			},
+			wantErr: true,
+			errMsg:  "Missing eab or dns01 config",
+		},
+		{
+			name: "DNS01-only valid",
+			config: AcmeProxyConfig{
+				CaURL: "https://acme.example.com",
+				Lego: LegoConfig{
+					Provider: "route53",
+					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
+				},
+			},
+			wantErr:      false,
+			wantUseEAB:   false,
+			wantUseDNS01: true,
+		},
+		{
+			name: "partial DNS01 - only Provider set",
+			config: AcmeProxyConfig{
+				CaURL: "https://acme.example.com",
+				Lego:  LegoConfig{Provider: "route53"},
+			},
+			wantErr: true,
+			errMsg:  "Missing eab or dns01 config",
+		},
+		{
+			name: "partial DNS01 - only Env_Vars set",
+			config: AcmeProxyConfig{
+				CaURL: "https://acme.example.com",
+				Lego:  LegoConfig{Env_Vars: map[string]string{"AWS_REGION": "us-east-1"}},
+			},
+			wantErr: true,
+			errMsg:  "Missing eab or dns01 config",
+		},
+		{
+			name: "both EAB and DNS01 configured",
+			config: AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+				Lego: LegoConfig{
+					Provider: "route53",
+					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
+				},
+			},
+			wantErr:      false,
+			wantUseEAB:   true,
+			wantUseDNS01: true,
+		},
+		{
+			name: "EAB-only sets useEAB flag",
+			config: AcmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			},
+			wantErr:      false,
+			wantUseEAB:   true,
+			wantUseDNS01: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+				return
+			}
+			if tt.config.useEAB != tt.wantUseEAB {
+				t.Errorf("useEAB = %v, want %v", tt.config.useEAB, tt.wantUseEAB)
+			}
+			if tt.config.useDNS01 != tt.wantUseDNS01 {
+				t.Errorf("useDNS01 = %v, want %v", tt.config.useDNS01, tt.wantUseDNS01)
+			}
+		})
+	}
+}
+
+// --- parseConfig(): DNS01 and both-mode JSON (gaps 9–10) ---
+
+func TestParseConfig_DNS01AndBothModes(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       string
+		wantUseEAB   bool
+		wantUseDNS01 bool
+	}{
+		{
+			name: "DNS01-only valid JSON",
+			config: `{
+				"ca_url": "https://acme.example.com",
+				"dns01": {
+					"provider": "route53",
+					"env_vars": {"AWS_REGION": "us-east-1"}
+				}
+			}`,
+			wantUseEAB:   false,
+			wantUseDNS01: true,
+		},
+		{
+			name: "both EAB and DNS01 in JSON",
+			config: `{
+				"ca_url": "https://acme.example.com",
+				"eab_kid": "test-kid",
+				"eab_hmac_key": "test-hmac",
+				"dns01": {
+					"provider": "route53",
+					"env_vars": {"AWS_REGION": "us-east-1"}
+				}
+			}`,
+			wantUseEAB:   true,
+			wantUseDNS01: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := parseConfig([]byte(tt.config))
+			if err != nil {
+				t.Fatalf("parseConfig() unexpected error: %v", err)
+			}
+			if cfg.useEAB != tt.wantUseEAB {
+				t.Errorf("useEAB = %v, want %v", cfg.useEAB, tt.wantUseEAB)
+			}
+			if cfg.useDNS01 != tt.wantUseDNS01 {
+				t.Errorf("useDNS01 = %v, want %v", cfg.useDNS01, tt.wantUseDNS01)
+			}
+		})
+	}
+}
+
+// --- User interface methods (gaps 11–13) ---
+
+func TestUser_InterfaceMethods(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+
+	reg := &registration.Resource{URI: "https://acme.example.com/account/1"}
+
+	u := &User{
+		Email:        "test@example.com",
+		Registration: reg,
+		key:          key,
+	}
+
+	if got := u.GetEmail(); got != "test@example.com" {
+		t.Errorf("GetEmail() = %q, want %q", got, "test@example.com")
+	}
+
+	if got := u.GetRegistration(); got != reg {
+		t.Errorf("GetRegistration() = %v, want %v", got, reg)
+	}
+
+	if got := u.GetPrivateKey(); got != key {
+		t.Errorf("GetPrivateKey() did not return the expected key")
+	}
+}
+
+func TestUser_GetRegistration_Nil(t *testing.T) {
+	u := &User{}
+	if got := u.GetRegistration(); got != nil {
+		t.Errorf("GetRegistration() = %v, want nil", got)
+	}
+}
+
+// --- splitCertificateBundle(): mixed PEM block types (gap 14) ---
+
+func Test_splitCertificateBundle_MixedPEMTypes(t *testing.T) {
+	certPEM := createTestCertPEM(t, 1)
+
+	// Interleave a PRIVATE KEY block before and after the certificate
+	keyBlock := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: []byte("not-a-real-key")})
+	bundle := append(keyBlock, certPEM...)
+	bundle = append(bundle, keyBlock...)
+
+	leaf, intermediates, err := splitCertificateBundle(bundle)
+	if err != nil {
+		t.Fatalf("splitCertificateBundle() unexpected error: %v", err)
+	}
+	if leaf == nil {
+		t.Fatal("expected non-nil leaf certificate")
+	}
+	if leaf.SerialNumber.Int64() != 1 {
+		t.Errorf("leaf serial = %d, want 1", leaf.SerialNumber.Int64())
+	}
+	if len(intermediates) != 0 {
+		t.Errorf("expected 0 intermediates, got %d", len(intermediates))
+	}
+}
+
+// --- RevokeCertificate: success and error paths (gaps 15–16) ---
+
+func TestRevokeCertificate_WithMock_Success(t *testing.T) {
+	var revokedPEM []byte
+	mockClient := &mockACMEClient{
+		revokeFunc: func(pemBytes []byte) error {
+			revokedPEM = pemBytes
+			return nil
+		},
+	}
+
+	cas := &testExternalCAS{
+		ExternalCAS: &ExternalCAS{
+			ctx: context.Background(),
+			cfg: &AcmeProxyConfig{
+				CaURL:   "https://acme.test.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			},
+		},
+		mockClient: mockClient,
+	}
+
+	cert := createTestCert(t, 42)
+	req := &apiv1.RevokeCertificateRequest{Certificate: cert}
+
+	resp, err := cas.RevokeCertificate(req)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if resp == nil || resp.Certificate != cert {
+		t.Error("expected response to contain the revoked certificate")
+	}
+	if len(revokedPEM) == 0 {
+		t.Error("expected revokeFunc to be called with PEM bytes")
+	}
+}
+
+func TestRevokeCertificate_WithMock_Error(t *testing.T) {
+	mockClient := &mockACMEClient{
+		revokeFunc: func(pemBytes []byte) error {
+			return errors.New("ACME revocation refused")
+		},
+	}
+
+	cas := &testExternalCAS{
+		ExternalCAS: &ExternalCAS{
+			ctx: context.Background(),
+			cfg: &AcmeProxyConfig{
+				CaURL:   "https://acme.test.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			},
+		},
+		mockClient: mockClient,
+	}
+
+	cert := createTestCert(t, 99)
+	req := &apiv1.RevokeCertificateRequest{Certificate: cert}
+
+	_, err := cas.RevokeCertificate(req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "ACME revocation refused") {
+		t.Errorf("expected error containing 'ACME revocation refused', got: %v", err)
+	}
+}
+
+// RevokeCertificate on testExternalCAS delegates to ExternalCAS.RevokeCertificate
+// but uses the injected mock client via createLegoClient.
+func (t *testExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
+	if err := validateRevokeCertificateRequest(req); err != nil {
+		return nil, err
+	}
+	acmeClient, err := t.createLegoClient(t.cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ACME client: %w", err)
+	}
+	pemBytes := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: req.Certificate.Raw,
+	})
+	if err := acmeClient.Revoke(pemBytes); err != nil {
+		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
+	}
+	return &apiv1.RevokeCertificateResponse{Certificate: req.Certificate}, nil
+}
+
+// createTestCert returns a parsed *x509.Certificate (not just PEM bytes).
+func createTestCert(t *testing.T, serial int64) *x509.Certificate {
+	t.Helper()
+	pemBytes := createTestCertPEM(t, serial)
+	block, _ := pem.Decode(pemBytes)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		t.Fatalf("failed to parse test certificate: %v", err)
+	}
+	return cert
 }

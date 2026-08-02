@@ -69,10 +69,16 @@ cat > "$CONFIG_FILE" << EOF
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "dns01": {
+        "provider":"",
+        "dns_servers":[],
+        "env_vars": {
+        }
+      },
       "metrics": {
         "enabled": true,
         "port": 9234,
-        "dataSource": "db/metrics"
+        "dataSource": "${DB_DIR}/metrics"
       }
     },
     "provisioners": [
@@ -96,7 +102,7 @@ cat > "$CONFIG_FILE" << EOF
   },
   "tls": {
     "minVersion": 1.1,
-    "maxVersion": 1.2,
+    "maxVersion": 1.3,
     "renegotiation": false
   },
   "commonName": "acmeproxy.example.com"
@@ -192,9 +198,11 @@ echo "Next steps:"
 echo "  1. Edit ${CONFIG_FILE} and configure:"
 echo "     - dnsNames: Your ACME proxy hostname"
 echo "     - ca_url: Your upstream ACME CA URL"
-echo "     - account_email: Your account email"
-echo "     - eab_kid: External Account Binding Key ID"
-echo "     - eab_hmac_key: External Account Binding HMAC key"
+echo "     - account_email: Your ACME account email"
+echo "     - eab_kid and eab_hmac_key: EAB credentials issued by your upstream CA"
+echo "     - dns01: Lego acme provider configuration if using dns01 challenge with upstream CA"
+echo ""
+echo "  Check the docs for configuration options: https://software.es.net/acme-proxy/install/#configuration"
 echo ""
 echo "  2. Start the service:"
 echo "     sudo systemctl start acme-proxy"
