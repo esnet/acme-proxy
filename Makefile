@@ -10,6 +10,9 @@ BUILD_TIME  ?= $(shell date -u '+%Y-%m-%d %H:%M UTC')
 
 default: build
 
+test:
+	go test -race ./externalcas
+
 clean:
 	@echo "Cleaning build cache..."
 	go clean -cache

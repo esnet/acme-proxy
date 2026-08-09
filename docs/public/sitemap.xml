@@ -3,16 +3,18 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>http://localhost:1313/quickstart/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <lastmod>2026-07-03T16:14:04-05:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/install/</loc>
-    <lastmod>2026-05-09T16:31:07-05:00</lastmod>
+    <lastmod>2026-07-03T16:52:02-05:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/configuration/</loc>
   </url><url>
     <loc>http://localhost:1313/client/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <lastmod>2026-05-10T14:39:06-05:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/user/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <lastmod>2026-05-10T14:39:06-05:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/</loc>
     <lastmod>2026-05-09T16:30:55-05:00</lastmod>

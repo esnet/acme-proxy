@@ -119,7 +119,7 @@ func (c *certMetaCollector) Collect(ch chan<- prometheus.Metric) {
 // StartMetricsServer starts the Prometheus metrics HTTP server once.
 // DataSource is guaranteed non-empty by AcmeProxyConfig.Validate() when enabled.
 // Returns an error if the cert store cannot be opened — this fails server startup.
-func StartMetricsServer(m Metrics) error {
+func StartMetricsServer(m metrics) error {
 	if !m.Enabled {
 		return nil
 	}

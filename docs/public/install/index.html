@@ -8,26 +8,26 @@ https://github.com/alex-shpak/hugo-book
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Install# Three methods are available. The install script is recommended for most deployments.
-Method Best for Install script Standard Linux servers, systemd environments Pre-built binary Environments where curl-pipe-to-shell is prohibited Build from source Development, or architectures not covered by releases Docker Container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.
+<meta name="description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
 <meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/install/">
-  <meta property="og:site_name" content="acme-proxy">
-  <meta property="og:title" content="Install">
-  <meta property="og:description" content="Install# Three methods are available. The install script is recommended for most deployments.
-Method Best for Install script Standard Linux servers, systemd environments Pre-built binary Environments where curl-pipe-to-shell is prohibited Build from source Development, or architectures not covered by releases Docker Container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:modified_time" content="2026-05-09T16:31:07-05:00">
+	<meta property="og:site_name" content="acme-proxy">
+	<meta property="og:title" content="Install">
+	<meta property="og:description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:modified_time" content="2026-07-03T16:52:02-05:00">
 
 
-  <meta itemprop="name" content="Install">
-  <meta itemprop="description" content="Install# Three methods are available. The install script is recommended for most deployments.
-Method Best for Install script Standard Linux servers, systemd environments Pre-built binary Environments where curl-pipe-to-shell is prohibited Build from source Development, or architectures not covered by releases Docker Container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
-  <meta itemprop="dateModified" content="2026-05-09T16:31:07-05:00">
-  <meta itemprop="wordCount" content="865">
+	<meta itemprop="name" content="Install">
+	<meta itemprop="description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
+	<meta itemprop="dateModified" content="2026-07-03T16:52:02-05:00">
+	<meta itemprop="wordCount" content="441">
 
 <title>Install | acme-proxy</title>
 <link rel="icon" href="/favicon.png" >
@@ -37,7 +37,7 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
 
 
   <script defer src="/fuse.min.js"></script>
-  <script defer src="/en.search.min.3b53a73b50c77a03ef9f852162dd865a1ef44c853558a2c64c8f675e48958950.js" integrity="sha256-O1OnO1DHegPvn4UhYt2GWh70TIU1WKLGTI9nXkiViVA=" crossorigin="anonymous"></script>
+  <script defer src="/en.search.min.341d576d9d0fa3fc0e64d9ac46d2637f86d80f21c409734fc4ab6615fde12d8d.js" integrity="sha256-NB1XbZ0Po/wOZNmsRtJjf4bYDyHECXNPxKtmFf3hLY0=" crossorigin="anonymous"></script>
 
   <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
 
@@ -150,6 +150,20 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
   
 
   
+    <a href="/configuration/" class="">
+      Configure</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
     <a href="/client/" class="">
       ACME Clients</a>
   
@@ -232,27 +246,17 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
             <li><a href="#what-the-script-installs">What the script installs</a></li>
           </ul>
         </li>
-        <li><a href="#pre-built-binary">Pre-built Binary</a></li>
         <li><a href="#build-from-source">Build from Source</a></li>
-        <li><a href="#docker">Docker</a>
+        <li><a href="#install-using-docker">Install using Docker</a>
           <ul>
-            <li><a href="#pre-built-image">Pre-built image</a></li>
-            <li><a href="#build-your-own-image">Build your own image</a></li>
             <li><a href="#docker-compose">Docker Compose</a></li>
-          </ul>
-        </li>
-        <li><a href="#configuration">Configuration</a>
-          <ul>
-            <li><a href="#minimal-required-configuration">Minimal required configuration</a></li>
-            <li><a href="#field-reference">Field reference</a></li>
-            <li><a href="#upstream-ca-urls">Upstream CA URLs</a></li>
           </ul>
         </li>
         <li><a href="#starting-the-service">Starting the Service</a>
           <ul>
             <li><a href="#systemd">Systemd</a></li>
             <li><a href="#running-manually-without-systemd">Running manually (without systemd)</a></li>
-            <li><a href="#docker-1">Docker</a></li>
+            <li><a href="#docker">Docker</a></li>
           </ul>
         </li>
         <li><a href="#verify">Verify</a></li>
@@ -271,32 +275,28 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
       
       
   <article class="markdown book-article"><h1 id="install">Install<a class="anchor" href="#install">#</a></h1>
-<p>Three methods are available. The install script is recommended for most deployments.</p>
+<p>There are a few methods for produciton installation. The install script is recommended for most deployments due to it&rsquo;s simplicity.</p>
 <table>
-  <thead>
-      <tr>
-          <th>Method</th>
-          <th>Best for</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><a href="#install-script-recommended">Install script</a></td>
-          <td>Standard Linux servers, systemd environments</td>
-      </tr>
-      <tr>
-          <td><a href="#pre-built-binary">Pre-built binary</a></td>
-          <td>Environments where curl-pipe-to-shell is prohibited</td>
-      </tr>
-      <tr>
-          <td><a href="#build-from-source">Build from source</a></td>
-          <td>Development, or architectures not covered by releases</td>
-      </tr>
-      <tr>
-          <td><a href="#docker">Docker</a></td>
-          <td>Container-based deployments</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Method</th>
+					<th>Best for</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><a href="#install-script-recommended">Install script</a></td>
+					<td>Standard Linux servers, systemd environments</td>
+			</tr>
+			<tr>
+					<td><a href="#build-from-source">Build from source</a></td>
+					<td>Development, or architectures not covered by releases</td>
+			</tr>
+			<tr>
+					<td><a href="#docker">Docker</a></td>
+					<td>Standalone container-based deployments</td>
+			</tr>
+	</tbody>
 </table>
 <hr>
 <h2 id="install-script-recommended">Install Script (Recommended)<a class="anchor" href="#install-script-recommended">#</a></h2>
@@ -312,85 +312,33 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | <span style="color:#5af78e">\
 </span></span></span><span style="display:flex;"><span>  sudo <span style="color:#ff5c57">INSTALL_DIR</span><span style="color:#ff6ac1">=</span>/usr/local/acme-proxy <span style="color:#ff5c57">SERVICE_USER</span><span style="color:#ff6ac1">=</span>acmeservice sh</span></span></code></pre></div><h3 id="what-the-script-installs">What the script installs<a class="anchor" href="#what-the-script-installs">#</a></h3>
 <table>
-  <thead>
-      <tr>
-          <th>Path</th>
-          <th>Description</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>$INSTALL_DIR/step-ca</code></td>
-          <td>The server binary</td>
-      </tr>
-      <tr>
-          <td><code>$INSTALL_DIR/ca.json</code></td>
-          <td>Configuration file (template — must be edited)</td>
-      </tr>
-      <tr>
-          <td><code>$DB_DIR/bbolt</code></td>
-          <td>bbolt KV store for ACME account state</td>
-      </tr>
-      <tr>
-          <td><code>/etc/systemd/system/acme-proxy.service</code></td>
-          <td>Systemd service unit</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Path</th>
+					<th>Description</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>$INSTALL_DIR/step-ca</code></td>
+					<td>The server binary</td>
+			</tr>
+			<tr>
+					<td><code>$INSTALL_DIR/ca.json</code></td>
+					<td>Configuration file (template — must be edited)</td>
+			</tr>
+			<tr>
+					<td><code>$DB_DIR/bbolt</code></td>
+					<td>bbolt KV store for ACME account state</td>
+			</tr>
+			<tr>
+					<td><code>/etc/systemd/system/acme-proxy.service</code></td>
+					<td>Systemd service unit</td>
+			</tr>
+	</tbody>
 </table>
-<p>The service is <strong>enabled but not started</strong>. <a href="#configuration">Configure <code>ca.json</code></a> before starting.</p>
+<p>The service is <strong>enabled but not started</strong>. <a href="/configuration/">Configure</a> <code>ca.json</code> file before starting.</p>
 <hr>
-<h2 id="pre-built-binary">Pre-built Binary<a class="anchor" href="#pre-built-binary">#</a></h2>
-<p>Download the release binary directly from the <a href="https://github.com/esnet/acme-proxy/releases">GitHub releases page</a>, verify the checksum, and install manually.</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#ff5c57">VERSION</span><span style="color:#ff6ac1">=</span>1.0.0   <span style="color:#78787e"># replace with the current release</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#78787e"># Download binary and checksum</span>
-</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#5af78e">&#34;https://github.com/esnet/acme-proxy/releases/download/v</span><span style="color:#5af78e">${</span><span style="color:#ff5c57">VERSION</span><span style="color:#5af78e">}</span><span style="color:#5af78e">/step-ca_linux_amd64&#34;</span>
-</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#5af78e">&#34;https://github.com/esnet/acme-proxy/releases/download/v</span><span style="color:#5af78e">${</span><span style="color:#ff5c57">VERSION</span><span style="color:#5af78e">}</span><span style="color:#5af78e">/step-ca_linux_amd64.sha256&#34;</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#78787e"># Verify</span>
-</span></span><span style="display:flex;"><span>sha256sum -c step-ca_linux_amd64.sha256
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#78787e"># Install</span>
-</span></span><span style="display:flex;"><span>sudo install -o root -g root -m <span style="color:#ff9f43">0755</span> step-ca_linux_amd64 /opt/acme-proxy/step-ca</span></span></code></pre></div><blockquote class='book-hint '>
-<p>For arm64, substitute <code>amd64</code> with <code>arm64</code> in the filename.</p>
-</blockquote><p>After placing the binary, create the config directory and set up <code>ca.json</code> manually (see <a href="#configuration">Configuration</a>), then create a systemd service unit:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo mkdir -p /opt/acme-proxy/db
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>sudo tee /etc/systemd/system/acme-proxy.service <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">[Unit]
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Description=ACME Proxy Server (step-ca)
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Documentation=https://github.com/esnet/acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">After=network-online.target
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Wants=network-online.target
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">StartLimitIntervalSec=60
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">StartLimitBurst=3
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">[Service]
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Type=simple
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">User=acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Group=acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">ExecStart=/opt/acme-proxy/step-ca /opt/acme-proxy/ca.json
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">WorkingDirectory=/opt/acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">Restart=on-failure
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">RestartSec=5
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">NoNewPrivileges=yes
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">ProtectSystem=strict
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">PrivateTmp=yes
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">AmbientCapabilities=CAP_NET_BIND_SERVICE
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">ReadWritePaths=/opt/acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">StandardOutput=journal
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">StandardError=journal
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">SyslogIdentifier=acme-proxy
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">[Install]
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">WantedBy=multi-user.target
-</span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>sudo useradd -r -s /sbin/nologin acme-proxy
-</span></span><span style="display:flex;"><span>sudo chown -R acme-proxy:acme-proxy /opt/acme-proxy
-</span></span><span style="display:flex;"><span>sudo systemctl daemon-reload
-</span></span><span style="display:flex;"><span>sudo systemctl <span style="color:#ff5c57">enable</span> acme-proxy</span></span></code></pre></div><hr>
 <h2 id="build-from-source">Build from Source<a class="anchor" href="#build-from-source">#</a></h2>
 <p><strong>Requirements:</strong> Go &gt;= 1.25, <code>libpcsclite-dev</code> (Debian/Ubuntu) or <code>pcsc-lite-devel</code> (RHEL/Rocky)</p>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#78787e"># Install build dependency</span>
@@ -401,27 +349,22 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
 </span></span><span style="display:flex;"><span>git clone https://github.com/esnet/acme-proxy.git
 </span></span><span style="display:flex;"><span><span style="color:#ff5c57">cd</span> acme-proxy
 </span></span><span style="display:flex;"><span>make</span></span></code></pre></div><p>The build produces a <code>step-ca</code> binary in the current directory. Copy it to your install location:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo install -o root -g root -m <span style="color:#ff9f43">0755</span> step-ca /opt/acme-proxy/step-ca</span></span></code></pre></div><p>Then follow the <a href="#pre-built-binary">pre-built binary</a> instructions to create the service unit.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#78787e"># configure `ca.json` file before starting step-ca</span>
+</span></span><span style="display:flex;"><span>./step-ca ca.json</span></span></code></pre></div><p>Use the <a href="https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh">installer script</a> as a reference to complete the setup with systemd service unit, service account user, permissions etc.</p>
 <hr>
-<h2 id="docker">Docker<a class="anchor" href="#docker">#</a></h2>
-<h3 id="pre-built-image">Pre-built image<a class="anchor" href="#pre-built-image">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker pull ghcr.io/esnet/acme-proxy:latest</span></span></code></pre></div><p>Run with a bind-mounted config file:</p>
+<h2 id="install-using-docker">Install using Docker<a class="anchor" href="#install-using-docker">#</a></h2>
+<p>Run the following commands before starting the container on a linux host</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkdir -p /opt/acme-proxy/db
+</span></span><span style="display:flex;"><span>touch /opt/acme-proxy/ca.json
+</span></span><span style="display:flex;"><span>chown -R 65532:65532 /opt/acme-proxy</span></span></code></pre></div><p>Make sure you have configured the <code>ca.json</code> file</p>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker run -d <span style="color:#5af78e">\
 </span></span></span><span style="display:flex;"><span>  --name acme-proxy <span style="color:#5af78e">\
 </span></span></span><span style="display:flex;"><span>  -p 443:443 <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v ./ca.json:/opt/acme-proxy/ca.json:ro <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v acme-proxy-db:/opt/acme-proxy/db <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  ghcr.io/esnet/acme-proxy:latest</span></span></code></pre></div><p>View logs:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><h3 id="build-your-own-image">Build your own image<a class="anchor" href="#build-your-own-image">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>git clone https://github.com/esnet/acme-proxy.git
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">cd</span> acme-proxy
-</span></span><span style="display:flex;"><span>docker build -t acme-proxy:latest .</span></span></code></pre></div><p>Run:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker run -d <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  --name acme-proxy <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -p 443:443 <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v ./ca.json:/opt/acme-proxy/ca.json:ro <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v acme-proxy-db:/opt/acme-proxy/db <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  acme-proxy:latest</span></span></code></pre></div><h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose">#</a></h3>
+</span></span></span><span style="display:flex;"><span>  -v <span style="color:#5af78e">&#34;</span><span style="color:#ff6ac1">$(</span><span style="color:#ff5c57">pwd</span><span style="color:#ff6ac1">)</span><span style="color:#5af78e">&#34;</span>/ca.json:/opt/acme-proxy/ca.json:ro <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  -v <span style="color:#5af78e">&#34;</span><span style="color:#ff6ac1">$(</span><span style="color:#ff5c57">pwd</span><span style="color:#ff6ac1">)</span><span style="color:#5af78e">&#34;</span>/db:/opt/acme-proxy/db <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>  --restart unless-stopped <span style="color:#5af78e">\
+</span></span></span><span style="display:flex;"><span>ghcr.io/esnet/acme-proxy:latest</span></span></code></pre></div><p>View logs:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose">#</a></h3>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">services</span>:
 </span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">acme-proxy</span>:
 </span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">image</span>: ghcr.io/esnet/acme-proxy:latest
@@ -429,147 +372,8 @@ Method Best for Install script Standard Linux servers, systemd environments Pre-
 </span></span><span style="display:flex;"><span>      - <span style="color:#5af78e">&#34;443:443&#34;</span>
 </span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">volumes</span>:
 </span></span><span style="display:flex;"><span>      - ./ca.json:/opt/acme-proxy/ca.json:ro
-</span></span><span style="display:flex;"><span>      - acme-proxy-db:/opt/acme-proxy/db
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">restart</span>: unless-stopped
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">volumes</span>:
-</span></span><span style="display:flex;"><span>  acme-proxy-db:</span></span></code></pre></div><hr>
-<h2 id="configuration">Configuration<a class="anchor" href="#configuration">#</a></h2>
-<p>All install methods use the same <code>ca.json</code> configuration format. The install script creates a template — five fields require customization before the service can start.</p>
-<h3 id="minimal-required-configuration">Minimal required configuration<a class="anchor" href="#minimal-required-configuration">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;address&#34;</span>: <span style="color:#5af78e">&#34;:443&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;dnsNames&#34;</span>: [<span style="color:#5af78e">&#34;acmeproxy.example.com&#34;</span>],
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;logger&#34;</span>: {
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;format&#34;</span>: <span style="color:#5af78e">&#34;json&#34;</span>
-</span></span><span style="display:flex;"><span>  },
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;db&#34;</span>: {
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;type&#34;</span>: <span style="color:#5af78e">&#34;bbolt&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;dataSource&#34;</span>: <span style="color:#5af78e">&#34;/opt/acme-proxy/db/bbolt&#34;</span>
-</span></span><span style="display:flex;"><span>  },
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;authority&#34;</span>: {
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;type&#34;</span>: <span style="color:#5af78e">&#34;externalcas&#34;</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;config&#34;</span>: {
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;ca_url&#34;</span>: <span style="color:#5af78e">&#34;https://acme.sectigo.com/v2/InCommonRSAOV&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;account_email&#34;</span>: <span style="color:#5af78e">&#34;certadmin@example.com&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;eab_kid&#34;</span>: <span style="color:#5af78e">&#34;your-eab-key-id&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;eab_hmac_key&#34;</span>: <span style="color:#5af78e">&#34;your-eab-hmac-key&#34;</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;certlifetime&#34;</span>: <span style="color:#ff9f43">30</span>,
-</span></span><span style="display:flex;"><span>      <span style="color:#ff6ac1">&#34;metrics&#34;</span>: {
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;enabled&#34;</span>: <span style="color:#ff6ac1">true</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;port&#34;</span>: <span style="color:#ff9f43">9234</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;dataSource&#34;</span>: <span style="color:#5af78e">&#34;/opt/acme-proxy/db/metrics&#34;</span>
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    },
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;provisioners&#34;</span>: [
-</span></span><span style="display:flex;"><span>      {
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;type&#34;</span>: <span style="color:#5af78e">&#34;ACME&#34;</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;name&#34;</span>: <span style="color:#5af78e">&#34;acme&#34;</span>,
-</span></span><span style="display:flex;"><span>        <span style="color:#ff6ac1">&#34;claims&#34;</span>: {
-</span></span><span style="display:flex;"><span>          <span style="color:#ff6ac1">&#34;enableSSHCA&#34;</span>: <span style="color:#ff6ac1">false</span>,
-</span></span><span style="display:flex;"><span>          <span style="color:#ff6ac1">&#34;disableRenewal&#34;</span>: <span style="color:#ff6ac1">false</span>,
-</span></span><span style="display:flex;"><span>          <span style="color:#ff6ac1">&#34;allowRenewalAfterExpiry&#34;</span>: <span style="color:#ff6ac1">false</span>,
-</span></span><span style="display:flex;"><span>          <span style="color:#ff6ac1">&#34;disableSmallstepExtensions&#34;</span>: <span style="color:#ff6ac1">true</span>
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    ],
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;backdate&#34;</span>: <span style="color:#5af78e">&#34;1m0s&#34;</span>
-</span></span><span style="display:flex;"><span>  },
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;tls&#34;</span>: {
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;minVersion&#34;</span>: <span style="color:#ff9f43">1.2</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;maxVersion&#34;</span>: <span style="color:#ff9f43">1.3</span>,
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">&#34;renegotiation&#34;</span>: <span style="color:#ff6ac1">false</span>
-</span></span><span style="display:flex;"><span>  },
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">&#34;commonName&#34;</span>: <span style="color:#5af78e">&#34;acmeproxy.example.com&#34;</span>
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div><h3 id="field-reference">Field reference<a class="anchor" href="#field-reference">#</a></h3>
-<table>
-  <thead>
-      <tr>
-          <th>Field</th>
-          <th>Required</th>
-          <th>Description</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>address</code></td>
-          <td>Yes</td>
-          <td>Listen address. <code>:443</code> binds all interfaces on port 443.</td>
-      </tr>
-      <tr>
-          <td><code>dnsNames</code></td>
-          <td>Yes</td>
-          <td>Hostname(s) that this proxy is reachable at. acme-proxy requests a TLS cert for itself using these names on first start.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.ca_url</code></td>
-          <td>Yes</td>
-          <td>ACME directory URL of your upstream certificate authority.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.account_email</code></td>
-          <td>Yes</td>
-          <td>Email registered with the upstream CA.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.eab_kid</code></td>
-          <td>Yes</td>
-          <td>External Account Binding Key ID, obtained from your CA&rsquo;s account portal.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.eab_hmac_key</code></td>
-          <td>Yes</td>
-          <td>External Account Binding HMAC key, obtained from your CA&rsquo;s account portal.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.certlifetime</code></td>
-          <td>No</td>
-          <td>Request certificate with a max lifetime period if supported by upstream CA</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.metrics.enabled</code></td>
-          <td>No</td>
-          <td>Expose Prometheus metrics. Default: <code>true</code>.</td>
-      </tr>
-      <tr>
-          <td><code>authority.config.metrics.port</code></td>
-          <td>No</td>
-          <td>Metrics port. Default: <code>9234</code>.</td>
-      </tr>
-      <tr>
-          <td><code>db.dataSource</code></td>
-          <td>Yes</td>
-          <td>Path to the bbolt KV store directory. Must be writable by the service user.</td>
-      </tr>
-      <tr>
-          <td><code>commonName</code></td>
-          <td>Yes</td>
-          <td>Common name for the proxy&rsquo;s own TLS certificate. Should match <code>dnsNames[0]</code>.</td>
-      </tr>
-  </tbody>
-</table>
-<h3 id="upstream-ca-urls">Upstream CA URLs<a class="anchor" href="#upstream-ca-urls">#</a></h3>
-<table>
-  <thead>
-      <tr>
-          <th>CA</th>
-          <th>ACME URL</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>Sectigo / InCommon RSA OV</td>
-          <td><code>https://acme.sectigo.com/v2/InCommonRSAOV</code></td>
-      </tr>
-      <tr>
-          <td>ZeroSSL</td>
-          <td><code>https://acme.zerossl.com/v2/DV90</code></td>
-      </tr>
-  </tbody>
-</table>
-<blockquote class='book-hint important'>
-<p><strong>Note</strong><br>
-LetsEncrypt as a public certificate authority does not support ACME accounts via External Account Binding and hence it cannot be used as an upstream CA with acme-proxy.</p></blockquote><hr>
+</span></span><span style="display:flex;"><span>      - ./db:/opt/acme-proxy/db
+</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">restart</span>: unless-stopped</span></span></code></pre></div><hr>
 <h2 id="starting-the-service">Starting the Service<a class="anchor" href="#starting-the-service">#</a></h2>
 <h3 id="systemd">Systemd<a class="anchor" href="#systemd">#</a></h3>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo systemctl start acme-proxy
@@ -582,7 +386,7 @@ Initializing ACME client...
 [INFO] [acmeproxy.example.com] acme: Validations succeeded; requesting certificates
 Successfully obtained certificate from external CA
 Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">Running manually (without systemd)<a class="anchor" href="#running-manually-without-systemd">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/opt/acme-proxy/step-ca /opt/acme-proxy/ca.json</span></span></code></pre></div><h3 id="docker-1">Docker<a class="anchor" href="#docker-1">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/opt/acme-proxy/step-ca /opt/acme-proxy/ca.json</span></span></code></pre></div><h3 id="docker">Docker<a class="anchor" href="#docker">#</a></h3>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker compose up -d
 </span></span><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><hr>
 <h2 id="verify">Verify<a class="anchor" href="#verify">#</a></h2>
@@ -604,9 +408,9 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/3df18d183014adf6fe7f72f30fb92e0938d5ab81" title='Last modified by Kapil Agrawal | May 9, 2026' target="_blank" rel="noopener">
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/118133c30fbb216d6b4ef54575d6e1b08fa37680" title='Last modified by Kapil Agrawal | July 3, 2026' target="_blank" rel="noopener">
     <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
-    <span>May 9, 2026</span>
+    <span>July 3, 2026</span>
   </a>
 
 </div>
@@ -640,8 +444,8 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
     </span>
     <span>
     
-      <a href="/client/" class="flex align-center">
-        <span>ACME Clients</span>
+      <a href="/configuration/" class="flex align-center">
+        <span>Configure</span>
         <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
       </a>
     
@@ -685,27 +489,17 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
             <li><a href="#what-the-script-installs">What the script installs</a></li>
           </ul>
         </li>
-        <li><a href="#pre-built-binary">Pre-built Binary</a></li>
         <li><a href="#build-from-source">Build from Source</a></li>
-        <li><a href="#docker">Docker</a>
+        <li><a href="#install-using-docker">Install using Docker</a>
           <ul>
-            <li><a href="#pre-built-image">Pre-built image</a></li>
-            <li><a href="#build-your-own-image">Build your own image</a></li>
             <li><a href="#docker-compose">Docker Compose</a></li>
-          </ul>
-        </li>
-        <li><a href="#configuration">Configuration</a>
-          <ul>
-            <li><a href="#minimal-required-configuration">Minimal required configuration</a></li>
-            <li><a href="#field-reference">Field reference</a></li>
-            <li><a href="#upstream-ca-urls">Upstream CA URLs</a></li>
           </ul>
         </li>
         <li><a href="#starting-the-service">Starting the Service</a>
           <ul>
             <li><a href="#systemd">Systemd</a></li>
             <li><a href="#running-manually-without-systemd">Running manually (without systemd)</a></li>
-            <li><a href="#docker-1">Docker</a></li>
+            <li><a href="#docker">Docker</a></li>
           </ul>
         </li>
         <li><a href="#verify">Verify</a></li>

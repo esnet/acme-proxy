@@ -146,7 +146,7 @@ func TestCertMetaCollector_Collect_LabelValues(t *testing.T) {
 }
 
 func TestStartMetricsServer_Disabled(t *testing.T) {
-	if err := StartMetricsServer(Metrics{Enabled: false}); err != nil {
+	if err := StartMetricsServer(metrics{Enabled: false}); err != nil {
 		t.Errorf("StartMetricsServer(disabled) = %v, want nil", err)
 	}
 }

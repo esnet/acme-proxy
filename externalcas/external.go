@@ -82,7 +82,7 @@ type certificateResult struct {
 // ExternalCAS implements the CertificateAuthorityService interface using an external CA
 type ExternalCAS struct {
 	ctx         context.Context
-	cfg         *AcmeProxyConfig
+	cfg         *acmeProxyConfig
 	dnsProvider challenge.Provider
 }
 
@@ -92,7 +92,7 @@ func (c *ExternalCAS) Type() apiv1.Type {
 
 // createLegoClient creates a fresh lego ACME client with clean state.
 // This ensures no stale nonces or other protocol state from previous requests.
-func (c *ExternalCAS) createLegoClient(cfg *AcmeProxyConfig) (ACMEClient, error) {
+func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)

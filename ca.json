@@ -15,14 +15,13 @@
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
-      "dns01":{
+      "dns01_txt":{
         "provider":"",
         "dns_servers":[],
         "env_vars":{
         }
       },
       "metrics": {
-        "enabled": true,
         "port": 9234,
         "dataSource": "/opt/acme-proxy/db/metrics"
       }

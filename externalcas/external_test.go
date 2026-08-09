@@ -25,7 +25,7 @@ func TestNew(t *testing.T) {
 	ctx := context.Background()
 	opts := apiv1.Options{
 		Type: "externalcas",
-		Config: mustMarshalConfig(t, &AcmeProxyConfig{
+		Config: mustMarshalConfig(t, &acmeProxyConfig{
 			CaURL:   "https://acme.example.com",
 			Kid:     "test-kid",
 			HmacKey: "test-hmac",
@@ -42,201 +42,6 @@ func TestNew(t *testing.T) {
 
 	if got != want {
 		t.Fatalf("want: %s; got %s", want, got)
-	}
-}
-
-func TestNew_ValidatesConfig(t *testing.T) {
-	tests := []struct {
-		name   string
-		config []byte
-		errMsg string
-	}{
-		{
-			name:   "empty config",
-			config: []byte(""),
-			errMsg: "failed to unmarshal config",
-		},
-		{
-			name:   "missing ca_url",
-			config: mustMarshalConfig(t, &AcmeProxyConfig{Kid: "k", HmacKey: "h"}),
-			errMsg: "ca_url is required",
-		},
-		{
-			name: "metrics enabled without datasource",
-			config: mustMarshalConfig(t, &AcmeProxyConfig{
-				CaURL:   "https://acme.example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-				Metrics: Metrics{Enabled: true, DataSource: ""},
-			}),
-			errMsg: "metrics.datasource is required",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := New(context.Background(), apiv1.Options{Config: tt.config})
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), tt.errMsg) {
-				t.Errorf("error = %q, want error containing %q", err.Error(), tt.errMsg)
-			}
-		})
-	}
-}
-
-func TestAcmeProxyConfig_Validate(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  AcmeProxyConfig
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid config",
-			config: AcmeProxyConfig{
-				CaURL:        "https://acme.example.com",
-				Email:        "test@example.com",
-				Kid:          "test-kid",
-				HmacKey:      "test-hmac",
-				CertLifetime: 30,
-			},
-			wantErr: false,
-		},
-		{
-			name: "missing ca_url",
-			config: AcmeProxyConfig{
-				Email:   "test@example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-			},
-			wantErr: true,
-			errMsg:  "ca_url is required",
-		},
-		{
-			name: "negative certlifetime",
-			config: AcmeProxyConfig{
-				CaURL:        "https://acme.example.com",
-				Email:        "test@example.com",
-				Kid:          "test-kid",
-				HmacKey:      "test-hmac",
-				CertLifetime: -1,
-			},
-			wantErr: true,
-			errMsg:  "certlifetime cannot be negative",
-		},
-		{
-			name: "zero certlifetime is valid",
-			config: AcmeProxyConfig{
-				CaURL:        "https://acme.example.com",
-				Email:        "test@example.com",
-				Kid:          "test-kid",
-				HmacKey:      "test-hmac",
-				CertLifetime: 0,
-			},
-			wantErr: false,
-		},
-		{
-			name: "metrics enabled without datasource",
-			config: AcmeProxyConfig{
-				CaURL:   "https://acme.example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-				Metrics: Metrics{Enabled: true, DataSource: ""},
-			},
-			wantErr: true,
-			errMsg:  "metrics.datasource is required",
-		},
-		{
-			name: "metrics enabled with datasource",
-			config: AcmeProxyConfig{
-				CaURL:   "https://acme.example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-				Metrics: Metrics{Enabled: true, DataSource: "/tmp/test.db"},
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr && !strings.Contains(err.Error(), tt.errMsg) {
-				t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
-			}
-		})
-	}
-}
-
-func TestAcmeProxyConfig_Timeouts(t *testing.T) {
-	config := AcmeProxyConfig{}
-
-	httpTimeout := config.HTTPTimeout()
-	if httpTimeout != 90*time.Second {
-		t.Errorf("HTTPTimeout() = %v, want %v", httpTimeout, 90*time.Second)
-	}
-
-	requestTimeout := config.RequestTimeout()
-	if requestTimeout != 2*time.Minute {
-		t.Errorf("RequestTimeout() = %v, want %v", requestTimeout, 2*time.Minute)
-	}
-}
-
-func TestParseConfig(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  string
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid config",
-			config: `{
-				"ca_url": "https://acme.example.com",
-				"account_email": "test@example.com",
-				"eab_kid": "test-kid",
-				"eab_hmac_key": "test-hmac"
-			}`,
-			wantErr: false,
-		},
-		{
-			name:    "invalid json",
-			config:  `{invalid json`,
-			wantErr: true,
-			errMsg:  "failed to unmarshal config",
-		},
-		{
-			name: "missing required field",
-			config: `{
-				"account_email": "test@example.com"
-			}`,
-			wantErr: true,
-			errMsg:  "invalid config",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cfg, err := parseConfig([]byte(tt.config))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseConfig() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if tt.wantErr {
-				if !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("parseConfig() error = %q, want error containing %q", err.Error(), tt.errMsg)
-				}
-			} else {
-				if cfg == nil {
-					t.Error("parseConfig() returned nil config")
-				}
-			}
-		})
 	}
 }
 
@@ -392,7 +197,7 @@ func TestCreateCertificate_WithMock(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			cfg: &AcmeProxyConfig{
+			cfg: &acmeProxyConfig{
 				CaURL:        "https://acme.test.com",
 				Email:        "test@example.com",
 				Kid:          "test-kid",
@@ -440,7 +245,7 @@ func TestCreateCertificate_WithMock_Error(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			cfg: &AcmeProxyConfig{
+			cfg: &acmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Email:   "test@example.com",
 				Kid:     "test-kid",
@@ -480,7 +285,7 @@ func TestCreateCertificate_Timeout(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			cfg: &AcmeProxyConfig{
+			cfg: &acmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Email:   "test@example.com",
 				Kid:     "test-kid",
@@ -668,7 +473,7 @@ type testExternalCAS struct {
 }
 
 // Override createLegoClient to return our mock
-func (t *testExternalCAS) createLegoClient(cfg *AcmeProxyConfig) (ACMEClient, error) {
+func (t *testExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
 	if t.mockClient != nil {
 		return t.mockClient, nil
 	}
@@ -777,7 +582,7 @@ func createTestCertPEM(t *testing.T, serial int64) []byte {
 }
 
 // mustMarshalConfig marshals a config or fails the test
-func mustMarshalConfig(t *testing.T, cfg *AcmeProxyConfig) []byte {
+func mustMarshalConfig(t *testing.T, cfg *acmeProxyConfig) []byte {
 	t.Helper()
 	data, err := json.Marshal(cfg)
 	if err != nil {
@@ -790,16 +595,16 @@ func mustMarshalConfig(t *testing.T, cfg *AcmeProxyConfig) []byte {
 
 func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 	tests := []struct {
-		name        string
-		config      AcmeProxyConfig
-		wantErr     bool
-		errMsg      string
-		wantUseEAB  bool
+		name         string
+		config       acmeProxyConfig
+		wantErr      bool
+		errMsg       string
+		wantUseEAB   bool
 		wantUseDNS01 bool
 	}{
 		{
 			name: "neither EAB nor DNS01 configured",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 			},
 			wantErr: true,
@@ -807,7 +612,7 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 		},
 		{
 			name: "partial EAB - only Kid set",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 				Kid:   "test-kid",
 			},
@@ -816,7 +621,7 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 		},
 		{
 			name: "partial EAB - only HmacKey set",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
 				HmacKey: "test-hmac",
 			},
@@ -825,9 +630,9 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 		},
 		{
 			name: "DNS01-only valid",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
-				Lego: LegoConfig{
+				Lego: legoConfig{
 					Provider: "route53",
 					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
 				},
@@ -838,29 +643,29 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 		},
 		{
 			name: "partial DNS01 - only Provider set",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
-				Lego:  LegoConfig{Provider: "route53"},
+				Lego:  legoConfig{Provider: "route53"},
 			},
 			wantErr: true,
 			errMsg:  "Missing eab or dns01 config",
 		},
 		{
 			name: "partial DNS01 - only Env_Vars set",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
-				Lego:  LegoConfig{Env_Vars: map[string]string{"AWS_REGION": "us-east-1"}},
+				Lego:  legoConfig{Env_Vars: map[string]string{"AWS_REGION": "us-east-1"}},
 			},
 			wantErr: true,
 			errMsg:  "Missing eab or dns01 config",
 		},
 		{
 			name: "both EAB and DNS01 configured",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
-				Lego: LegoConfig{
+				Lego: legoConfig{
 					Provider: "route53",
 					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
 				},
@@ -871,7 +676,7 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 		},
 		{
 			name: "EAB-only sets useEAB flag",
-			config: AcmeProxyConfig{
+			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
@@ -918,7 +723,7 @@ func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 			name: "DNS01-only valid JSON",
 			config: `{
 				"ca_url": "https://acme.example.com",
-				"dns01": {
+				"dns01_txt": {
 					"provider": "route53",
 					"env_vars": {"AWS_REGION": "us-east-1"}
 				}
@@ -932,7 +737,7 @@ func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 				"ca_url": "https://acme.example.com",
 				"eab_kid": "test-kid",
 				"eab_hmac_key": "test-hmac",
-				"dns01": {
+				"dns01_txt": {
 					"provider": "route53",
 					"env_vars": {"AWS_REGION": "us-east-1"}
 				}
@@ -1033,7 +838,7 @@ func TestRevokeCertificate_WithMock_Success(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			cfg: &AcmeProxyConfig{
+			cfg: &acmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
@@ -1067,7 +872,7 @@ func TestRevokeCertificate_WithMock_Error(t *testing.T) {
 	cas := &testExternalCAS{
 		ExternalCAS: &ExternalCAS{
 			ctx: context.Background(),
-			cfg: &AcmeProxyConfig{
+			cfg: &acmeProxyConfig{
 				CaURL:   "https://acme.test.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",

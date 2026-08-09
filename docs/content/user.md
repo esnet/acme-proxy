@@ -1,6 +1,6 @@
 +++
 title = 'User Guide'
-weight = 40
+weight = 50
 BookToC = true
 +++
 
