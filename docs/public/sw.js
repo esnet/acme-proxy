@@ -10,8 +10,8 @@ const pages = [
     "/categories/",
     "/tags/",
     "/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css",
-  "/en.search-data.min.306cf90c79988dd5049b2fdde01ba70180cd93d9725717d5fa00ec76ade5f771.json",
-  "/en.search.min.341d576d9d0fa3fc0e64d9ac46d2637f86d80f21c409734fc4ab6615fde12d8d.js",
+  "/en.search-data.min.57d56c30021749ed50d812f2f43ce0f186ea115715a9a38cb89b7501b35fc500.json",
+  "/en.search.min.0828a380e7ec55ef6d1f81209159f3c99edd3b04016c5814de4f0ea2a34b099f.js",
   
 ];
 

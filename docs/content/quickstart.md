@@ -43,14 +43,6 @@ curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | 
 1. External Account Binding (EAB)
 2. DNS01-TXT
 
-**Common ACME enabled CA URLs:**
-
-| CA | URL |
-|----|-----|
-| LetsEncrypt | `https://acme-v02.api.letsencrypt.org/directory` |
-| CertiNext | `https://acme-us.certinext.io/v1/directory` |
-| Sectigo OV | `https://acme.sectigo.com/v2/OV` |
-
 Depending on your upstream CA, you may need to configure either one or both modes.
 
 ```sh
@@ -65,6 +57,14 @@ Set the following fields first
 | `ca_url` | Your upstream CA's ACME directory URL (see table below) |
 | `account_email` | Contact email registered with the upstream CA |
 
+**Common ACME enabled CA URLs:**
+
+| CA | URL |
+|----|-----|
+| LetsEncrypt | `https://acme-v02.api.letsencrypt.org/directory` |
+| CertiNext | `https://acme-us.certinext.io/v1/directory` |
+| Sectigo OV | `https://acme.sectigo.com/v2/OV` |
+
 
 ### 1. External Account Binding (EAB)
 
@@ -74,7 +74,7 @@ Set the following fields first
 | `eab_hmac_key` | EAB HMAC key from your CA's account portal |
 
 
-```json
+```json {hl_lines=["9-10"]}
 {
   "address": ":443",
   "dnsNames": ["acme-proxy.example.com"],
@@ -93,16 +93,16 @@ Set the following fields first
 
 ### 2. DNS01-TXT
 
-LetsEncrypt does not support EAB. To get certificates signed from LetsEncrypt you must use the `dns01_txt` 
+LetsEncrypt does not support EAB. To get certificates signed from LetsEncrypt you must use the `dns01_txt` mode
 
-| Field                   | Description |
-|-------|-----------------|
-| `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag |
-| `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems |
-| `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication |
+| Field                   | Description                                                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag name |
+| `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
+| `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
 
 
-```json
+```json {hl_lines=["9-15"]}
 { 
   "address": ":443",
   "dnsNames": ["acme-proxy.example.com"],
@@ -187,7 +187,7 @@ Verify [connectivity requirements](index.md/#connectivity-requirements) have bee
 
 ---
 
-## Step 5 — Issue a Test Certificate
+## Step 5 — Issue a Certificate
 
 On a server running in your network, install `acme.sh` if not already present:
 
@@ -199,7 +199,7 @@ sudo apt-get install -y acme.sh socat
 sudo dnf install -y epel-release acme.sh socat
 ```
 
-Issue a certificate in standalone mode (temporarily binds port 80 for the HTTP-01 challenge). 
+Issue a certificate in standalone mode (temporarily binds port 80 for the HTTP-01 challenge). `myserver.example.com` must have a valid A/AAAA record which `acme-proxy.example.com` should be able to resolve 
 
 ```sh
 acme.sh --issue \

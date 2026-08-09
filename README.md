@@ -51,10 +51,9 @@ Some commercial certificate authorities allow their customers to validate their 
 
 ### 2. DNS01-TXT
 
-[LEGO](https://go-acme.github.io/lego/) is a well known ACME client which supports over 100 DNS providers to solve DNS01-TXT challenge. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing those credentials to all your servers.
+[Lego](https://go-acme.github.io/lego/) is a well known ACME client which supports over 200 DNS providers to solve DNS01-TXT challenge. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing those credentials to all your servers.
 
 ![DNS01-TXT](docs/assets/dns01-txt.png)
-
 
 ## Quick Start
 
@@ -107,7 +106,7 @@ Review and update configuration options in [ca.json](./ca.json) before starting 
 vim ca.json
 ```
 
-Refer to the [documentation](https://software.es.net/acme-proxy/install/#configuration) for full set of configuration options. For a quick start the most relevant config bits are:
+Refer to the [documentation](https://software.es.net/acme-proxy/configuration) for full set of configuration options. For a quick start the most relevant config bits are:
 
 ```json
 {
@@ -155,9 +154,12 @@ To get certificates signed from LetsEncrypt use the following config options
   }
 ```
 
-- `provider` is your DNS provider's CLI flag name [as shown in Lego docs](https://go-acme.github.io/lego/dns/index.html).
-- `dns_servers` is a list of DNS server addresses which lego will query to check if TXT record is in place. We recommend using your authoritative DNS server's address to avoid any caching/TTL related issues.
-- `env_vars` contains your environment variables specific to your Lego DNS provider.
+| Field                   | Description                                                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag name |
+| `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
+| `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
+
 
 ### Starting acme-proxy
 
@@ -256,7 +258,6 @@ oSlzzVurgu0CIFeUruafCMHm2SzuP1eUCgAcMBHtTiugiduq+726bxcw2ln0noLE
 [Tue 15 Jul 22:41:13 CDT 2025] Your cert key is in: /root/.acme.sh/myserver.example.com_ecc/myserver.example.com.key
 [Tue 15 Jul 22:41:13 CDT 2025] The intermediate CA cert is in: /root/.acme.sh/myserver.example.com_ecc/ca.cer
 [Tue 15 Jul 22:41:13 CDT 2025] And the full-chain cert is in: /root/.acme.sh/myserver.example.com_ecc/fullchain.cer
-
 ```
 
 ### Verify

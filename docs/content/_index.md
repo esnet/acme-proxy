@@ -29,7 +29,7 @@ Some commercial certificate authorities allow their customers to do a one time v
 
 ### 2. DNS01-TXT
 
-`acme-proxy` carries [LEGO](https://go-acme.github.io/lego/) as a Go dependency which is a well known ACME client that supports over 200 DNS providers to solve ACME challenges. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing and rotating those credentials across your infrastructure. 
+`acme-proxy` carries [Lego](https://go-acme.github.io/lego/) as a Go dependency which is a well known ACME client that supports over 200 DNS providers to solve ACME challenges. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing and rotating those credentials across your infrastructure. 
 
 ![DNS01-TXT](/assets/dns01-txt.png)
 

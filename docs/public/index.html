@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-	<meta name="generator" content="Hugo 0.164.0"><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+	<meta name="generator" content="Hugo 0.164.0">
   <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -13,7 +13,7 @@ https://github.com/alex-shpak/hugo-book
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://docs.acme-proxy.es.net/">
 	<meta property="og:site_name" content="acme-proxy">
 	<meta property="og:title" content="acme-proxy">
 	<meta property="og:description" content="What is acme-proxy?# acme-proxy allows users to get certificates from any certificate authority that supports ACME protocol (such as LetsEncrypt, Sectigo, Digicert etc.) without opening http/80 to the internet or distributing api keys for your DNS server! This is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.">
@@ -23,23 +23,23 @@ https://github.com/alex-shpak/hugo-book
 
 	<meta itemprop="name" content="acme-proxy">
 	<meta itemprop="description" content="What is acme-proxy?# acme-proxy allows users to get certificates from any certificate authority that supports ACME protocol (such as LetsEncrypt, Sectigo, Digicert etc.) without opening http/80 to the internet or distributing api keys for your DNS server! This is a standalone ACME server built on step-ca that operates in registration authority (RA) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does NOT sign certificates or store private keys.">
-	<meta itemprop="dateModified" content="2026-05-09T16:30:55-05:00">
+	<meta itemprop="dateModified" content="2026-08-08T21:42:04-05:00">
 	<meta itemprop="wordCount" content="483">
 
 <title>acme-proxy | acme-proxy</title>
 <link rel="icon" href="/favicon.png" >
 <link rel="manifest" href="/manifest.json">
-<link rel="canonical" href="http://localhost:1313/">
+<link rel="canonical" href="http://docs.acme-proxy.es.net/">
 <link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
 
 
   <script defer src="/fuse.min.js"></script>
-  <script defer src="/en.search.min.341d576d9d0fa3fc0e64d9ac46d2637f86d80f21c409734fc4ab6615fde12d8d.js" integrity="sha256-NB1XbZ0Po/wOZNmsRtJjf4bYDyHECXNPxKtmFf3hLY0=" crossorigin="anonymous"></script>
+  <script defer src="/en.search.min.0828a380e7ec55ef6d1f81209159f3c99edd3b04016c5814de4f0ea2a34b099f.js" integrity="sha256-CCijgOfsVe9tH4EgkVnzyZ7dOwQBbFgU3k8OoqNLCZ8=" crossorigin="anonymous"></script>
 
   <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
 
 
-<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/index.xml" title="acme-proxy" />
+<link rel="alternate" type="application/rss+xml" href="http://docs.acme-proxy.es.net/index.xml" title="acme-proxy" />
 
   <style>
   pre {
@@ -288,7 +288,7 @@ https://github.com/alex-shpak/hugo-book
 </label>
 <p><strong>Note:</strong> LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo, ZeroSSL, DigiCert do.</p>
 <h3 id="2-dns01-txt">2. DNS01-TXT<a class="anchor" href="#2-dns01-txt">#</a></h3>
-<p><code>acme-proxy</code> carries <a href="https://go-acme.github.io/lego/">LEGO</a> as a Go dependency which is a well known ACME client that supports over 200 DNS providers to solve ACME challenges. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server&rsquo;s API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing and rotating those credentials across your infrastructure.</p>
+<p><code>acme-proxy</code> carries <a href="https://go-acme.github.io/lego/">Lego</a> as a Go dependency which is a well known ACME client that supports over 200 DNS providers to solve ACME challenges. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server&rsquo;s API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing and rotating those credentials across your infrastructure.</p>
 <p><img src="/dns01-txt.png" alt="DNS01-TXT" /></p>
 <p><strong>Note:</strong> Using this mode also allows users to get signed certificates from LetsEncrypt!</p>
 <h2 id="connectivity-requirements">Connectivity Requirements<a class="anchor" href="#connectivity-requirements">#</a></h2>
@@ -312,9 +312,9 @@ Action          allow</code></pre></article>
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/3c01d2951d66782f2f5844ce2a052e01f59427b0" title='Last modified by Kapil Agrawal | May 9, 2026' target="_blank" rel="noopener">
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/02c70f9320fdbd613ce8d9b050565cd26429da4e" title='Last modified by Kapil Agrawal | August 8, 2026' target="_blank" rel="noopener">
     <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
-    <span>May 9, 2026</span>
+    <span>August 8, 2026</span>
   </a>
 
 </div>
