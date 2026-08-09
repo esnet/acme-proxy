@@ -17,7 +17,7 @@ type legoConfig struct {
 type metrics struct {
 	Enabled    bool   `json:"enabled,omitempty"`
 	Port       int    `json:"port,omitempty"`
-	DataSource string `json:"datasource,omitempty"`
+	DataSource string `json:"dataSource,omitempty"`
 }
 
 // AcmeProxyConfig contains the configuration for connecting to an external ACME CA
@@ -60,7 +60,7 @@ func (c *acmeProxyConfig) Validate() error {
 	}
 
 	if !c.useEAB && !c.useDNS01 {
-		return errors.New("Missing eab or dns01 config. Must configure one\nRefer docs https://software.es.net/acme-proxy/configuration")
+		return errors.New("missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration")
 	}
 	if c.CertLifetime < 0 {
 		return errors.New("certlifetime cannot be negative")
@@ -72,7 +72,7 @@ func (c *acmeProxyConfig) Validate() error {
 	}
 
 	if (c.Metrics.Port > 0 && c.Metrics.DataSource == "") || (c.Metrics.Port == 0 && c.Metrics.DataSource != "") {
-		return errors.New("Invalid metrics port or datasource.\nRefer docs https://software.es.net/acme-proxy/configuration")
+		return errors.New("invalid metrics port or dataSource.\nRefer docs https://software.es.net/acme-proxy/configuration")
 	}
 	return nil
 }
