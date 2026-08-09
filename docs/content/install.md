@@ -184,3 +184,46 @@ curl -s https://acmeproxy.example.com/acme/acme/directory | jq .
 ```
 
 A JSON object with `newNonce`, `newAccount`, `newOrder` keys confirms the ACME server is running and accepting requests.
+
+---
+
+## Verifying Release Binaries
+
+Each release binary is accompanied by a SHA256 checksum file and a [cosign](https://docs.sigstore.dev/cosign/overview/) signature bundle for supply-chain verification.
+
+### Checksum
+
+```sh
+VERSION=v1.0.0   # replace with the release version
+
+curl -fsSLO "https://github.com/esnet/acme-proxy/releases/download/${VERSION}/step-ca_linux_amd64"
+curl -fsSLO "https://github.com/esnet/acme-proxy/releases/download/${VERSION}/SHA256SUMS"
+
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+### Signature
+
+Binaries are signed using [keyless signing](https://docs.sigstore.dev/cosign/signing/overview/) via GitHub Actions OIDC — no long-lived signing key exists. Verification requires the `.bundle` file published alongside each binary.
+
+```sh
+# Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/
+VERSION=v1.0.0   # replace with the release version
+
+curl -fsSLO "https://github.com/esnet/acme-proxy/releases/download/${VERSION}/step-ca_linux_amd64"
+curl -fsSLO "https://github.com/esnet/acme-proxy/releases/download/${VERSION}/step-ca_linux_amd64.bundle"
+
+cosign verify-blob \
+  --bundle step-ca_linux_amd64.bundle \
+  --certificate-identity "https://github.com/esnet/acme-proxy/.github/workflows/ci.yml@refs/tags/${VERSION}" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  step-ca_linux_amd64
+```
+
+A successful verification prints:
+
+```
+Verified OK
+```
+
+Substitute `amd64` with `arm64` for the ARM binary.
