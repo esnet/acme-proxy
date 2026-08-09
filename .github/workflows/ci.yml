@@ -30,8 +30,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libpcsclite-dev
 
-      - name: Setup dev environment
-        run: make dev
+      - name: Check go.mod and go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
 
       - name: Check formatting
         run: |
@@ -68,9 +70,10 @@ jobs:
           sudo apt-get install -y libpcsclite-dev
 
       - name: Run tests
+        # Tests scoped to externalcas: the top-level package is a step-ca plugin entry
+        # point with no independently testable logic.
         run: |
-          make dev
-          go test -v -race -coverprofile=coverage.txt ./...
+          go test -v -race -coverprofile=coverage.txt ./externalcas
 
       - name: Upload coverage results to Codecov
         uses: codecov/codecov-action@v5
@@ -94,9 +97,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libpcsclite-dev
 
-      - name: Setup dev environment
-        run: make dev
-
       - name: Run gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
@@ -105,7 +105,7 @@ jobs:
       - name: Run govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck -C ./externalcas ./...
+          govulncheck ./...
 
   build:
     name: Build (${{ matrix.os }}_${{ matrix.arch }})
@@ -138,6 +138,10 @@ jobs:
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.goarch }}
+          # CGO is disabled for arm64 because the runner is x86 and cross-compiling
+          # with CGO requires a cross-compiler toolchain. The arm64 binary is therefore
+          # built without CGO. If a CGO dependency is ever added, the arm64 build will
+          # fail here and the matrix must be updated to use a native arm64 runner.
           CGO_ENABLED: ${{ matrix.arch == 'arm64' && '0' || '1' }}
           MATRIX_OS: ${{ matrix.os }}
           MATRIX_ARCH: ${{ matrix.arch }}
@@ -257,6 +261,7 @@ jobs:
           generate_release_notes: true
           files: |
             dist/step-ca_linux_*
+            dist/*.bundle
             dist/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
