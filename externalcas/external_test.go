@@ -45,6 +45,73 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNew_ValidatesConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		config []byte
+		errMsg string
+	}{
+		{
+			name:   "empty config bytes",
+			config: []byte(""),
+			errMsg: "failed to unmarshal config",
+		},
+		{
+			name:   "missing ca_url",
+			config: mustMarshalConfig(t, &acmeProxyConfig{Kid: "k", HmacKey: "h"}),
+			errMsg: "ca_url is required",
+		},
+		{
+			name:   "neither EAB nor DNS01 configured",
+			config: mustMarshalConfig(t, &acmeProxyConfig{CaURL: "https://acme.example.com"}),
+			errMsg: "missing eab or dns01 config",
+		},
+		{
+			name: "partial metrics — port only",
+			config: mustMarshalConfig(t, &acmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "k",
+				HmacKey: "h",
+				Metrics: metrics{Port: 9234},
+			}),
+			errMsg: "invalid metrics port or dataSource",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := New(context.Background(), apiv1.Options{Config: tt.config})
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("error = %q, want error containing %q", err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestNew_DNS01OnlyConfig(t *testing.T) {
+	// "manual" is the one Lego provider that requires no env vars and no network calls.
+	// It satisfies dns.NewDNSChallengeProviderByName without hitting any external service.
+	cfg := mustMarshalConfig(t, &acmeProxyConfig{
+		CaURL: "https://acme.example.com",
+		Lego: legoConfig{
+			Provider: "manual",
+			Env_Vars: map[string]string{"DUMMY": "1"},
+		},
+	})
+	cas, err := New(context.Background(), apiv1.Options{Config: cfg})
+	if err != nil {
+		t.Fatalf("New() with DNS01-only config returned unexpected error: %v", err)
+	}
+	if cas == nil {
+		t.Fatal("New() returned nil ExternalCAS")
+	}
+	if cas.dnsProvider == nil {
+		t.Error("dnsProvider should be set for DNS01-only config")
+	}
+}
+
 func Test_validateCreateCertificateRequest(t *testing.T) {
 	tests := []struct {
 		name    string

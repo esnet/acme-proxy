@@ -89,6 +89,15 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "metrics not configured leaves metricsEnabled false",
+			config: acmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "test-kid",
+				HmacKey: "test-hmac",
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -103,6 +112,53 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
+	t.Run("metricsEnabled set when port and datasource both present", func(t *testing.T) {
+		cfg := acmeProxyConfig{
+			CaURL:   "https://acme.example.com",
+			Kid:     "test-kid",
+			HmacKey: "test-hmac",
+			Metrics: metrics{Port: 9234, DataSource: "/tmp/metrics.db"},
+		}
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("Validate() unexpected error: %v", err)
+		}
+		if !cfg.metricsEnabled {
+			t.Error("metricsEnabled = false, want true when port and datasource are both set")
+		}
+	})
+
+	t.Run("metricsEnabled false when metrics not configured", func(t *testing.T) {
+		cfg := acmeProxyConfig{
+			CaURL:   "https://acme.example.com",
+			Kid:     "test-kid",
+			HmacKey: "test-hmac",
+		}
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("Validate() unexpected error: %v", err)
+		}
+		if cfg.metricsEnabled {
+			t.Error("metricsEnabled = true, want false when metrics are not configured")
+		}
+	})
+
+	t.Run("metricsEnabled false when only port set (invalid)", func(t *testing.T) {
+		cfg := acmeProxyConfig{
+			CaURL:   "https://acme.example.com",
+			Kid:     "test-kid",
+			HmacKey: "test-hmac",
+			Metrics: metrics{Port: 9234},
+		}
+		err := cfg.Validate()
+		if err == nil {
+			t.Fatal("Validate() expected error for partial metrics config, got nil")
+		}
+		if cfg.metricsEnabled {
+			t.Error("metricsEnabled must remain false when Validate() returns an error")
+		}
+	})
 }
 
 func TestAcmeProxyConfig_Timeouts(t *testing.T) {
@@ -169,6 +225,67 @@ func TestParseConfig(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestParseConfig_DNS01TxtFieldValues(t *testing.T) {
+	raw := `{
+		"ca_url": "https://acme.example.com",
+		"dns01_txt": {
+			"provider": "route53",
+			"dns_servers": ["8.8.8.8", "1.1.1.1"],
+			"env_vars": {"AWS_REGION": "us-east-1", "AWS_ACCESS_KEY_ID": "AKIA123"}
+		}
+	}`
+	cfg, err := parseConfig([]byte(raw))
+	if err != nil {
+		t.Fatalf("parseConfig() unexpected error: %v", err)
+	}
+	if cfg.Lego.Provider != "route53" {
+		t.Errorf("Lego.Provider = %q, want %q", cfg.Lego.Provider, "route53")
+	}
+	if len(cfg.Lego.DnsServersList) != 2 {
+		t.Errorf("Lego.DnsServersList len = %d, want 2", len(cfg.Lego.DnsServersList))
+	} else {
+		if cfg.Lego.DnsServersList[0] != "8.8.8.8" {
+			t.Errorf("DnsServersList[0] = %q, want %q", cfg.Lego.DnsServersList[0], "8.8.8.8")
+		}
+		if cfg.Lego.DnsServersList[1] != "1.1.1.1" {
+			t.Errorf("DnsServersList[1] = %q, want %q", cfg.Lego.DnsServersList[1], "1.1.1.1")
+		}
+	}
+	if cfg.Lego.Env_Vars["AWS_REGION"] != "us-east-1" {
+		t.Errorf("Lego.Env_Vars[AWS_REGION] = %q, want %q", cfg.Lego.Env_Vars["AWS_REGION"], "us-east-1")
+	}
+	if cfg.Lego.Env_Vars["AWS_ACCESS_KEY_ID"] != "AKIA123" {
+		t.Errorf("Lego.Env_Vars[AWS_ACCESS_KEY_ID] = %q, want %q", cfg.Lego.Env_Vars["AWS_ACCESS_KEY_ID"], "AKIA123")
+	}
+}
+
+func TestParseConfig_MetricsFieldValues(t *testing.T) {
+	// Verifies that the "metrics" JSON block unmarshals correctly, including
+	// the "dataSource" casing used in ca.json matching the struct tag.
+	raw := `{
+		"ca_url": "https://acme.example.com",
+		"eab_kid": "kid",
+		"eab_hmac_key": "hmac",
+		"metrics": {
+			"port": 9234,
+			"dataSource": "/opt/acme-proxy/db/metrics"
+		}
+	}`
+	cfg, err := parseConfig([]byte(raw))
+	if err != nil {
+		t.Fatalf("parseConfig() unexpected error: %v", err)
+	}
+	if cfg.Metrics.Port != 9234 {
+		t.Errorf("Metrics.Port = %d, want 9234", cfg.Metrics.Port)
+	}
+	if cfg.Metrics.DataSource != "/opt/acme-proxy/db/metrics" {
+		t.Errorf("Metrics.DataSource = %q, want %q", cfg.Metrics.DataSource, "/opt/acme-proxy/db/metrics")
+	}
+	if !cfg.metricsEnabled {
+		t.Error("metricsEnabled = false, want true after parseConfig with port and dataSource set")
 	}
 }
 

@@ -25,10 +25,20 @@ repos:
 
 - repo: local
   hooks:
-    - id: govulncheck
-      name: govulncheck
-      entry: govulncheck
-      args: ["-C", "./externalcas", "./..."]
-      language: system
-      types: [go]
-      pass_filenames: false
+  - id: govulncheck
+    name: govulncheck
+    entry: govulncheck
+    args: ["-C", "./externalcas", "./..."]
+    language: system
+    types: [go]
+    pass_filenames: false
+
+- repo: local
+  hooks:
+  - id: staticcheck
+    name: staticcheck
+    entry: staticcheck
+    args: ["./externalcas"]
+    language: system
+    types: [go]
+    pass_filenames: false
