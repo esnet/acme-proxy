@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
+    - 'docs/**'
   workflow_dispatch:
 
 permissions:
@@ -22,32 +22,32 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: true # pulls in docs/themes/hugo-book
-          fetch-depth: 0 # required for enableGitInfo = true
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        submodules: true # pulls in docs/themes/hugo-book
+        fetch-depth: 0 # required for enableGitInfo = true
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3.2.1
-        with:
-          hugo-version: 'latest'
-          extended: true # required for SCSS compilation in hugo-book theme
+    - name: Setup Hugo
+      uses: peaceiris/actions-hugo@v3.2.1
+      with:
+        hugo-version: '0.164.0'
+        extended: true # required for SCSS compilation in hugo-book theme
 
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v6
+    - name: Configure Pages
+      id: pages
+      uses: actions/configure-pages@v6
 
-      - name: Build
-        env:
-          BASE_URL: ${{ steps.pages.outputs.base_url }}
-        run: hugo --environment public --minify --baseURL "$BASE_URL/"
-        working-directory: docs
+    - name: Build
+      env:
+        BASE_URL: ${{ steps.pages.outputs.base_url }}
+      run: hugo --environment public --minify --baseURL "$BASE_URL/"
+      working-directory: docs
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: docs/public
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: docs/public
 
   deploy:
     name: Deploy
@@ -60,6 +60,6 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
