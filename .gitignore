@@ -17,3 +17,6 @@ COMPARISON.md
 .python-version
 .ansible
 pyproject.toml
+.claude
+.zed
+dcv-dev.json

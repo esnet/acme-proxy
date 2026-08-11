@@ -2,23 +2,26 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/quickstart/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <loc>http://docs.acme-proxy.es.net/quickstart/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/install/</loc>
-    <lastmod>2026-05-09T16:31:07-05:00</lastmod>
+    <loc>http://docs.acme-proxy.es.net/install/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/client/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <loc>http://docs.acme-proxy.es.net/configuration/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/user/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <loc>http://docs.acme-proxy.es.net/client/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/</loc>
-    <lastmod>2026-05-09T16:30:55-05:00</lastmod>
+    <loc>http://docs.acme-proxy.es.net/user/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/categories/</loc>
+    <loc>http://docs.acme-proxy.es.net/</loc>
+    <lastmod>2026-08-08T21:42:04-05:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/tags/</loc>
+    <loc>http://docs.acme-proxy.es.net/categories/</loc>
+  </url><url>
+    <loc>http://docs.acme-proxy.es.net/tags/</loc>
   </url>
 </urlset>

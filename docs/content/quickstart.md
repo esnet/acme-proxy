@@ -38,34 +38,43 @@ curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | 
 
 ## Step 2 — Configure
 
-Open the config file:
+`acme-proxy` supports two modes to get a certificate signed from an external CA. 
+
+1. External Account Binding (EAB)
+2. DNS01-TXT
+
+Depending on your upstream CA, you may need to configure either one or both modes.
 
 ```sh
 sudo vim /opt/acme-proxy/ca.json
 ```
 
-Set these five fields — everything else can stay at its default:
+Set the following fields first
 
 | Field | Where to find it |
 |-------|-----------------|
-| `dnsNames` | Your acme-proxy hostname, e.g. `["acmeproxy.example.com"]` |
+| `dnsNames` | Your acme-proxy hostname, e.g. `["acme-proxy.example.com"]` |
 | `ca_url` | Your upstream CA's ACME directory URL (see table below) |
 | `account_email` | Contact email registered with the upstream CA |
-| `eab_kid` | EAB Key ID from your CA's account portal |
-| `eab_hmac_key` | EAB HMAC key from your CA's account portal |
 
-**Common upstream CA URLs:**
+**Common ACME enabled CA URLs:**
 
 | CA | URL |
 |----|-----|
-| Sectigo / InCommon RSA OV | `https://acme.sectigo.com/v2/InCommonRSAOV` |
-| ZeroSSL | `https://acme.zerossl.com/v2/DV90` |
+| LetsEncrypt | `https://acme-v02.api.letsencrypt.org/directory` |
+| CertiNext | `https://acme-us.certinext.io/v1/directory` |
+| Sectigo OV | `https://acme.sectigo.com/v2/OV` |
 
-> LetsEncrypt does not support EAB and cannot be used as an upstream CA with acme-proxy.
 
-**Minimal working config:**
+### 1. External Account Binding (EAB)
 
-```json
+| Field | Where to find it |
+|-------|------------------|
+| `eab_kid` | EAB Key ID from your CA's account portal |
+| `eab_hmac_key` | EAB HMAC key from your CA's account portal |
+
+
+```json {hl_lines=["9-10"]}
 {
   "address": ":443",
   "dnsNames": ["acme-proxy.example.com"],
@@ -78,6 +87,38 @@ Set these five fields — everything else can stay at its default:
       "eab_hmac_key": "your-hmac-key-here"
     }
   },
+  "commonName": "acme-proxy.example.com"
+}
+```
+
+### 2. DNS01-TXT
+
+LetsEncrypt does not support EAB. To get certificates signed from LetsEncrypt you must use the `dns01_txt` mode
+
+| Field                   | Description                                                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag name |
+| `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
+| `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
+
+
+```json {hl_lines=["9-15"]}
+{ 
+  "address": ":443",
+  "dnsNames": ["acme-proxy.example.com"],
+  "authority": {
+    "type": "externalcas",
+    "config": {
+      "ca_url": "https://acme-v02.api.letsencrypt.org/directory",
+      "account_email": "certadmin@example.com",
+      "dns01_txt": {
+        "provider": "lego-dns-provider-code",
+        "dns_servers": ["8.8.8,8", "1.1.1.1", "2606:4700:4700::1111"],
+        "env_vars": { 
+          "LEGO_PROVIDER_API_KEY": "xxxxxxx", 
+        }
+      }
+    },
   "commonName": "acme-proxy.example.com"
 }
 ```
@@ -103,23 +144,23 @@ The service is ready when logs show:
 2025/07/15 22:12:25 Initializing ACME client...
 2025/07/15 22:12:25 [INFO] acme: Registering account for admin@example.com
 2025/07/15 22:12:26 ACME client initialized successfully
-2025/07/15 22:12:26 Processing certificate request for domains: [proxy.example.com]
-2025/07/15 22:12:26 Starting certificate request processing for domains: [proxy.example.com]
-2025/07/15 22:12:26 [INFO] [proxy.example.com] acme: Obtaining bundled SAN certificate given a CSR
-2025/07/15 22:12:27 [INFO] [proxy.example.com] AuthURL: https://acme.sectigo.com/v2/InCommonRSAOV/authz/sx4qvINAdWw2IjplmyH6kg
-2025/07/15 22:12:27 [INFO] [proxy.example.com] acme: authorization already valid; skipping challenge
-2025/07/15 22:12:27 [INFO] [proxy.example.com] acme: Validations succeeded; requesting certificates
+2025/07/15 22:12:26 Processing certificate request for domains: [acme-proxy.example.com]
+2025/07/15 22:12:26 Starting certificate request processing for domains: [acme-proxy.example.com]
+2025/07/15 22:12:26 [INFO] [acme-proxy.example.com] acme: Obtaining bundled SAN certificate given a CSR
+2025/07/15 22:12:27 [INFO] [acme-proxy.example.com] AuthURL: https://acme.sectigo.com/v2/InCommonRSAOV/authz/sx4qvINAdWw2IjplmyH6kg
+2025/07/15 22:12:27 [INFO] [acme-proxy.example.com] acme: authorization already valid; skipping challenge
+2025/07/15 22:12:27 [INFO] [acme-proxy.example.com] acme: Validations succeeded; requesting certificates
 2025/07/15 22:12:27 [INFO] Wait for certificate [timeout: 30s, interval: 500ms]
-2025/07/15 22:12:33 [INFO] [proxy.example.com] Server responded with a certificate.
-2025/07/15 22:12:33 Successfully obtained certificate from InCommon for domains: [proxy.example.com]
+2025/07/15 22:12:33 [INFO] [acme-proxy.example.com] Server responded with a certificate.
+2025/07/15 22:12:33 Successfully obtained certificate from InCommon for domains: [acme-proxy.example.com]
 2025/07/15 22:12:33 Starting Smallstep CA/0000000-dev (linux/amd64)
 2025/07/15 22:12:33 Documentation: https://u.step.sm/docs/ca
 2025/07/15 22:12:33 Community Discord: https://u.step.sm/discord
 2025/07/15 22:12:33 Config file: ca.json
-2025/07/15 22:12:33 The primary server URL is https://acmeproxy.example.com:443
-2025/07/15 22:12:33 Root certificates are available at https://acmeproxy.example.com:443/roots.pem
+2025/07/15 22:12:33 The primary server URL is https://acme-proxy.example.com:443
+2025/07/15 22:12:33 Root certificates are available at https://acme-proxy.example.com:443/roots.pem
 2025/07/15 22:12:33 X.509 Root Fingerprint: a6cf64dbb4c8d5fd19ce48896068db03b533a8d1336c6256a87d00cbb3def3ea
-2025/07/15 22:12:33 Serving HTTPS on proxy.example.com:443 ...
+2025/07/15 22:12:33 Serving HTTPS on acme-proxy.example.com:443 ...
 ```
 
 ---
@@ -127,37 +168,42 @@ The service is ready when logs show:
 ## Step 4 — Verify
 
 ```sh
-curl -s https://acmeproxy.example.com/acme/acme/directory | jq .
+curl -s https://acme-proxy.example.com/acme/acme/directory | jq .
 ```
 
 Expected:
 
 ```json
 {
-  "newNonce": "https://acmeproxy.example.com/acme/acme/new-nonce",
-  "newAccount": "https://acmeproxy.example.com/acme/acme/new-account",
-  "newOrder": "https://acmeproxy.example.com/acme/acme/new-order",
-  "revokeCert": "https://acmeproxy.example.com/acme/acme/revoke-cert",
-  "keyChange": "https://acmeproxy.example.com/acme/acme/key-change"
+  "newNonce": "https://acme-proxy.example.com/acme/acme/new-nonce",
+  "newAccount": "https://acme-proxy.example.com/acme/acme/new-account",
+  "newOrder": "https://acme-proxy.example.com/acme/acme/new-order",
+  "revokeCert": "https://acme-proxy.example.com/acme/acme/revoke-cert",
+  "keyChange": "https://acme-proxy.example.com/acme/acme/key-change"
 }
 ```
 
+Verify [connectivity requirements](index.md/#connectivity-requirements) have been met before proceeding to the next step.
+
 ---
 
-## Step 5 — Issue a Test Certificate
+## Step 5 — Issue a Certificate
 
-Install acme.sh if not already present:
+On a server running in your network, install `acme.sh` if not already present:
 
 ```sh
-sudo apt-get install -y acme.sh socat              # Debian / Ubuntu
-sudo dnf install -y epel-release acme.sh socat     # RHEL / Rocky
+# Debian / Ubuntu
+sudo apt-get install -y acme.sh socat
+
+# RHEL / Rocky / Alma
+sudo dnf install -y epel-release acme.sh socat
 ```
 
-Issue a certificate in standalone mode (temporarily binds port 80 for the HTTP-01 challenge):
+Issue a certificate in standalone mode (temporarily binds port 80 for the HTTP-01 challenge). `myserver.example.com` must have a valid A/AAAA record which `acme-proxy.example.com` should be able to resolve 
 
 ```sh
 acme.sh --issue \
-  --server https://acmeproxy.example.com/acme/acme/directory \
+  --server https://acme-proxy.example.com/acme/acme/directory \
   --domain myserver.example.com \
   --standalone
 ```
@@ -169,11 +215,3 @@ openssl x509 \
   -in ~/.acme.sh/myserver.example.com_ecc/myserver.example.com.cer \
   -noout -issuer -dates
 ```
-
----
-
-## Next Steps
-
-- **Set up ACME clients system-wide with auto-renewal** — [Client Guide](client.md)
-- **Issue certificates for NGINX, Apache, Docker workloads** — [User Guide](user.md)
-- **Alternative install methods** (binary, source, Docker, full config reference) — [Install](install.md)

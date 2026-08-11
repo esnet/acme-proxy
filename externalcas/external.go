@@ -2,23 +2,24 @@ package externalcas
 
 import (
 	"context"
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/go-acme/lego/v4/certcrypto"
 	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/challenge"
+	"github.com/go-acme/lego/v4/challenge/dns01"
 	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v4/providers/dns"
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/smallstep/certificates/cas/apiv1"
 )
@@ -30,10 +31,21 @@ func init() {
 }
 
 func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
-	cas := &ExternalCAS{ctx: ctx, config: opts.Config}
-	cfg, err := cas.parseConfig()
+	cas := &ExternalCAS{ctx: ctx}
+	cfg, err := parseConfig(opts.Config)
 	if err != nil {
 		return nil, err
+	}
+	cas.cfg = cfg
+	if cfg.useDNS01 {
+		for k, v := range cfg.Lego.Env_Vars {
+			os.Setenv(k, v)
+		}
+		provider, err := dns.NewDNSChallengeProviderByName(cfg.Lego.Provider)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create DNS provider %q: %w", cfg.Lego.Provider, err)
+		}
+		cas.dnsProvider = provider
 	}
 	if err := StartMetricsServer(cfg.Metrics); err != nil {
 		return nil, err
@@ -41,85 +53,13 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 	return cas, nil
 }
 
-// AcmeProxyConfig contains the configuration for connecting to an external ACME CA
-type AcmeProxyConfig struct {
-	// ACME server url of External CA
-	CaURL string `json:"ca_url"`
-
-	// External Account Binding
-	Email   string `json:"account_email,omitempty"`
-	Kid     string `json:"eab_kid"`
-	HmacKey string `json:"eab_hmac_key"`
-
-	// Certificate lifetime in days
-	CertLifetime int `json:"certlifetime,omitempty"`
-
-	// Prometheus metrics endpoint
-	Metrics Metrics `json:"metrics"`
-}
-
-// Validate checks if the AcmeProxyConfig contains required fields and valid values
-func (c *AcmeProxyConfig) Validate() error {
-	if c.CaURL == "" {
-		return errors.New("ca_url is required")
-	}
-	if c.Kid == "" {
-		return errors.New("eab_kid is required")
-	}
-	if c.HmacKey == "" {
-		return errors.New("eab_hmac_key is required")
-	}
-	if c.CertLifetime < 0 {
-		return errors.New("certlifetime cannot be negative")
-	}
-	if c.Metrics.Enabled && c.Metrics.DataSource == "" {
-		return errors.New("metrics.datasource is required when metrics is enabled")
-	}
-	return nil
-}
-
-// HTTPTimeout returns the timeout for HTTP client operations
-func (c *AcmeProxyConfig) HTTPTimeout() time.Duration {
-	return 90 * time.Second
-}
-
-// RequestTimeout returns the timeout for certificate request operations
-func (c *AcmeProxyConfig) RequestTimeout() time.Duration {
-	return 2 * time.Minute
-}
-
-type Metrics struct {
-	Enabled    bool   `json:"enabled,omitempty"`
-	Port       int    `json:"port,omitempty"`
-	DataSource string `json:"datasource,omitempty"`
-}
-
-// User implements the lego registration.User interface
-type User struct {
-	Email        string
-	Registration *registration.Resource
-	key          crypto.PrivateKey
-}
-
-func (u *User) GetEmail() string {
-	return u.Email
-}
-
-func (u *User) GetRegistration() *registration.Resource {
-	return u.Registration
-}
-
-func (u *User) GetPrivateKey() crypto.PrivateKey {
-	return u.key
-}
-
 // validateCreateCertificateRequest validates that a CreateCertificateRequest has required fields
 func validateCreateCertificateRequest(req *apiv1.CreateCertificateRequest) error {
 	if req.CSR == nil {
-		return errors.New("CSR cannot be nil")
+		return errors.New("csr cannot be nil")
 	}
 	if req.Template == nil {
-		return errors.New("template cannot be nil")
+		return errors.New("cert template cannot be nil")
 	}
 	return nil
 }
@@ -132,43 +72,6 @@ func validateRevokeCertificateRequest(req *apiv1.RevokeCertificateRequest) error
 	return nil
 }
 
-// splitCertificateBundle splits a PEM-encoded certificate bundle into a leaf certificate
-// and a chain of intermediate certificates. The first certificate in the bundle is treated
-// as the leaf certificate, and all subsequent certificates are treated as intermediates.
-func splitCertificateBundle(pemBytes []byte) (*x509.Certificate, []*x509.Certificate, error) {
-	var certificates []*x509.Certificate
-	remaining := pemBytes
-
-	for {
-		block, rest := pem.Decode(remaining)
-		if block == nil {
-			break
-		}
-
-		if block.Type == "CERTIFICATE" {
-			cert, err := x509.ParseCertificate(block.Bytes)
-			if err != nil {
-				return nil, nil, fmt.Errorf("failed to parse certificate: %w", err)
-			}
-			certificates = append(certificates, cert)
-		}
-
-		remaining = rest
-	}
-
-	if len(certificates) == 0 {
-		return nil, nil, errors.New("no certificates found in bundle")
-	}
-
-	leafCert := certificates[0]
-	var intermediates []*x509.Certificate
-	if len(certificates) > 1 {
-		intermediates = certificates[1:]
-	}
-
-	return leafCert, intermediates, nil
-}
-
 // certificateResult holds the result of an async certificate operation
 type certificateResult struct {
 	response *apiv1.CreateCertificateResponse
@@ -176,32 +79,20 @@ type certificateResult struct {
 	err      error
 }
 
-// ExternalCAS implements the CertificateAuthorityService interface using an external ACME CA
+// ExternalCAS implements the CertificateAuthorityService interface using an external CA
 type ExternalCAS struct {
-	ctx    context.Context
-	config json.RawMessage
+	ctx         context.Context
+	cfg         *acmeProxyConfig
+	dnsProvider challenge.Provider
 }
 
 func (c *ExternalCAS) Type() apiv1.Type {
 	return apiv1.ExternalCAS
 }
 
-// parseConfig parses and validates the configuration
-func (c *ExternalCAS) parseConfig() (*AcmeProxyConfig, error) {
-	var cfg AcmeProxyConfig
-	if err := json.Unmarshal(c.config, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
-	}
-	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-	return &cfg, nil
-}
-
 // createLegoClient creates a fresh lego ACME client with clean state.
 // This ensures no stale nonces or other protocol state from previous requests.
-func (c *ExternalCAS) createLegoClient(cfg *AcmeProxyConfig) (ACMEClient, error) {
-	// Generate ECDSA P-256 key for ACME account
+func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
@@ -213,29 +104,50 @@ func (c *ExternalCAS) createLegoClient(cfg *AcmeProxyConfig) (ACMEClient, error)
 	}
 
 	// Configure lego client
-	config := lego.NewConfig(user)
-	config.CADirURL = cfg.CaURL
-	config.Certificate.KeyType = certcrypto.EC256
-	config.HTTPClient = &http.Client{
+	clientConfig := lego.NewConfig(user)
+	clientConfig.CADirURL = cfg.CaURL
+	clientConfig.Certificate.KeyType = certcrypto.EC256 // gitleaks:allow
+	clientConfig.HTTPClient = &http.Client{
 		Timeout: cfg.HTTPTimeout(),
 	}
 
 	// Create lego client
-	client, err := lego.NewClient(config)
+	client, err := lego.NewClient(clientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lego client: %w", err)
 	}
 
-	// Register with External Account Binding
-	reg, err := client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
-		TermsOfServiceAgreed: true,
-		Kid:                  cfg.Kid,
-		HmacEncoded:          cfg.HmacKey,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("EAB registration failed: %w", err)
+	// Lego provider configuration when using dns01 challenge
+	if cfg.useDNS01 {
+		var opts []dns01.ChallengeOption
+		if len(cfg.Lego.DnsServersList) > 0 {
+			opts = append(opts, dns01.AddRecursiveNameservers(cfg.Lego.DnsServersList))
+		}
+		if err := client.Challenge.SetDNS01Provider(c.dnsProvider, opts...); err != nil {
+			return nil, fmt.Errorf("failed to set DNS-01 provider: %w", err)
+		}
 	}
-	user.Registration = reg
+
+	// Account registration — EAB takes precedence when configured
+	if cfg.useEAB {
+		reg, err := client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
+			TermsOfServiceAgreed: true,
+			Kid:                  cfg.Kid,
+			HmacEncoded:          cfg.HmacKey,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
+		}
+		user.Registration = reg
+	} else {
+		reg, err := client.Registration.Register(registration.RegisterOptions{
+			TermsOfServiceAgreed: true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
+		}
+		user.Registration = reg
+	}
 
 	// Wrap in our interface adapter
 	return &legoClientAdapter{certClient: client.Certificate}, nil
@@ -247,20 +159,15 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		return nil, err
 	}
 
-	cfg, err := c.parseConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	// Create a fresh ACME client for this request
 	// This eliminates any stale nonce or protocol state issues
 	slog.Debug("creating fresh ACME client for certificate request")
-	acmeClient, err := c.createLegoClient(cfg)
+	acmeClient, err := c.createLegoClient(c.cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create ACME client: %w", err)
+		return nil, fmt.Errorf("failed to create lego ACME client: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(c.ctx, cfg.RequestTimeout())
+	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.RequestTimeout())
 	defer cancel()
 
 	slog.Info("processing certificate request", "domains", req.CSR.DNSNames)
@@ -270,9 +177,9 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		CSR:    req.CSR,
 		Bundle: true,
 	}
-	if cfg.CertLifetime > 0 {
-		csrRequest.NotAfter = time.Now().Add(time.Duration(cfg.CertLifetime) * 24 * time.Hour)
-		slog.Debug("using configured certificate lifetime", "days", cfg.CertLifetime)
+	if c.cfg.CertLifetime > 0 {
+		csrRequest.NotAfter = time.Now().Add(time.Duration(c.cfg.CertLifetime) * 24 * time.Hour)
+		slog.Debug("using configured certificate lifetime", "days", c.cfg.CertLifetime)
 	}
 
 	// Request certificate with context timeout
@@ -382,14 +289,9 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		return nil, err
 	}
 
-	cfg, err := c.parseConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	// Create a fresh ACME client for this revocation request
 	slog.Debug("creating fresh ACME client for certificate revocation")
-	acmeClient, err := c.createLegoClient(cfg)
+	acmeClient, err := c.createLegoClient(c.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ACME client: %w", err)
 	}
@@ -400,7 +302,8 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		Bytes: req.Certificate.Raw,
 	})
 
-	slog.Info("revoking certificate",
+	slog.Info(
+		"revoking certificate",
 		"serial", req.Certificate.SerialNumber.String(),
 		"subject", req.Certificate.Subject.CommonName,
 	)
@@ -410,7 +313,8 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 	revokeDuration := time.Since(revokeStart)
 
 	if revokeErr != nil {
-		slog.Error("failed to revoke certificate",
+		slog.Error(
+			"failed to revoke certificate",
 			"serial", req.Certificate.SerialNumber.String(),
 			"error", revokeErr,
 		)
@@ -433,7 +337,8 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		return nil, fmt.Errorf("failed to revoke certificate: %w", revokeErr)
 	}
 
-	slog.Info("certificate revoked successfully",
+	slog.Info(
+		"certificate revoked successfully",
 		"serial", req.Certificate.SerialNumber.String(),
 	)
 	if metricsEnabled {

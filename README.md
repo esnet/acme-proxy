@@ -1,26 +1,10 @@
 # About
 
-`acme-proxy` is a standalone ACME server built on [step-ca](https://github.com/smallstep/certificates) that operates in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does **NOT** sign certificates or store private keys.
+`acme-proxy` allows users to get certificates from any certificate authority that supports ACME protocol (such as LetsEncrypt, Sectigo, Digicert etc.) without opening http/80 to the internet _or_ distributing api keys for your DNS server! This is a standalone ACME server built on [step-ca](https://github.com/smallstep/certificates) that operates in [registration authority (RA)](https://smallstep.com/docs/registration-authorities/) mode. It accepts certificate orders and validates certificate requests using the ACME protocol (RFC 8555), but does **NOT** sign certificates or store private keys.
 
 ## Documentation
 
 Checkout our [documentation site](https://software.es.net/acme-proxy) for detailed examples on user guide, installation instructions, configuration etc.
-
-## How It Works
-
-`acme-proxy` runs as an ACME server inside your trusted network, acting as an intermediary between your internal infrastructure and an external certificate authority service (such as Sectigo). When a client successfully completes an ACME challenge, `acme-proxy` forwards the certificate signing request to an external certificate authority (CA) that supports External Account Binding (EAB). The external CA signs the certificate and returns it to the client through `acme-proxy`.
-
-**Certificate Request Flow:**
-
-1. Your internal server (behind a firewall perimeter) requests a certificate from `acme-proxy` using standard ACME clients like certbot, acme.sh or cert-manager.io if you're using Kubernetes.
-2. `acme-proxy` presents cryptographic challenges to verify domain ownership
-3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to your external CA using External Account Binding (EAB)
-4. The external CA signs the certificate
-5. `acme-proxy` retrieves the certificate bundle and returns it to your server
-
-![sequence diagram](docs/assets/highlevel-flow.png)
-
-**Note:** LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo and ZeroSSL do.
 
 ## Use Cases
 
@@ -28,17 +12,48 @@ This architecture addresses typical enterprise constraints that prevent direct c
 
 **HTTP-01 Challenge Limitations:**
 
-- Security policies prohibit exposing port 80 to the public internet
+- Security policies prohibit exposing port 80 to the public internet.
 
 **DNS-01 Challenge Limitations:**
 
 - Legacy DNS infrastructure lacks REST API support or ACME client integration
-- Security policies restrict distribution of API tokens or TSIG keys for large DNS zones
+- Security policies restrict distribution of API tokens or TSIG keys for large DNS zones <br>
 
-For more information on security considerations when using DNS-01 challenge:
+For more information on security considerations when using DNS-01 TXT challenge:
 
 - [EFF: Technical Deep Dive on ACME DNS Challenge Validation](https://www.eff.org/deeplinks/2018/02/technical-deep-dive-securing-automation-acme-dns-challenge-validation)
 - [LetsEncrypt: DNS-01 Challenge](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge)
+
+<br>**How acme-proxy mitigates security risks**
+
+1. HTTP/80 exposure is limited to a trusted internal host rather than the global internet which is the case when using LetsEncrypt.
+2. No distributing DNS related api key or tsig key to ACME clients.
+
+
+## How It Works
+
+`acme-proxy` runs as an ACME server inside your trusted network, acting as an intermediary between your internal infrastructure and an upstream certificate authority which signs the certificate.
+
+1. Your internal server (behind a firewall perimeter) requests a certificate from `acme-proxy` using standard ACME client such as certbot, acme.sh or cert-manager.io if you're using Kubernetes.
+2. `acme-proxy` presents cryptographic challenges to verify domain ownership.
+3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to an external certificate authority for signing
+4. `acme-proxy` retrieves the signed certificate bundle and returns it to your server
+
+<br>To get signed certificates from an external CA `acme-proxy` supports two modes of operations:
+
+### 1. External Account Binding (EAB)
+
+Some commercial certificate authorities allow their customers to validate their apex domain (example.com) once and issue an EAB key.  Using this key customers can get certs for *.example.com without having to validate every domain or subdomain (say foo.example.com) individually.
+
+![sequence diagram](docs/assets/highlevel-flow.png)
+
+**Note:** LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo, ZeroSSL, DigiCert do.
+
+### 2. DNS01-TXT
+
+[Lego](https://go-acme.github.io/lego/) is a well known ACME client which supports over 200 DNS providers to solve DNS01-TXT challenge. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing those credentials to all your servers.
+
+![DNS01-TXT](docs/assets/dns01-txt.png)
 
 ## Quick Start
 
@@ -91,10 +106,11 @@ Review and update configuration options in [ca.json](./ca.json) before starting 
 vim ca.json
 ```
 
-Checkout our [official docs](https://software.es.net/acme-proxy/install/#configuration) for full set of configuration options. For quick start the most relevant config bits are:
+Refer to the [documentation](https://software.es.net/acme-proxy/configuration) for full set of configuration options. For a quick start the most relevant config bits are:
 
 ```json
-  "dnsNames": ["acmeproxy.example.com"],
+{
+  "dnsNames": ["acme-proxy.example.com"],
   ...
   "authority": {
     "type": "externalcas",
@@ -103,25 +119,47 @@ Checkout our [official docs](https://software.es.net/acme-proxy/install/#configu
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
-      "metrics": {
-        "enabled": true,
-        "port": 9234,
-        "dataSource": "/opt/acme-proxy/db/metrics"
+      "dns01_txt":{
+        "providers": "",
+        "dns_servers":"",
+        "env_vars": {}
       }
-    },
+    }
+  },
   ...
-    "commonName": "acmeproxy.example.com"
-  }
+    "commonName": "acme-proxy.example.com"
+}
 ```
 
-Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account. To get signed certs from InCommon use `https://acme.sectigo.com/v2/InCommonRSAOV` as shown below
+Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account. To get signed certs from CertiNext/InCommon use `https://acme-us.certinext.io/v1/directory` as shown below
 
 ```json
-  "ca_url": "https://acme.sectigo.com/v2/InCommonRSAOV"
+  "ca_url": "https://acme-us.certinext.io/v1/directory"
   "account_email": "certadmin@example.com",
   "eab_kid": "",
   "eab_hmac_key": "",
 ```
+
+To get certificates signed from LetsEncrypt use the following config options
+
+```json
+  "ca_url": "https://acme-v02.api.letsencrypt.org/directory"
+  "account_email": "certadmin@example.com",
+  "dns01_txt": {
+    "provider": "lego-dns-provider-code",
+    "dns_servers": ["8.8.8,8", "1.1.1.1", "2606:4700:4700::1111"],
+    "env_vars": {
+      "LEGO_PROVIDER_API_KEY": "xxxxxxx",
+    }
+  }
+```
+
+| Field                   | Description                                                                  |
+|-------------------------|------------------------------------------------------------------------------|
+| `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag name |
+| `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
+| `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
+
 
 ### Starting acme-proxy
 
@@ -220,7 +258,6 @@ oSlzzVurgu0CIFeUruafCMHm2SzuP1eUCgAcMBHtTiugiduq+726bxcw2ln0noLE
 [Tue 15 Jul 22:41:13 CDT 2025] Your cert key is in: /root/.acme.sh/myserver.example.com_ecc/myserver.example.com.key
 [Tue 15 Jul 22:41:13 CDT 2025] The intermediate CA cert is in: /root/.acme.sh/myserver.example.com_ecc/ca.cer
 [Tue 15 Jul 22:41:13 CDT 2025] And the full-chain cert is in: /root/.acme.sh/myserver.example.com_ecc/fullchain.cer
-
 ```
 
 ### Verify

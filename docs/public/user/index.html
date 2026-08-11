@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+<head>
   <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -15,35 +15,35 @@ Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Bare
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/user/">
-  <meta property="og:site_name" content="acme-proxy">
-  <meta property="og:title" content="User Guide">
-  <meta property="og:description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://docs.acme-proxy.es.net/user/">
+	<meta property="og:site_name" content="acme-proxy">
+	<meta property="og:title" content="User Guide">
+	<meta property="og:description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
 ACME directory URL:
 https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
 Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode (Databases, Redis, Kafka etc.) 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See ACME clients page for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# acme.sh Register and issue a certificate (single domain):">
-  <meta property="og:locale" content="en">
-  <meta property="og:type" content="article">
-    <meta property="article:modified_time" content="2026-05-09T16:30:55-05:00">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:modified_time" content="2026-08-08T21:42:04-05:00">
 
 
-  <meta itemprop="name" content="User Guide">
-  <meta itemprop="description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
+	<meta itemprop="name" content="User Guide">
+	<meta itemprop="description" content="User Guide# This guide covers how to obtain and automatically renew TLS certificates from acme-proxy using three common ACME clients: acme.sh, Certbot, and Lego.
 ACME directory URL:
 https://acme-proxy.example.com/acme/acme/directoryReplace acme-proxy.example.com with your organization’s actual acme-proxy hostname.
 Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Baremetal 3. Standalone Mode (Databases, Redis, Kafka etc.) 4. Docker and Docker Compose 5. Kubernetes (cert-manager) Prerequisites# The ACME client must be installed and an account registered with acme-proxy before running any commands in this guide. See ACME clients page for installation instructions and systemd renewal timer setup. Port 80 must be reachable from the acme-proxy server (used for HTTP-01 challenge validation). Your domain’s DNS must resolve to the host where the ACME client runs. Replace the following placeholders throughout this guide: acme-proxy.example.com — your acme-proxy hostname myserver.example.com — the domain you want a certificate for admin@example.com — your contact email 1. NGINX on Linux VM / Baremetal# acme.sh Register and issue a certificate (single domain):">
-  <meta itemprop="dateModified" content="2026-05-09T16:30:55-05:00">
-  <meta itemprop="wordCount" content="3312">
+	<meta itemprop="dateModified" content="2026-08-08T21:42:04-05:00">
+	<meta itemprop="wordCount" content="3312">
 
 <title>User Guide | acme-proxy</title>
 <link rel="icon" href="/favicon.png" >
 <link rel="manifest" href="/manifest.json">
-<link rel="canonical" href="http://localhost:1313/user/">
+<link rel="canonical" href="http://docs.acme-proxy.es.net/user/">
 <link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
 
 
   <script defer src="/fuse.min.js"></script>
-  <script defer src="/en.search.min.3b53a73b50c77a03ef9f852162dd865a1ef44c853558a2c64c8f675e48958950.js" integrity="sha256-O1OnO1DHegPvn4UhYt2GWh70TIU1WKLGTI9nXkiViVA=" crossorigin="anonymous"></script>
+  <script defer src="/en.search.min.0828a380e7ec55ef6d1f81209159f3c99edd3b04016c5814de4f0ea2a34b099f.js" integrity="sha256-CCijgOfsVe9tH4EgkVnzyZ7dOwQBbFgU3k8OoqNLCZ8=" crossorigin="anonymous"></script>
 
   <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
 
@@ -144,6 +144,20 @@ Table of Contents# 1. NGINX on Linux VM / Baremetal 2. Apache on Linux VM / Bare
   
     <a href="/install/" class="">
       Install</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/configuration/" class="">
+      Configure</a>
   
 
         </li>
@@ -794,34 +808,34 @@ Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the con
 </span></span><span style="display:flex;"><span>kubectl get challenge -n default
 </span></span><span style="display:flex;"><span>kubectl describe challenge &lt;name&gt; -n default</span></span></code></pre></div><p>The <code>Challenge</code> object&rsquo;s status message identifies the exact failure:</p>
 <table>
-  <thead>
-      <tr>
-          <th>Symptom</th>
-          <th>Likely cause</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>ClusterIssuer</code> not ready</td>
-          <td>acme-proxy unreachable from cert-manager pods; wrong ACME directory URL</td>
-      </tr>
-      <tr>
-          <td>Challenge stays <code>pending</code></td>
-          <td>acme-proxy cannot reach the Gateway on port 80; domain DNS not pointing at the Gateway&rsquo;s external IP</td>
-      </tr>
-      <tr>
-          <td>Challenge <code>HTTPRoute</code> not attached</td>
-          <td>Gateway HTTP listener <code>allowedRoutes</code> does not include the namespace where the <code>Certificate</code> lives</td>
-      </tr>
-      <tr>
-          <td>Challenge fails with <code>connection refused</code></td>
-          <td>HTTP listener missing on Gateway, or <code>parentRefs</code> in <code>ClusterIssuer</code> pointing to wrong Gateway name or namespace</td>
-      </tr>
-      <tr>
-          <td><code>unauthorized</code> from ACME server</td>
-          <td>The <code>acme-proxy-account-key</code> Secret was deleted; recreate the <code>ClusterIssuer</code> to re-register</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Symptom</th>
+					<th>Likely cause</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>ClusterIssuer</code> not ready</td>
+					<td>acme-proxy unreachable from cert-manager pods; wrong ACME directory URL</td>
+			</tr>
+			<tr>
+					<td>Challenge stays <code>pending</code></td>
+					<td>acme-proxy cannot reach the Gateway on port 80; domain DNS not pointing at the Gateway&rsquo;s external IP</td>
+			</tr>
+			<tr>
+					<td>Challenge <code>HTTPRoute</code> not attached</td>
+					<td>Gateway HTTP listener <code>allowedRoutes</code> does not include the namespace where the <code>Certificate</code> lives</td>
+			</tr>
+			<tr>
+					<td>Challenge fails with <code>connection refused</code></td>
+					<td>HTTP listener missing on Gateway, or <code>parentRefs</code> in <code>ClusterIssuer</code> pointing to wrong Gateway name or namespace</td>
+			</tr>
+			<tr>
+					<td><code>unauthorized</code> from ACME server</td>
+					<td>The <code>acme-proxy-account-key</code> Secret was deleted; recreate the <code>ClusterIssuer</code> to re-register</td>
+			</tr>
+	</tbody>
 </table>
 <hr>
 <h2 id="pre-and-post-hooks">Pre and Post Hooks<a class="anchor" href="#pre-and-post-hooks">#</a></h2>
@@ -833,30 +847,30 @@ Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the con
 <p>The three clients use different hook mechanisms.</p>
 <h3 id="hook-phases">Hook phases<a class="anchor" href="#hook-phases">#</a></h3>
 <table>
-  <thead>
-      <tr>
-          <th>Phase</th>
-          <th>When it runs</th>
-          <th>Purpose</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td>Pre-hook</td>
-          <td>Before the challenge attempt</td>
-          <td>Free port 80, drain connections</td>
-      </tr>
-      <tr>
-          <td>Post-hook</td>
-          <td>After the challenge, regardless of outcome</td>
-          <td>Restore services stopped by pre-hook</td>
-      </tr>
-      <tr>
-          <td>Deploy / renew hook</td>
-          <td>Only on successful issuance or renewal</td>
-          <td>Reload or restart the service using the certificate</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Phase</th>
+					<th>When it runs</th>
+					<th>Purpose</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>Pre-hook</td>
+					<td>Before the challenge attempt</td>
+					<td>Free port 80, drain connections</td>
+			</tr>
+			<tr>
+					<td>Post-hook</td>
+					<td>After the challenge, regardless of outcome</td>
+					<td>Restore services stopped by pre-hook</td>
+			</tr>
+			<tr>
+					<td>Deploy / renew hook</td>
+					<td>Only on successful issuance or renewal</td>
+					<td>Reload or restart the service using the certificate</td>
+			</tr>
+	</tbody>
 </table>
 <hr>
 <div class="book-tabs" >
@@ -880,26 +894,26 @@ Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the con
 <input type="radio" class="toggle" name="tabs-4" id="tabs-4-1"  /><label for="tabs-4-1">Certbot</label><div class="book-tabs-content markdown-inner">
 <p>Certbot uses a directory-based hook model. Any executable script placed in these directories runs for all certificates:</p>
 <table>
-  <thead>
-      <tr>
-          <th>Directory</th>
-          <th>Phase</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>/etc/letsencrypt/renewal-hooks/pre/</code></td>
-          <td>Before challenge</td>
-      </tr>
-      <tr>
-          <td><code>/etc/letsencrypt/renewal-hooks/post/</code></td>
-          <td>After challenge, regardless of outcome</td>
-      </tr>
-      <tr>
-          <td><code>/etc/letsencrypt/renewal-hooks/deploy/</code></td>
-          <td>On successful renewal only</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Directory</th>
+					<th>Phase</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>/etc/letsencrypt/renewal-hooks/pre/</code></td>
+					<td>Before challenge</td>
+			</tr>
+			<tr>
+					<td><code>/etc/letsencrypt/renewal-hooks/post/</code></td>
+					<td>After challenge, regardless of outcome</td>
+			</tr>
+			<tr>
+					<td><code>/etc/letsencrypt/renewal-hooks/deploy/</code></td>
+					<td>On successful renewal only</td>
+			</tr>
+	</tbody>
 </table>
 <p><strong>Pre and post hooks (port 80 management):</strong></p>
 <div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tee /etc/letsencrypt/renewal-hooks/pre/stop-myapp.sh <span style="color:#5af78e">&lt;&lt;&#39;EOF&#39;
@@ -972,70 +986,70 @@ Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the con
 </span></span></span><span style="display:flex;"><span><span style="color:#5af78e">EOF</span>
 </span></span><span style="display:flex;"><span>sudo chmod <span style="color:#ff9f43">0700</span> /usr/local/sbin/lego-renew-myserver.sh</span></span></code></pre></div><p>Lego passes the following environment variables to hook scripts:</p>
 <table>
-  <thead>
-      <tr>
-          <th>Variable</th>
-          <th>Value</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>LEGO_ACCOUNT_EMAIL</code></td>
-          <td>Account email</td>
-      </tr>
-      <tr>
-          <td><code>LEGO_CERT_PATH</code></td>
-          <td>Path to the certificate file</td>
-      </tr>
-      <tr>
-          <td><code>LEGO_CERT_KEY_PATH</code></td>
-          <td>Path to the private key file</td>
-      </tr>
-      <tr>
-          <td><code>LEGO_CERT_DOMAIN</code></td>
-          <td>Primary domain on the certificate</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Variable</th>
+					<th>Value</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>LEGO_ACCOUNT_EMAIL</code></td>
+					<td>Account email</td>
+			</tr>
+			<tr>
+					<td><code>LEGO_CERT_PATH</code></td>
+					<td>Path to the certificate file</td>
+			</tr>
+			<tr>
+					<td><code>LEGO_CERT_KEY_PATH</code></td>
+					<td>Path to the private key file</td>
+			</tr>
+			<tr>
+					<td><code>LEGO_CERT_DOMAIN</code></td>
+					<td>Primary domain on the certificate</td>
+			</tr>
+	</tbody>
 </table>
 </div>
 </div>
 <hr>
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting">#</a></h2>
 <table>
-  <thead>
-      <tr>
-          <th>Symptom</th>
-          <th>Likely cause</th>
-          <th>Fix</th>
-      </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td><code>connection refused</code> on port 80</td>
-          <td>Firewall blocking challenge traffic</td>
-          <td>Open port 80 from acme-proxy host</td>
-      </tr>
-      <tr>
-          <td><code>no route to host</code> to acme-proxy</td>
-          <td>DNS not resolving or network ACL</td>
-          <td>Confirm the proxy hostname resolves and port 443 is reachable</td>
-      </tr>
-      <tr>
-          <td>Certificate issued but service won&rsquo;t reload</td>
-          <td><code>--reloadcmd</code> / deploy hook misconfigured</td>
-          <td>Run the reload command manually; check service name</td>
-      </tr>
-      <tr>
-          <td>Renewal fails in standalone mode</td>
-          <td>Port 80 occupied during renewal window</td>
-          <td>Stop the process holding port 80 before renewal, or switch to webroot mode</td>
-      </tr>
-      <tr>
-          <td><code>unauthorized</code> from ACME server</td>
-          <td>Account not registered with this server</td>
-          <td>Re-run <code>--register-account</code> against the correct <code>--server</code> URL</td>
-      </tr>
-  </tbody>
+	<thead>
+			<tr>
+					<th>Symptom</th>
+					<th>Likely cause</th>
+					<th>Fix</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td><code>connection refused</code> on port 80</td>
+					<td>Firewall blocking challenge traffic</td>
+					<td>Open port 80 from acme-proxy host</td>
+			</tr>
+			<tr>
+					<td><code>no route to host</code> to acme-proxy</td>
+					<td>DNS not resolving or network ACL</td>
+					<td>Confirm the proxy hostname resolves and port 443 is reachable</td>
+			</tr>
+			<tr>
+					<td>Certificate issued but service won&rsquo;t reload</td>
+					<td><code>--reloadcmd</code> / deploy hook misconfigured</td>
+					<td>Run the reload command manually; check service name</td>
+			</tr>
+			<tr>
+					<td>Renewal fails in standalone mode</td>
+					<td>Port 80 occupied during renewal window</td>
+					<td>Stop the process holding port 80 before renewal, or switch to webroot mode</td>
+			</tr>
+			<tr>
+					<td><code>unauthorized</code> from ACME server</td>
+					<td>Account not registered with this server</td>
+					<td>Re-run <code>--register-account</code> against the correct <code>--server</code> URL</td>
+			</tr>
+	</tbody>
 </table>
 </article>
  
@@ -1046,9 +1060,9 @@ Mount a host directory (e.g., <code>/var/www/acme-challenge</code>) into the con
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/3c01d2951d66782f2f5844ce2a052e01f59427b0" title='Last modified by Kapil Agrawal | May 9, 2026' target="_blank" rel="noopener">
+<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/02c70f9320fdbd613ce8d9b050565cd26429da4e" title='Last modified by Kapil Agrawal | August 8, 2026' target="_blank" rel="noopener">
     <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
-    <span>May 9, 2026</span>
+    <span>August 8, 2026</span>
   </a>
 
 </div>
