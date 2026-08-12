@@ -20,3 +20,4 @@ pyproject.toml
 .claude
 .zed
 dcv-dev.json
+citest-ca.json
