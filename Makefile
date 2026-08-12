@@ -55,3 +55,9 @@ build: clean check-deps
 	mkdir db
 	go build -ldflags="-s -w -X main.Version=$(VERSION) -X 'main.BuildTime=$(BUILD_TIME)'" -v -o $(APP_NAME) .
 	@echo "✔ OK"
+
+debug: clean check-deps
+	mkdir db
+	go build \
+	-ldflags="-X main.Version=$(VERSION) -X 'main.BuildTime=$(BUILD_TIME)'" \
+	-gcflags="all=-N -l" -o $(APP_NAME) .
