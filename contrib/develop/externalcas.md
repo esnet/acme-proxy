@@ -1,6 +1,6 @@
 # ACME server as Registration Authority
 
-See [upstream docs](#upstream-docs) section for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
+See [Breadcrumbs](#Breadcrumbs) for more background on what registration authority, CAS are and how those concepts fits into step-ca architecture.
 
 ## Certificate Authority Service (CAS)
 
@@ -18,7 +18,7 @@ type CertificateAuthorityService interface {
 }
 ```
 
-The go package also defines a special type called `ExternalCAS` for this exact purpose. Which is why our [ca.json](../ca.json) file defines an authority of `type: externalcas`.
+The go package also defines a special type called `ExternalCAS` for this exact purpose. Which is why our [ca.json](../../ca.json) file defines an authority of `type: externalcas`.
 
 ```go
 const (
@@ -37,12 +37,12 @@ const (
 )
 ```
 
-## Upstream docs
+## Breadcrumbs
 
-**Step CA github repo**
-<https://github.com/smallstep/certificates/tree/master>
+**step-ca github repo**
+<https://github.com/smallstep/certificates>
 
-**Step CA Registration Authority (RA)**
+**Step CA Registration Authority (RA) mode**
 <https://smallstep.com/docs/step-ca/registration-authority-ra-mode/>
 
 **RA related github discussions**

@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Uninstalls acme-proxy and related configuration files on a linux host for a clean start
+#
 set -e
 
 INSTALL_DIR="${INSTALL_DIR:-/opt/acme-proxy}"

@@ -1,10 +1,12 @@
-# Guide to patching upstream related changes
+# Guide to patching upstream related bugs
 
-- While smallstep/certifiates is meant to serve as the upstream Go module for acme-proxy, we have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo [esnet/certificates](https://github.com/esnet/certificates).
+acme-proxy uses smallstep/certificates as an upstream dependency but just like any other software `smallstep/certifiates` can have bugs too. We have identified a couple of issues which imapct us and have even submitted merge requests but are waiting action from upstream maintainers.
+
+Until then we will have to maintain some patches/fixes ourselves until they get merged upstream. Our patched version of step-ca is currently maintained in a forked repo [esnet/certificates](https://github.com/esnet/certificates).
 
 - The branch naming scheme for our patches follow a pattern `patch/upstream-version`. For example: patches made against smallstep/certificates `v0.30.2` are in a branch called `patch/v0.30.2`.
 
-- Once the patches have been applied and tested, we tag the commit using a naming scheme `[upstream version]-patch.count`. So if the patches have been applied against upstream `v0.30.2` our go.mod in acme-proxy should contain
+- Once the patches have been applied and tested, we tag the commit using a naming scheme `[upstream version]-patch.count`. So if the patches have been applied against upstream `v0.30.2` our go.mod in acme-proxy should contain the following directive
 
 ```
 replace github.com/smallstep/certificates => github.com/esnet/certificates v0.30.2-patch.2
