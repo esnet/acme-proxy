@@ -44,47 +44,58 @@
 
     {
       "id": 2,
-      "type": "stat",
+      "type": "table",
       "title": "External CA",
       "description": "Reachability of the external CA directory URL. Probed every 30 seconds.",
       "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "externalcas_external_ca_up",
-          "legendFormat": "CA status",
-          "refId": "A"
+          "expr": "externalcas_external_ca_up{ca_url!=\"\"}",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
         }
       ],
+      "transformations": [
+        { "id": "filterFieldsByName", "options": {
+          "include": { "names": ["ca_url", "Value"] }
+        }},
+        { "id": "organize", "options": {
+          "renameByName": { "ca_url": "CA URL", "Value": "Status" }
+        }}
+      ],
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
+        "footer": { "show": false }
       },
       "fieldConfig": {
         "defaults": {
-          "mappings": [
-            { "type": "value", "options": { "1": { "text": "UP",   "color": "green", "index": 0 } } },
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red",   "index": 1 } } }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red",   "value": null },
-              { "color": "green", "value": 1    }
-            ]
-          },
-          "color": { "mode": "thresholds" },
-          "noValue": "Unknown"
+          "custom": { "align": "left", "displayMode": "auto" }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Status" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "custom.width", "value": 80 },
+              { "id": "custom.align", "value": "center" },
+              { "id": "mappings", "value": [
+                { "type": "value", "options": {
+                  "0": { "text": "DOWN", "color": "red",   "index": 0 },
+                  "1": { "text": "UP",   "color": "green", "index": 1 }
+                }}
+              ]},
+              { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red",   "value": null },
+                  { "color": "green", "value": 1    }
+                ]
+              }},
+              { "id": "color", "value": { "mode": "thresholds" } }
+            ]
+          }
+        ]
       }
     },
 
@@ -92,14 +103,15 @@
       "id": 3,
       "type": "stat",
       "title": "Issued (Success)",
-      "description": "Total certificates successfully issued since process start.",
+      "description": "Total certificates successfully issued, based on the persistent KV store.",
       "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "externalcas_certificates_issued_total{status=\"success\"}",
+          "expr": "count(externalcas_certificate_info{status=\"success\"})",
           "legendFormat": "Issued",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "options": {
@@ -173,14 +185,15 @@
       "id": 5,
       "type": "stat",
       "title": "Revoked",
-      "description": "Total certificates successfully revoked since process start.",
+      "description": "Total certificates successfully revoked, based on the persistent KV store.",
       "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "externalcas_certificates_revoked_total{status=\"success\"}",
+          "expr": "count(externalcas_certificate_revocation_info{status=\"success\"})",
           "legendFormat": "Revoked",
-          "refId": "A"
+          "refId": "A",
+          "instant": true
         }
       ],
       "options": {
@@ -211,13 +224,13 @@
     {
       "id": 6,
       "type": "stat",
-      "title": "Issuance Success Rate",
-      "description": "Percentage of issuance attempts that succeeded over the last 5 minutes.",
+      "title": "Issuance Success Rate (24h)",
+      "description": "Percentage of issuance attempts that succeeded in the last 24 hours.",
       "gridPos": { "x": 16, "y": 1, "w": 4, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(externalcas_certificates_issued_total{status=\"success\"}[5m]) / rate(externalcas_certificates_issued_total[5m])",
+          "expr": "increase(externalcas_certificates_issued_total{status=\"success\"}[24h]) / ignoring(status) sum without(status) (increase(externalcas_certificates_issued_total[24h]))",
           "legendFormat": "Success rate",
           "refId": "A"
         }
@@ -312,12 +325,12 @@
       "id": 9,
       "type": "timeseries",
       "title": "Issuance Rate by Status",
-      "description": "Certificate issuances per second, split by success and failure.",
+      "description": "Certificate issuances per day, split by success and failure.",
       "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(externalcas_certificates_issued_total[5m])",
+          "expr": "rate(externalcas_certificates_issued_total[$__rate_interval]) * 86400",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -328,7 +341,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "short",
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
@@ -362,12 +375,12 @@
       "id": 10,
       "type": "timeseries",
       "title": "Revocation Rate by Status",
-      "description": "Certificate revocations per second, split by success and failure.",
+      "description": "Certificate revocations per day, split by success and failure.",
       "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(externalcas_certificates_revoked_total[5m])",
+          "expr": "rate(externalcas_certificates_revoked_total[$__rate_interval]) * 86400",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -378,7 +391,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "short",
           "color": { "mode": "palette-classic" },
           "custom": {
             "drawStyle": "line",
@@ -525,8 +538,8 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "(externalcas_certificate_expiry_timestamp_seconds - time()) / 86400",
-          "legendFormat": "{{serial}} — {{common_name}}",
+          "expr": "((externalcas_certificate_expiry_timestamp_seconds - time()) / 86400) * on(serial, common_name) group_left(issuer) externalcas_certificate_info{status=\"success\"}",
+          "legendFormat": "",
           "refId": "A",
           "instant": true,
           "format": "table"
@@ -534,10 +547,11 @@
       ],
       "transformations": [
         { "id": "filterFieldsByName", "options": {
-          "include": { "names": ["serial", "common_name", "Value"] }
+          "include": { "names": ["serial", "common_name", "issuer", "Value"] }
         }},
         { "id": "organize", "options": {
-          "renameByName": { "Value": "Days Remaining", "serial": "Serial", "common_name": "Common Name" }
+          "renameByName": { "Value": "Days Remaining", "serial": "Serial", "common_name": "Common Name", "issuer": "Issuer" },
+          "indexByName": { "Common Name": 0, "Serial": 1, "Issuer": 2, "Days Remaining": 3 }
         }},
         { "id": "sortBy", "options": { "fields": [{ "displayName": "Days Remaining", "desc": false }] }}
       ],
@@ -574,6 +588,13 @@
             "properties": [
               { "id": "custom.displayMode", "value": "auto" },
               { "id": "custom.width", "value": 260 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Issuer" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "auto" },
+              { "id": "custom.width", "value": 220 }
             ]
           },
           {
@@ -653,8 +674,8 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "count by (common_name, sans) (externalcas_certificate_info{status=\"success\"}) - 1",
-          "legendFormat": "{{common_name}}",
+          "expr": "count by (common_name, sans, issuer) (externalcas_certificate_info{status=\"success\"}) - 1",
+          "legendFormat": "",
           "refId": "A",
           "instant": true,
           "format": "table"
@@ -662,10 +683,11 @@
       ],
       "transformations": [
         { "id": "filterFieldsByName", "options": {
-          "include": { "names": ["common_name", "sans", "Value"] }
+          "include": { "names": ["common_name", "sans", "issuer", "Value"] }
         }},
         { "id": "organize", "options": {
-          "renameByName": { "Value": "Renewals", "common_name": "Common Name", "sans": "SANs" }
+          "renameByName": { "Value": "Renewals", "common_name": "Common Name", "sans": "SANs", "issuer": "Issuer" },
+          "indexByName": { "Common Name": 0, "SANs": 1, "Issuer": 2, "Renewals": 3 }
         }},
         { "id": "sortBy", "options": { "fields": [{ "displayName": "Renewals", "desc": true }] }}
       ],
@@ -688,6 +710,13 @@
         },
         "overrides": [
           {
+            "matcher": { "id": "byName", "options": "Issuer" },
+            "properties": [
+              { "id": "custom.displayMode", "value": "auto" },
+              { "id": "custom.width", "value": 200 }
+            ]
+          },
+          {
             "matcher": { "id": "byName", "options": "Renewals" },
             "properties": [
               { "id": "custom.displayMode", "value": "color-background" },
@@ -699,11 +728,96 @@
     },
 
     {
+      "id": 24,
+      "type": "table",
+      "title": "Certificates Issued in Time Range",
+      "description": "Certificates whose issued-at timestamp falls within the dashboard time picker window. Row count in the footer shows how many certs were issued in the selected period.",
+      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 10 },
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "targets": [
+        {
+          "expr": "((externalcas_certificate_expiry_timestamp_seconds - time()) / 86400) * on(serial, common_name) group_left(issuer, sans) (externalcas_certificate_info{status=\"success\"} and on(serial, common_name) (externalcas_certificate_issued_timestamp_seconds >= ($__from / 1000)))",
+          "legendFormat": "",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "filterFieldsByName", "options": {
+          "include": { "names": ["serial", "common_name", "issuer", "sans", "Value"] }
+        }},
+        { "id": "organize", "options": {
+          "renameByName": {
+            "serial":      "Serial",
+            "common_name": "Common Name",
+            "issuer":      "Issuer",
+            "sans":        "SANs",
+            "Value":       "Days Remaining"
+          },
+          "indexByName": {
+            "Common Name":    0,
+            "SANs":           1,
+            "Issuer":         2,
+            "Serial":         3,
+            "Days Remaining": 4
+          }
+        }},
+        { "id": "sortBy", "options": { "fields": [{ "displayName": "Days Remaining", "desc": false }] }}
+      ],
+      "options": {
+        "sortBy": [{ "displayName": "Days Remaining", "desc": false }],
+        "footer": { "show": true, "reducer": ["count"], "fields": ["Common Name"], "countRows": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "left", "displayMode": "auto" },
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Common Name" },
+            "properties": [{ "id": "custom.width", "value": 220 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "SANs" },
+            "properties": [{ "id": "custom.width", "value": 260 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Issuer" },
+            "properties": [{ "id": "custom.width", "value": 200 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Serial" },
+            "properties": [{ "id": "custom.width", "value": 220 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Days Remaining" },
+            "properties": [
+              { "id": "unit", "value": "d" },
+              { "id": "custom.width", "value": 160 },
+              { "id": "custom.displayMode", "value": "color-background" },
+              { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red",    "value": null },
+                  { "color": "yellow", "value": 15   },
+                  { "color": "green",  "value": 30   }
+                ]
+              }},
+              { "id": "color", "value": { "mode": "thresholds" } }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
       "id": 18,
       "type": "row",
       "title": "Go Runtime & Process",
       "collapsed": false,
-      "gridPos": { "x": 0, "y": 42, "w": 24, "h": 1 }
+      "gridPos": { "x": 0, "y": 53, "w": 24, "h": 1 }
     },
 
     {
@@ -711,7 +825,7 @@
       "type": "timeseries",
       "title": "Goroutines",
       "description": "Number of goroutines currently running. Sustained growth indicates a goroutine leak.",
-      "gridPos": { "x": 0, "y": 43, "w": 8, "h": 7 },
+      "gridPos": { "x": 0, "y": 54, "w": 8, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -752,7 +866,7 @@
       "type": "timeseries",
       "title": "Heap Memory In Use",
       "description": "Bytes of heap objects currently allocated.",
-      "gridPos": { "x": 8, "y": 43, "w": 8, "h": 7 },
+      "gridPos": { "x": 8, "y": 54, "w": 8, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -798,7 +912,7 @@
       "type": "timeseries",
       "title": "CPU Usage",
       "description": "Rate of CPU time consumed by the process (cores).",
-      "gridPos": { "x": 16, "y": 43, "w": 8, "h": 7 },
+      "gridPos": { "x": 16, "y": 54, "w": 8, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -839,7 +953,7 @@
       "type": "timeseries",
       "title": "GC Pause Duration (P99)",
       "description": "99th percentile GC stop-the-world pause duration.",
-      "gridPos": { "x": 0, "y": 50, "w": 12, "h": 7 },
+      "gridPos": { "x": 0, "y": 61, "w": 12, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
@@ -880,7 +994,7 @@
       "type": "timeseries",
       "title": "Open File Descriptors",
       "description": "Number of open file descriptors held by the process.",
-      "gridPos": { "x": 12, "y": 50, "w": 12, "h": 7 },
+      "gridPos": { "x": 12, "y": 61, "w": 12, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
