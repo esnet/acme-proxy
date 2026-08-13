@@ -115,7 +115,7 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 }
 
 func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
-	t.Run("metricsEnabled set when port and datasource both present", func(t *testing.T) {
+	t.Run("Metrics.Enabled set when port and datasource both present", func(t *testing.T) {
 		cfg := acmeProxyConfig{
 			CaURL:   "https://acme.example.com",
 			Kid:     "test-kid",
@@ -125,12 +125,12 @@ func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
 		if err := cfg.Validate(); err != nil {
 			t.Fatalf("Validate() unexpected error: %v", err)
 		}
-		if !cfg.metricsEnabled {
-			t.Error("metricsEnabled = false, want true when port and datasource are both set")
+		if !cfg.Metrics.Enabled {
+			t.Error("Metrics.Enabled = false, want true when port and datasource are both set")
 		}
 	})
 
-	t.Run("metricsEnabled false when metrics not configured", func(t *testing.T) {
+	t.Run("Metrics.Enabled false when metrics not configured", func(t *testing.T) {
 		cfg := acmeProxyConfig{
 			CaURL:   "https://acme.example.com",
 			Kid:     "test-kid",
@@ -139,12 +139,12 @@ func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
 		if err := cfg.Validate(); err != nil {
 			t.Fatalf("Validate() unexpected error: %v", err)
 		}
-		if cfg.metricsEnabled {
-			t.Error("metricsEnabled = true, want false when metrics are not configured")
+		if cfg.Metrics.Enabled {
+			t.Error("Metrics.Enabled = true, want false when metrics are not configured")
 		}
 	})
 
-	t.Run("metricsEnabled false when only port set (invalid)", func(t *testing.T) {
+	t.Run("Metrics.Enabled false when only port set (invalid)", func(t *testing.T) {
 		cfg := acmeProxyConfig{
 			CaURL:   "https://acme.example.com",
 			Kid:     "test-kid",
@@ -155,8 +155,8 @@ func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
 		if err == nil {
 			t.Fatal("Validate() expected error for partial metrics config, got nil")
 		}
-		if cfg.metricsEnabled {
-			t.Error("metricsEnabled must remain false when Validate() returns an error")
+		if cfg.Metrics.Enabled {
+			t.Error("Metrics.Enabled must remain false when Validate() returns an error")
 		}
 	})
 }
@@ -284,8 +284,8 @@ func TestParseConfig_MetricsFieldValues(t *testing.T) {
 	if cfg.Metrics.DataSource != "/opt/acme-proxy/db/metrics" {
 		t.Errorf("Metrics.DataSource = %q, want %q", cfg.Metrics.DataSource, "/opt/acme-proxy/db/metrics")
 	}
-	if !cfg.metricsEnabled {
-		t.Error("metricsEnabled = false, want true after parseConfig with port and dataSource set")
+	if !cfg.Metrics.Enabled {
+		t.Error("Metrics.Enabled = false, want true after parseConfig with port and dataSource set")
 	}
 }
 

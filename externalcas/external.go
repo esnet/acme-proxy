@@ -47,7 +47,7 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 		}
 		cas.dnsProvider = provider
 	}
-	if err := StartMetricsServer(cfg.Metrics); err != nil {
+	if err := StartMetricsServer(cfg.Metrics, cfg.CaURL); err != nil {
 		return nil, err
 	}
 	return cas, nil
@@ -130,19 +130,27 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 
 	// Account registration — EAB takes precedence when configured
 	if cfg.useEAB {
+		regStart := time.Now()
 		reg, err := client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
 			TermsOfServiceAgreed: true,
 			Kid:                  cfg.Kid,
 			HmacEncoded:          cfg.HmacKey,
 		})
+		if metricsEnabled {
+			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
+		}
 		if err != nil {
 			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
 		}
 		user.Registration = reg
 	} else {
+		regStart := time.Now()
 		reg, err := client.Registration.Register(registration.RegisterOptions{
 			TermsOfServiceAgreed: true,
 		})
+		if metricsEnabled {
+			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
+		}
 		if err != nil {
 			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
 		}
@@ -229,6 +237,8 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		if result.err != nil {
 			if metricsEnabled {
 				certificatesIssuedTotal.WithLabelValues("failure").Inc()
+				certificateRequestDuration.WithLabelValues("issue").Observe(result.duration.Seconds())
+				acmeRoundtripDuration.WithLabelValues("obtain").Observe(result.duration.Seconds())
 				if req.CSR != nil {
 					if err := globalStore.recordIssued(CertRecord{
 						CommonName:      req.CSR.Subject.CommonName,
@@ -245,7 +255,12 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		slog.Info("obtained certificate from external CA", "domains", req.CSR.DNSNames)
 		if metricsEnabled {
 			certificatesIssuedTotal.WithLabelValues("success").Inc()
+			certificateRequestDuration.WithLabelValues("issue").Observe(result.duration.Seconds())
+			acmeRoundtripDuration.WithLabelValues("obtain").Observe(result.duration.Seconds())
 			cert := result.response.Certificate
+			lifetime := cert.NotAfter.Sub(cert.NotBefore).Seconds()
+			certificateExpirationTime.WithLabelValues("issued").Observe(lifetime)
+			lastSuccessfulCertificateTimestamp.SetToCurrentTime()
 			if err := globalStore.recordIssued(CertRecord{
 				Serial:          cert.SerialNumber.Text(16),
 				CommonName:      cert.Subject.CommonName,
@@ -320,6 +335,8 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 		)
 		if metricsEnabled {
 			certificatesRevokedTotal.WithLabelValues("failure").Inc()
+			certificateRequestDuration.WithLabelValues("revoke").Observe(revokeDuration.Seconds())
+			acmeRoundtripDuration.WithLabelValues("revoke").Observe(revokeDuration.Seconds())
 			cert := req.Certificate
 			if err := globalStore.recordRevoked(CertRecord{
 				Serial:          cert.SerialNumber.Text(16),
@@ -343,6 +360,8 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 	)
 	if metricsEnabled {
 		certificatesRevokedTotal.WithLabelValues("success").Inc()
+		certificateRequestDuration.WithLabelValues("revoke").Observe(revokeDuration.Seconds())
+		acmeRoundtripDuration.WithLabelValues("revoke").Observe(revokeDuration.Seconds())
 		cert := req.Certificate
 		if err := globalStore.recordRevoked(CertRecord{
 			Serial:          cert.SerialNumber.Text(16),
