@@ -90,16 +90,21 @@ func (c *certMetaCollector) Describe(ch chan<- *prometheus.Desc) {
 //	revocationDuration:  serial, common_name, status
 func (c *certMetaCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, r := range c.store.allIssued() {
+		// Skip failure records: serial and issuer are empty, so all failures for
+		// the same CN/SAN collapse to identical label sets causing duplicate metric
+		// errors at scrape time. Failures are already counted by
+		// externalcas_certificates_issued_total{status="failure"}.
+		if r.Status != "success" {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(c.issuedInfo, prometheus.GaugeValue, 1,
 			r.Serial, r.CommonName, r.Issuer, r.SANs, r.Status)
 		ch <- prometheus.MustNewConstMetric(c.requestDuration, prometheus.GaugeValue, r.DurationSeconds,
 			r.Serial, r.CommonName, r.Status)
-		if r.Status == "success" {
-			ch <- prometheus.MustNewConstMetric(c.issuedAt, prometheus.GaugeValue, float64(r.IssuedAt.Unix()),
-				r.Serial, r.CommonName)
-			ch <- prometheus.MustNewConstMetric(c.expiresAt, prometheus.GaugeValue, float64(r.ExpiresAt.Unix()),
-				r.Serial, r.CommonName)
-		}
+		ch <- prometheus.MustNewConstMetric(c.issuedAt, prometheus.GaugeValue, float64(r.IssuedAt.Unix()),
+			r.Serial, r.CommonName)
+		ch <- prometheus.MustNewConstMetric(c.expiresAt, prometheus.GaugeValue, float64(r.ExpiresAt.Unix()),
+			r.Serial, r.CommonName)
 	}
 	for _, r := range c.store.allRevoked() {
 		ch <- prometheus.MustNewConstMetric(c.revokedInfo, prometheus.GaugeValue, 1,

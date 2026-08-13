@@ -50,31 +50,52 @@ func TestCertMetaCollector_Collect_SuccessRecord(t *testing.T) {
 
 func TestCertMetaCollector_Collect_FailureRecord(t *testing.T) {
 	s := newTestStore(t)
-	if err := s.recordIssued(CertRecord{
-		CommonName: "example.com", SANs: "example.com",
-		DurationSeconds: 0.3, Status: "failure",
-	}); err != nil {
-		t.Fatal(err)
+	// Store multiple failures for the same CN/SAN — the pre-fix behaviour would
+	// emit duplicate label sets and cause a Prometheus scrape error.
+	for i := 0; i < 3; i++ {
+		if err := s.recordIssued(CertRecord{
+			CommonName: "example.com", SANs: "example.com",
+			DurationSeconds: 0.3, Status: "failure",
+		}); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	c := newCertMetaCollector(s)
-	// Failures emit info and duration but NOT timestamp metrics — IssuedAt/ExpiresAt are
-	// zero values that would appear as 1970-01-01 in dashboards.
+	// Failure records must not be emitted by the collector — serial and issuer are
+	// empty for all failures, so multiple failures for the same CN/SAN produce
+	// identical label sets which Prometheus rejects with a duplicate metric error.
+	// Failures are counted by externalcas_certificates_issued_total{status="failure"}.
 	for _, name := range []string{
 		"externalcas_certificate_info",
 		"externalcas_certificate_signing_duration_seconds",
-	} {
-		if n := testutil.CollectAndCount(c, name); n != 1 {
-			t.Errorf("CollectAndCount(%q) = %d, want 1", name, n)
-		}
-	}
-	for _, name := range []string{
 		"externalcas_certificate_issued_timestamp_seconds",
 		"externalcas_certificate_expiry_timestamp_seconds",
 	} {
 		if n := testutil.CollectAndCount(c, name); n != 0 {
-			t.Errorf("CollectAndCount(%q) = %d, want 0 (timestamps must not be emitted for failures)", name, n)
+			t.Errorf("CollectAndCount(%q) = %d, want 0 (failure records must not be emitted)", name, n)
 		}
+	}
+}
+
+func TestCertMetaCollector_Collect_MultipleFailures_NoDuplicates(t *testing.T) {
+	// Regression test for: multiple failures for the same CN/SAN causing duplicate
+	// label set errors at scrape time when serial and issuer are both empty.
+	s := newTestStore(t)
+	for i := 0; i < 5; i++ {
+		if err := s.recordIssued(CertRecord{
+			CommonName: "example.com", SANs: "example.com",
+			DurationSeconds: float64(i), Status: "failure",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(newCertMetaCollector(s))
+	// Gather must succeed without duplicate metric errors.
+	if _, err := reg.Gather(); err != nil {
+		t.Errorf("Gather() returned error with multiple failure records: %v", err)
 	}
 }
 
