@@ -73,12 +73,7 @@ jobs:
         # Tests scoped to externalcas: the top-level package is a step-ca plugin entry
         # point with no independently testable logic.
         run: |
-          go test -v -race -coverprofile=coverage.txt ./externalcas
-
-      - name: Upload coverage results to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          go test -v -race ./externalcas
 
   security-scan:
     name: Security Scan
