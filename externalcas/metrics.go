@@ -167,7 +167,7 @@ func runCAHealthProbe(caURL string, interval time.Duration) {
 	probe := func() {
 		resp, err := client.Get(caURL) //nolint:noctx
 		if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			externalCAStatus.Set(0)
+			externalCAStatus.WithLabelValues(caURL).Set(0)
 			if err != nil {
 				slog.Debug("external CA health probe failed", "url", caURL, "error", err)
 			} else {
@@ -177,7 +177,7 @@ func runCAHealthProbe(caURL string, interval time.Duration) {
 			return
 		}
 		resp.Body.Close()
-		externalCAStatus.Set(1)
+		externalCAStatus.WithLabelValues(caURL).Set(1)
 	}
 	probe() // run once immediately so the gauge is meaningful before the first tick
 	ticker := time.NewTicker(interval)
@@ -257,11 +257,12 @@ var (
 	)
 
 	// Gauges — values that can go up or down
-	externalCAStatus = prometheus.NewGauge(
+	externalCAStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "externalcas_external_ca_up",
 			Help: "Status of external CA (1 = up/healthy, 0 = down/unhealthy)",
 		},
+		[]string{"ca_url"},
 	)
 
 	lastSuccessfulCertificateTimestamp = prometheus.NewGauge(

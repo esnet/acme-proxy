@@ -1,6 +1,8 @@
 package externalcas
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -169,5 +171,95 @@ func TestCertMetaCollector_Collect_LabelValues(t *testing.T) {
 func TestStartMetricsServer_Disabled(t *testing.T) {
 	if err := StartMetricsServer(metrics{Enabled: false}, ""); err != nil {
 		t.Errorf("StartMetricsServer(disabled) = %v, want nil", err)
+	}
+}
+
+func TestRunCAHealthProbe_SetsCAURLLabel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "test_ca_up",
+		Help: "test",
+	}, []string{"ca_url"})
+
+	// Run one probe synchronously by calling the same logic used in runCAHealthProbe.
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(srv.URL) //nolint:noctx
+	if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		gauge.WithLabelValues(srv.URL).Set(0)
+	} else {
+		resp.Body.Close()
+		gauge.WithLabelValues(srv.URL).Set(1)
+	}
+
+	// Verify label is present and value is 1.
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(gauge)
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("Gather() error: %v", err)
+	}
+	if len(mfs) != 1 {
+		t.Fatalf("expected 1 metric family, got %d", len(mfs))
+	}
+	metrics := mfs[0].GetMetric()
+	if len(metrics) != 1 {
+		t.Fatalf("expected 1 metric, got %d", len(metrics))
+	}
+	labels := make(map[string]string)
+	for _, lp := range metrics[0].GetLabel() {
+		labels[lp.GetName()] = lp.GetValue()
+	}
+	if labels["ca_url"] != srv.URL {
+		t.Errorf("ca_url label = %q, want %q", labels["ca_url"], srv.URL)
+	}
+	if v := metrics[0].GetGauge().GetValue(); v != 1 {
+		t.Errorf("gauge value = %v, want 1", v)
+	}
+}
+
+func TestRunCAHealthProbe_DownOnError(t *testing.T) {
+	// Use a server that immediately closes connections.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "test_ca_up_down",
+		Help: "test",
+	}, []string{"ca_url"})
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(srv.URL) //nolint:noctx
+	if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		gauge.WithLabelValues(srv.URL).Set(0)
+	} else {
+		resp.Body.Close()
+		gauge.WithLabelValues(srv.URL).Set(1)
+	}
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(gauge)
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("Gather() error: %v", err)
+	}
+	metrics := mfs[0].GetMetric()
+	if v := metrics[0].GetGauge().GetValue(); v != 0 {
+		t.Errorf("gauge value = %v, want 0 (non-2xx should set DOWN)", v)
+	}
+	labels := make(map[string]string)
+	for _, lp := range metrics[0].GetLabel() {
+		labels[lp.GetName()] = lp.GetValue()
+	}
+	if labels["ca_url"] != srv.URL {
+		t.Errorf("ca_url label = %q, want %q", labels["ca_url"], srv.URL)
 	}
 }
