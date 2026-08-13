@@ -1,10 +1,3 @@
-// Total certs issued, renewed, revoked
-// client metadata (hostname, src_ip, acme_client used)
-// SAN(s), isssue/renew status (success, failed)
-// cert expiraiton date
-// external CA acme endpoint status (up/down)
-// measure time it takes to get certs signed from external CA
-
 package externalcas
 
 import (
@@ -16,7 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -119,7 +112,7 @@ func (c *certMetaCollector) Collect(ch chan<- prometheus.Metric) {
 // StartMetricsServer starts the Prometheus metrics HTTP server once.
 // DataSource is guaranteed non-empty by AcmeProxyConfig.Validate() when enabled.
 // Returns an error if the cert store cannot be opened — this fails server startup.
-func StartMetricsServer(m metrics) error {
+func StartMetricsServer(m metrics, caURL string) error {
 	if !m.Enabled {
 		return nil
 	}
@@ -131,11 +124,15 @@ func StartMetricsServer(m metrics) error {
 			return
 		}
 		globalStore = s
+
 		if err := registry.Register(newCertMetaCollector(s)); err != nil {
 			startErr = fmt.Errorf("failed to register cert meta collector: %w", err)
 			return
 		}
+
 		metricsEnabled = true
+		go runCAHealthProbe(caURL, 30*time.Second)
+
 		port := m.Port
 		if port == 0 {
 			port = 9123
@@ -158,6 +155,33 @@ func StartMetricsServer(m metrics) error {
 	return startErr
 }
 
+// runCAHealthProbe periodically GETs caURL and updates externalCAStatus.
+// A 2xx response sets the gauge to 1 (up); any error or non-2xx sets it to 0 (down).
+func runCAHealthProbe(caURL string, interval time.Duration) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	probe := func() {
+		resp, err := client.Get(caURL) //nolint:noctx
+		if err != nil || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			externalCAStatus.Set(0)
+			if err != nil {
+				slog.Debug("external CA health probe failed", "url", caURL, "error", err)
+			} else {
+				resp.Body.Close()
+				slog.Debug("external CA health probe non-2xx", "url", caURL, "status", resp.StatusCode)
+			}
+			return
+		}
+		resp.Body.Close()
+		externalCAStatus.Set(1)
+	}
+	probe() // run once immediately so the gauge is meaningful before the first tick
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for range ticker.C {
+		probe()
+	}
+}
+
 var (
 	// metricsServerOnce ensures the metrics HTTP server starts exactly once
 	metricsServerOnce sync.Once
@@ -168,11 +192,19 @@ var (
 	// globalStore is the sidecar cert store; nil when DataSource is not configured
 	globalStore *certStore
 
-	// Prometheus registry for all externalcas metrics
-	registry *prometheus.Registry
+	// Prometheus registry for all externalcas metrics; isolated from the default registry
+	// so Go/process collectors added here don't collide with any host-level defaults.
+	registry = func() *prometheus.Registry {
+		r := prometheus.NewRegistry()
+		r.MustRegister(
+			collectors.NewGoCollector(),
+			collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		)
+		return r
+	}()
 
-	// Counters - monotonically increasing values
-	certificatesIssuedTotal = promauto.NewCounterVec(
+	// Counters — monotonically increasing
+	certificatesIssuedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "externalcas_certificates_issued_total",
 			Help: "Total number of certificates issued from external CA, labeled by status (success/failure)",
@@ -180,15 +212,7 @@ var (
 		[]string{"status"},
 	)
 
-	certificatesRenewedTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "externalcas_certificates_renewed_total",
-			Help: "Total number of certificates renewed from external CA, labeled by status (success/failure)",
-		},
-		[]string{"status"},
-	)
-
-	certificatesRevokedTotal = promauto.NewCounterVec(
+	certificatesRevokedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "externalcas_certificates_revoked_total",
 			Help: "Total number of certificates revoked at external CA, labeled by status (success/failure)",
@@ -196,26 +220,18 @@ var (
 		[]string{"status"},
 	)
 
-	acmeErrorsTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "externalcas_acme_errors_total",
-			Help: "Total number of ACME protocol errors encountered, labeled by error type",
-		},
-		[]string{"error_type"},
-	)
-
-	// Histograms - distribution of observed values (request durations)
-	certificateRequestDuration = promauto.NewHistogramVec(
+	// Histograms — distribution of observed values
+	certificateRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name: "externalcas_certificate_request_duration_seconds",
-			Help: "Time taken to obtain certificate from external CA (in seconds)",
+			Help: "Time taken to obtain or revoke a certificate from the external CA (in seconds)",
 			// Buckets: 1s, 2.5s, 5s, 10s, 30s, 60s, 120s
 			Buckets: []float64{1, 2.5, 5, 10, 30, 60, 120},
 		},
 		[]string{"operation"}, // operation: issue, revoke
 	)
 
-	acmeRoundtripDuration = promauto.NewHistogramVec(
+	acmeRoundtripDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name: "externalcas_acme_roundtrip_duration_seconds",
 			Help: "Time taken for individual ACME API calls (in seconds)",
@@ -225,49 +241,40 @@ var (
 		[]string{"acme_operation"}, // acme_operation: register, obtain, revoke
 	)
 
-	// Gauges - values that can go up or down
-	externalCAStatus = promauto.NewGauge(
+	certificateExpirationTime = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "externalcas_certificate_expiration_seconds",
+			Help: "Distribution of certificate lifetimes (NotAfter - NotBefore, in seconds)",
+			// Buckets: 1 day, 7 days, 30 days, 60 days, 90 days, 365 days
+			Buckets: []float64{86400, 604800, 2592000, 5184000, 7776000, 31536000},
+		},
+		[]string{"status"}, // status: issued, renewed
+	)
+
+	// Gauges — values that can go up or down
+	externalCAStatus = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "externalcas_external_ca_up",
 			Help: "Status of external CA (1 = up/healthy, 0 = down/unhealthy)",
 		},
 	)
 
-	lastSuccessfulCertificateTimestamp = promauto.NewGauge(
+	lastSuccessfulCertificateTimestamp = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "externalcas_last_successful_certificate_timestamp_seconds",
 			Help: "Unix timestamp of the last successfully issued certificate",
 		},
 	)
-
-	certificateExpirationTime = promauto.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name: "externalcas_certificate_expiration_seconds",
-			Help: "Distribution of certificate expiration times (lifetime in seconds)",
-			// Buckets: 1 day, 7 days, 30 days, 60 days, 90 days, 365 days
-			Buckets: []float64{86400, 604800, 2592000, 5184000, 7776000, 31536000},
-		},
-		[]string{"status"}, // status: issued, renewed
-	)
 )
 
 func init() {
-	// Create a dedicated Prometheus registry for externalcas metrics
-	// This allows isolation from other metrics that might exist in the application
-	registry = prometheus.NewRegistry()
-
-	// Register all metrics with the custom registry
-	registry.MustRegister(certificatesIssuedTotal)
-	registry.MustRegister(certificatesRenewedTotal)
-	registry.MustRegister(certificatesRevokedTotal)
-	registry.MustRegister(acmeErrorsTotal)
-	registry.MustRegister(certificateRequestDuration)
-	registry.MustRegister(acmeRoundtripDuration)
-	registry.MustRegister(externalCAStatus)
-	registry.MustRegister(lastSuccessfulCertificateTimestamp)
-	registry.MustRegister(certificateExpirationTime)
-
-	// Initialize external CA status to unknown (0)
-	// Will be set to 1 on first successful operation
-	externalCAStatus.Set(0)
+	registry.MustRegister(
+		certificatesIssuedTotal,
+		certificatesRevokedTotal,
+		certificateRequestDuration,
+		acmeRoundtripDuration,
+		certificateExpirationTime,
+		externalCAStatus,
+		lastSuccessfulCertificateTimestamp,
+	)
 }

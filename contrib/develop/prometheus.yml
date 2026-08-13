@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: acme-proxy
+    static_configs:
+      - targets: ['acme-proxy.duckdns.org:9234']

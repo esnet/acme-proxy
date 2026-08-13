@@ -41,9 +41,8 @@ type acmeProxyConfig struct {
 	Metrics metrics `json:"metrics"`
 
 	// derived during Validate(); not marshaled
-	useEAB         bool
-	useDNS01       bool
-	metricsEnabled bool
+	useEAB   bool
+	useDNS01 bool
 }
 
 // Validate checks if the values provided in ca.json file contain required fields
@@ -68,7 +67,7 @@ func (c *acmeProxyConfig) Validate() error {
 
 	// Consider Metrics enabled only when port & datasource both are defined
 	if c.Metrics.Port > 0 && c.Metrics.DataSource != "" {
-		c.metricsEnabled = true
+		c.Metrics.Enabled = true
 	}
 
 	if (c.Metrics.Port > 0 && c.Metrics.DataSource == "") || (c.Metrics.Port == 0 && c.Metrics.DataSource != "") {
