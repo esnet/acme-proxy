@@ -25,6 +25,20 @@
         "refresh": 1,
         "options": [],
         "current": {}
+      },
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "label": "Instance",
+        "hide": 0,
+        "refresh": 2,
+        "query": "label_values(externalcas_certificates_issued_total, instance)",
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "options": [],
+        "current": {}
       }
     ]
   },
@@ -51,7 +65,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "externalcas_external_ca_up{ca_url!=\"\"}",
+          "expr": "externalcas_external_ca_up{ca_url!=\"\", instance=\"$instance\"}",
           "refId": "A",
           "instant": true,
           "format": "table"
@@ -108,7 +122,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "count(externalcas_certificate_info{status=\"success\"})",
+          "expr": "count(externalcas_certificate_info{status=\"success\", instance=\"$instance\"})",
           "legendFormat": "Issued",
           "refId": "A",
           "instant": true
@@ -148,7 +162,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "externalcas_certificates_issued_total{status=\"failure\"}",
+          "expr": "externalcas_certificates_issued_total{status=\"failure\", instance=\"$instance\"}",
           "legendFormat": "Failures",
           "refId": "A"
         }
@@ -190,7 +204,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "count(externalcas_certificate_revocation_info{status=\"success\"})",
+          "expr": "count(externalcas_certificate_revocation_info{status=\"success\", instance=\"$instance\"})",
           "legendFormat": "Revoked",
           "refId": "A",
           "instant": true
@@ -230,7 +244,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "increase(externalcas_certificates_issued_total{status=\"success\"}[24h]) / ignoring(status) sum without(status) (increase(externalcas_certificates_issued_total[24h]))",
+          "expr": "increase(externalcas_certificates_issued_total{status=\"success\", instance=\"$instance\"}[24h]) / ignoring(status) sum without(status) (increase(externalcas_certificates_issued_total{instance=\"$instance\"}[24h]))",
           "legendFormat": "Success rate",
           "refId": "A"
         }
@@ -275,7 +289,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "(time() - externalcas_last_successful_certificate_timestamp_seconds) / 60",
+          "expr": "(time() - externalcas_last_successful_certificate_timestamp_seconds{instance=\"$instance\"}) / 60",
           "legendFormat": "Minutes ago",
           "refId": "A"
         }
@@ -324,13 +338,13 @@
     {
       "id": 9,
       "type": "timeseries",
-      "title": "Issuance Rate by Status",
-      "description": "Certificate issuances per day, split by success and failure.",
+      "title": "Issuance Count by Status",
+      "description": "Total certificates issued in the selected time range, split by success and failure.",
       "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(externalcas_certificates_issued_total[$__rate_interval]) * 86400",
+          "expr": "increase(externalcas_certificates_issued_total{instance=\"$instance\"}[$__range])",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -374,13 +388,13 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Revocation Rate by Status",
-      "description": "Certificate revocations per day, split by success and failure.",
+      "title": "Revocation Count by Status",
+      "description": "Total certificates revoked in the selected time range, split by success and failure.",
       "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(externalcas_certificates_revoked_total[$__rate_interval]) * 86400",
+          "expr": "increase(externalcas_certificates_revoked_total{instance=\"$instance\"}[$__range])",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -438,17 +452,17 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, rate(externalcas_certificate_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.50, rate(externalcas_certificate_request_duration_seconds_bucket{instance=\"$instance\"}[5m]))",
           "legendFormat": "{{operation}} P50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, rate(externalcas_certificate_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(externalcas_certificate_request_duration_seconds_bucket{instance=\"$instance\"}[5m]))",
           "legendFormat": "{{operation}} P95",
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, rate(externalcas_certificate_request_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.99, rate(externalcas_certificate_request_duration_seconds_bucket{instance=\"$instance\"}[5m]))",
           "legendFormat": "{{operation}} P99",
           "refId": "C"
         }
@@ -489,7 +503,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(externalcas_acme_roundtrip_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.95, rate(externalcas_acme_roundtrip_duration_seconds_bucket{instance=\"$instance\"}[5m]))",
           "legendFormat": "{{acme_operation}} P95",
           "refId": "A"
         }
@@ -538,7 +552,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "((externalcas_certificate_expiry_timestamp_seconds - time()) / 86400) * on(serial, common_name) group_left(issuer) externalcas_certificate_info{status=\"success\"}",
+          "expr": "((externalcas_certificate_expiry_timestamp_seconds{instance=\"$instance\"} - time()) / 86400) * on(serial, common_name) group_left(issuer) externalcas_certificate_info{status=\"success\", instance=\"$instance\"}",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -617,7 +631,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "(externalcas_certificate_expiry_timestamp_seconds - time()) / 86400 < 30",
+          "expr": "(externalcas_certificate_expiry_timestamp_seconds{instance=\"$instance\"} - time()) / 86400 < 30",
           "legendFormat": "{{serial}} — {{common_name}}",
           "refId": "A",
           "instant": true,
@@ -674,7 +688,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "count by (common_name, sans, issuer) (externalcas_certificate_info{status=\"success\"}) - 1",
+          "expr": "count by (common_name, sans, issuer) (externalcas_certificate_info{status=\"success\", instance=\"$instance\"}) - 1",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -736,7 +750,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "((externalcas_certificate_expiry_timestamp_seconds - time()) / 86400) * on(serial, common_name) group_left(issuer, sans) (externalcas_certificate_info{status=\"success\"} and on(serial, common_name) (externalcas_certificate_issued_timestamp_seconds >= ($__from / 1000)))",
+          "expr": "((externalcas_certificate_expiry_timestamp_seconds{instance=\"$instance\"} - time()) / 86400) * on(serial, common_name) group_left(issuer, sans) (externalcas_certificate_info{status=\"success\", instance=\"$instance\"} and on(serial, common_name) (externalcas_certificate_issued_timestamp_seconds{instance=\"$instance\"} >= ($__from / 1000)))",
           "legendFormat": "",
           "refId": "A",
           "instant": true,
@@ -829,7 +843,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "go_goroutines",
+          "expr": "go_goroutines{instance=\"$instance\"}",
           "legendFormat": "goroutines",
           "refId": "A"
         }
@@ -870,12 +884,12 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "go_memstats_heap_inuse_bytes",
+          "expr": "go_memstats_heap_inuse_bytes{instance=\"$instance\"}",
           "legendFormat": "heap in use",
           "refId": "A"
         },
         {
-          "expr": "go_memstats_alloc_bytes",
+          "expr": "go_memstats_alloc_bytes{instance=\"$instance\"}",
           "legendFormat": "alloc",
           "refId": "B"
         }
@@ -911,12 +925,12 @@
       "id": 21,
       "type": "timeseries",
       "title": "CPU Usage",
-      "description": "Rate of CPU time consumed by the process (cores).",
+      "description": "Rate of CPU time consumed by the process, in cores (1.0 = one full core).",
       "gridPos": { "x": 16, "y": 54, "w": 8, "h": 7 },
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "rate(process_cpu_seconds_total[1m])",
+          "expr": "rate(process_cpu_seconds_total{instance=\"$instance\"}[$__rate_interval])",
           "legendFormat": "cpu",
           "refId": "A"
         }
@@ -927,7 +941,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "short",
           "color": { "fixedColor": "purple", "mode": "fixed" },
           "custom": {
             "drawStyle": "line",
@@ -957,7 +971,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, rate(go_gc_duration_seconds_bucket[5m]))",
+          "expr": "histogram_quantile(0.99, rate(go_gc_duration_seconds_bucket{instance=\"$instance\"}[5m]))",
           "legendFormat": "GC pause P99",
           "refId": "A"
         }
@@ -998,7 +1012,7 @@
       "datasource": { "type": "prometheus", "uid": "${datasource}" },
       "targets": [
         {
-          "expr": "process_open_fds",
+          "expr": "process_open_fds{instance=\"$instance\"}",
           "legendFormat": "open fds",
           "refId": "A"
         }
