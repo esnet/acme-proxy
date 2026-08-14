@@ -33,6 +33,12 @@ acme_proxy_tls_min_version: 1.2
 acme_proxy_tls_max_version: 1.3
 acme_proxy_tls_renegotiation: false
 
+# Dependencies
+# The pre-built binary is dynamically linked against libpcsclite.
+# Set to false only if you have verified the library is already present
+# or are supplying a statically-linked binary.
+acme_proxy_install_pcsc: true
+
 # Systemd service state
 acme_proxy_service_enabled: true
 acme_proxy_service_state: started

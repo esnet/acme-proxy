@@ -1,5 +1,6 @@
 ---
 - name: Deploy ca.json configuration
+  become: true
   ansible.builtin.template:
     src: ca.json.j2
     dest: "{{ acme_proxy_config_file }}"

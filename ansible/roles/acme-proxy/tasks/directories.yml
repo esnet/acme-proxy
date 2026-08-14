@@ -1,5 +1,6 @@
 ---
 - name: Create installation directories
+  become: true
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
