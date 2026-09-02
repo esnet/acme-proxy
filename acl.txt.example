@@ -1,0 +1,22 @@
+# acme-proxy client allow-list
+#
+# One entry per line: a single IP address or a CIDR subnet.
+# Lines starting with '#' are comments; blank lines are ignored.
+#
+# The file is re-read whenever it changes on disk, so edits apply to
+# the next request without restarting the daemon. It can also be edited from
+# the dashboard (ACL tab), which validates entries before saving.
+#
+# Point ca.json at this file:
+#   "acl": { "file": "/opt/acme-proxy/acl.txt" }
+#
+# NOTE: the first X-Forwarded-For value is honored when present, so list
+# the REAL client addresses when running behind a reverse proxy.
+
+# single hosts
+192.0.2.10
+198.51.100.7
+
+# subnets
+192.0.2.0/24
+2001:db8:1234::/48

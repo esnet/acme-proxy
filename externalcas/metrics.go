@@ -1,6 +1,7 @@
 package externalcas
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -116,21 +117,19 @@ func (c *certMetaCollector) Collect(ch chan<- prometheus.Metric) {
 
 // StartMetricsServer starts the Prometheus metrics HTTP server once.
 // DataSource is guaranteed non-empty by AcmeProxyConfig.Validate() when enabled.
-// Returns an error if the cert store cannot be opened — this fails server startup.
+// The cert store must already be opened (globalStore) by New(); this fails
+// server startup when it is missing.
 func StartMetricsServer(m metrics, caURL string) error {
 	if !m.Enabled {
 		return nil
 	}
 	var startErr error
 	metricsServerOnce.Do(func() {
-		s, err := newCertStore(m.DataSource)
-		if err != nil {
-			startErr = fmt.Errorf("failed to open cert store: %w", err)
+		if globalStore == nil {
+			startErr = errors.New("cert store not initialized")
 			return
 		}
-		globalStore = s
-
-		if err := registry.Register(newCertMetaCollector(s)); err != nil {
+		if err := registry.Register(newCertMetaCollector(globalStore)); err != nil {
 			startErr = fmt.Errorf("failed to register cert meta collector: %w", err)
 			return
 		}

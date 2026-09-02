@@ -52,11 +52,27 @@ Action          allow
 
 ### acme-proxy to Client (HTTP/80)
 
-`acme-proxy` validates HTTP-01 challenges by connecting to your servers directly on port 80. Your servers must allow inbound HTTP/80 from acme-proxy's IP — not from the public internet. This is the key security benefit: HTTP/80 exposure is limited to a trusted internal host rather than the global internet which is the case when using LetsEncrypt.
+`acme-proxy` validates HTTP-01 challenges by connecting to your servers directly on port 80. Your servers must allow inbound HTTP/80 from acme-proxy's IP, not from the public internet. This is the key security benefit: your servers' HTTP/80 exposure is limited to a trusted internal host rather than the global internet which is the case when using LetsEncrypt.
 
 ```
 Source          acme-proxy.example.com
 Destination     myserver.example.com
 Protocol        http (80)
 Action          allow
+```
+
+### Upstream CA to acme-proxy (HTTP/80, http-01 mode only)
+
+This is the opposite direction of the flow above and applies only when `challenge_type` is `http-01` (or `auto` without a DNS provider): the upstream CA (e.g. Let's Encrypt) connects to acme-proxy's public IP on port 80 to validate the challenge. Two properties keep this safe:
+
+- The listener exists **only while a certificate request is in flight**. It starts when the request begins and closes automatically once the last challenge completes, so nothing listens on port 80 while the proxy is idle.
+- While running it serves **only ACME challenge token responses**, with no general-purpose web service or application code behind it.
+
+If your policy forbids exposing port 80 even for these short windows, use `dns-01` or EAB toward the upstream CA instead; neither requires any inbound port 80.
+
+```
+Source          upstream CA validation servers
+Destination     acme-proxy public IP
+Protocol        http (80)
+Action          allow (http-01 mode only; not needed for dns-01/EAB)
 ```

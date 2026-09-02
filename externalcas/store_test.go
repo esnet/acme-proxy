@@ -1,6 +1,13 @@
 package externalcas
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -179,6 +186,189 @@ func TestCertStore_AllIssued_ReturnsCopy(t *testing.T) {
 	}
 }
 
+func TestCertStore_CacheCert(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now().Truncate(time.Second)
+
+	r := CertRecord{
+		Serial:          "cache001",
+		CommonName:      "cached.example.com",
+		Issuer:          "Test CA",
+		SANs:            "cached.example.com,www.cached.example.com",
+		IssuedAt:        now,
+		ExpiresAt:       now.Add(90 * 24 * time.Hour),
+		DurationSeconds: 2.0,
+		Status:          "success",
+		CertPEM:         []byte("fake-pem-data"),
+	}
+	if err := s.cacheCert(r); err != nil {
+		t.Fatalf("cacheCert() error = %v", err)
+	}
+
+	domains := []string{"cached.example.com", "www.cached.example.com"}
+	cached := s.findCachedCert(domains)
+	if cached == nil {
+		t.Fatal("findCachedCert() returned nil for cached domains")
+	}
+	if cached.Serial != r.Serial {
+		t.Errorf("Serial = %q, want %q", cached.Serial, r.Serial)
+	}
+}
+
+func TestCertStore_CacheCert_IgnoresFailure(t *testing.T) {
+	s := newTestStore(t)
+	r := CertRecord{
+		CommonName: "fail.example.com",
+		SANs:       "fail.example.com",
+		Status:     "failure",
+	}
+	if err := s.cacheCert(r); err != nil {
+		t.Fatalf("cacheCert() error = %v", err)
+	}
+	if cached := s.findCachedCert([]string{"fail.example.com"}); cached != nil {
+		t.Error("findCachedCert() should return nil for failed cert")
+	}
+}
+
+func TestCertStore_CacheCert_IgnoresEmptyPEM(t *testing.T) {
+	s := newTestStore(t)
+	r := CertRecord{
+		CommonName: "noPEM.example.com",
+		SANs:       "noPEM.example.com",
+		Status:     "success",
+		CertPEM:    nil,
+	}
+	if err := s.cacheCert(r); err != nil {
+		t.Fatalf("cacheCert() error = %v", err)
+	}
+	if cached := s.findCachedCert([]string{"noPEM.example.com"}); cached != nil {
+		t.Error("findCachedCert() should return nil when CertPEM is empty")
+	}
+}
+
+func TestCertStore_CacheCert_DomainOrderIndependent(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now().Truncate(time.Second)
+
+	r := CertRecord{
+		Serial:     "cache002",
+		CommonName: "a.example.com",
+		SANs:       "a.example.com,b.example.com",
+		IssuedAt:   now,
+		ExpiresAt:  now.Add(90 * 24 * time.Hour),
+		Status:     "success",
+		CertPEM:    []byte("fake-pem"),
+	}
+	if err := s.cacheCert(r); err != nil {
+		t.Fatal(err)
+	}
+
+	// Lookup with reversed order should still match
+	cached := s.findCachedCert([]string{"b.example.com", "a.example.com"})
+	if cached == nil {
+		t.Fatal("findCachedCert() should match regardless of domain order")
+	}
+	if cached.Serial != "cache002" {
+		t.Errorf("Serial = %q, want %q", cached.Serial, "cache002")
+	}
+}
+
+func TestCertStore_CacheCert_OverwritesOldEntry(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now().Truncate(time.Second)
+
+	r1 := CertRecord{
+		Serial:     "old001",
+		CommonName: "dup.example.com",
+		SANs:       "dup.example.com",
+		IssuedAt:   now,
+		ExpiresAt:  now.Add(90 * 24 * time.Hour),
+		Status:     "success",
+		CertPEM:    []byte("old-pem"),
+	}
+	r2 := CertRecord{
+		Serial:     "new001",
+		CommonName: "dup.example.com",
+		SANs:       "dup.example.com",
+		IssuedAt:   now,
+		ExpiresAt:  now.Add(90 * 24 * time.Hour),
+		Status:     "success",
+		CertPEM:    []byte("new-pem"),
+	}
+	if err := s.cacheCert(r1); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.cacheCert(r2); err != nil {
+		t.Fatal(err)
+	}
+
+	cached := s.findCachedCert([]string{"dup.example.com"})
+	if cached == nil {
+		t.Fatal("findCachedCert() returned nil")
+	}
+	if cached.Serial != "new001" {
+		t.Errorf("Serial = %q, want %q (should be latest)", cached.Serial, "new001")
+	}
+}
+
+func TestCertStore_CacheCert_Miss(t *testing.T) {
+	s := newTestStore(t)
+	cached := s.findCachedCert([]string{"nonexistent.example.com"})
+	if cached != nil {
+		t.Error("findCachedCert() should return nil for non-cached domains")
+	}
+}
+
+func TestCertStore_CachePersistence(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cache.db")
+	now := time.Now().Truncate(time.Second)
+
+	r := CertRecord{
+		Serial:     "persist001",
+		CommonName: "persist.example.com",
+		SANs:       "persist.example.com",
+		IssuedAt:   now,
+		ExpiresAt:  now.Add(90 * 24 * time.Hour),
+		Status:     "success",
+		CertPEM:    []byte("persist-pem"),
+	}
+
+	s1, err := newCertStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s1.cacheCert(r); err != nil {
+		t.Fatal(err)
+	}
+	s1.close()
+
+	s2, err := newCertStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s2.close()
+
+	cached := s2.findCachedCert([]string{"persist.example.com"})
+	if cached == nil {
+		t.Fatal("findCachedCert() after reopen returned nil — cache not persisted")
+	}
+	if cached.Serial != "persist001" {
+		t.Errorf("Serial = %q, want %q", cached.Serial, "persist001")
+	}
+}
+
+func TestCacheKey(t *testing.T) {
+	key1 := cacheKey([]string{"b.com", "a.com"})
+	key2 := cacheKey([]string{"a.com", "b.com"})
+	if key1 != key2 {
+		t.Errorf("cacheKey() not deterministic: %q != %q", key1, key2)
+	}
+	if key1 != "a.com,b.com" {
+		t.Errorf("cacheKey() = %q, want %q", key1, "a.com,b.com")
+	}
+}
+
 // newTestStore creates a certStore backed by a temp db that is closed automatically
 // when the test ends.
 func newTestStore(t *testing.T) *certStore {
@@ -189,4 +379,84 @@ func newTestStore(t *testing.T) *certStore {
 	}
 	t.Cleanup(func() { s.close() })
 	return s
+}
+
+// genKey is a test helper generating a fresh ECDSA P-256 key.
+func genKey(t *testing.T) *ecdsa.PrivateKey {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+	return key
+}
+
+// selfSignedCertPEM issues a minimal self-signed certificate for the given key
+// and returns its PEM encoding.
+func selfSignedCertPEM(t *testing.T, key *ecdsa.PrivateKey, dnsName string) []byte {
+	t.Helper()
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: dnsName},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		DNSNames:     []string{dnsName},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("failed to create certificate: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+}
+
+// csrFor builds a certificate request signed by the given key.
+func csrFor(t *testing.T, key *ecdsa.PrivateKey, dnsName string) *x509.CertificateRequest {
+	t.Helper()
+	csr, err := x509.CreateCertificateRequest(rand.Reader,
+		&x509.CertificateRequest{DNSNames: []string{dnsName}}, key)
+	if err != nil {
+		t.Fatalf("failed to create CSR: %v", err)
+	}
+	parsed, err := x509.ParseCertificateRequest(csr)
+	if err != nil {
+		t.Fatalf("failed to parse CSR: %v", err)
+	}
+	return parsed
+}
+
+// Regression: a cached certificate may only be served for a CSR carrying the
+// same public key. step-ca bootstraps with a fresh in-memory key on every
+// start; serving the previous boot's cached cert for the new key produced
+// "tls: private key does not match public key" and crashed the service.
+func TestCertRecord_MatchesCSR(t *testing.T) {
+	keyA := genKey(t)
+	keyB := genKey(t)
+
+	rec := CertRecord{
+		Serial:  "match001",
+		SANs:    "proxy.example.com",
+		Status:  "success",
+		CertPEM: selfSignedCertPEM(t, keyA, "proxy.example.com"),
+	}
+
+	// Same key -> match.
+	if !rec.matchesCSR(csrFor(t, keyA, "proxy.example.com")) {
+		t.Error("matchesCSR() = false for the certificate's own key, want true")
+	}
+
+	// Different key (fresh bootstrap key) -> no match.
+	if rec.matchesCSR(csrFor(t, keyB, "proxy.example.com")) {
+		t.Error("matchesCSR() = true for a different public key, want false")
+	}
+
+	// Degenerate inputs never match.
+	if rec.matchesCSR(nil) {
+		t.Error("matchesCSR(nil) = true, want false")
+	}
+	if (CertRecord{SANs: "x", Status: "success"}).matchesCSR(csrFor(t, keyA, "proxy.example.com")) {
+		t.Error("matchesCSR() = true with empty CertPEM, want false")
+	}
+	if (CertRecord{SANs: "x", Status: "success", CertPEM: []byte("not-pem")}).matchesCSR(csrFor(t, keyA, "proxy.example.com")) {
+		t.Error("matchesCSR() = true with invalid PEM, want false")
+	}
 }

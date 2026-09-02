@@ -10,14 +10,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
+	"github.com/go-acme/lego/v5/certificate"
 	"github.com/smallstep/certificates/cas/apiv1"
 )
 
@@ -62,11 +62,6 @@ func TestNew_ValidatesConfig(t *testing.T) {
 			errMsg: "ca_url is required",
 		},
 		{
-			name:   "neither EAB nor DNS01 configured",
-			config: mustMarshalConfig(t, &acmeProxyConfig{CaURL: "https://acme.example.com"}),
-			errMsg: "missing eab or dns01 config",
-		},
-		{
 			name: "partial metrics — port only",
 			config: mustMarshalConfig(t, &acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
@@ -109,6 +104,22 @@ func TestNew_DNS01OnlyConfig(t *testing.T) {
 	}
 	if cas.dnsProvider == nil {
 		t.Error("dnsProvider should be set for DNS01-only config")
+	}
+}
+
+func TestNew_HTTP01FallbackConfig(t *testing.T) {
+	cfg := mustMarshalConfig(t, &acmeProxyConfig{
+		CaURL: "https://acme.example.com",
+	})
+	cas, err := New(context.Background(), apiv1.Options{Config: cfg})
+	if err != nil {
+		t.Fatalf("New() with HTTP01 fallback config returned unexpected error: %v", err)
+	}
+	if cas == nil {
+		t.Fatal("New() returned nil ExternalCAS")
+	}
+	if cas.dnsProvider != nil {
+		t.Error("dnsProvider should be nil for HTTP01 fallback config")
 	}
 }
 
@@ -252,7 +263,7 @@ func TestCreateCertificate_Validation(t *testing.T) {
 func TestCreateCertificate_WithMock(t *testing.T) {
 	// Create a mock ACME client that returns a test certificate
 	mockClient := &mockACMEClient{
-		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+		obtainFunc: func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
 			// Return a test certificate bundle (leaf + intermediate)
 			chain := createTestCertPEM(t, 1)
 			chain = append(chain, createTestCertPEM(t, 2)...)
@@ -261,19 +272,13 @@ func TestCreateCertificate_WithMock(t *testing.T) {
 	}
 
 	// Create a mock ExternalCAS that uses our mock client
-	cas := &testExternalCAS{
-		ExternalCAS: &ExternalCAS{
-			ctx: context.Background(),
-			cfg: &acmeProxyConfig{
-				CaURL:        "https://acme.test.com",
-				Email:        "test@example.com",
-				Kid:          "test-kid",
-				HmacKey:      "test-hmac",
-				CertLifetime: 30,
-			},
-		},
-		mockClient: mockClient,
-	}
+	cas := newTestCAS(t, &acmeProxyConfig{
+		CaURL:        "https://acme.test.com",
+		Email:        "test@example.com",
+		Kid:          "test-kid",
+		HmacKey:      "test-hmac",
+		CertLifetime: 30,
+	}, mockClient)
 
 	// Create a test CSR
 	csr := &x509.CertificateRequest{
@@ -304,23 +309,17 @@ func TestCreateCertificate_WithMock(t *testing.T) {
 func TestCreateCertificate_WithMock_Error(t *testing.T) {
 	// Create a mock ACME client that returns an error
 	mockClient := &mockACMEClient{
-		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+		obtainFunc: func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
 			return nil, errors.New("ACME server error")
 		},
 	}
 
-	cas := &testExternalCAS{
-		ExternalCAS: &ExternalCAS{
-			ctx: context.Background(),
-			cfg: &acmeProxyConfig{
-				CaURL:   "https://acme.test.com",
-				Email:   "test@example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-			},
-		},
-		mockClient: mockClient,
-	}
+	cas := newTestCAS(t, &acmeProxyConfig{
+		CaURL:   "https://acme.test.com",
+		Email:   "test@example.com",
+		Kid:     "test-kid",
+		HmacKey: "test-hmac",
+	}, mockClient)
 
 	csr := &x509.CertificateRequest{
 		DNSNames: []string{"test.example.com"},
@@ -343,25 +342,30 @@ func TestCreateCertificate_WithMock_Error(t *testing.T) {
 func TestCreateCertificate_Timeout(t *testing.T) {
 	// Create a mock client that takes too long
 	mockClient := &mockACMEClient{
-		obtainFunc: func(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+		obtainFunc: func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
 			time.Sleep(5 * time.Second)
 			return nil, errors.New("should not reach here")
 		},
 	}
 
-	cas := &testExternalCAS{
-		ExternalCAS: &ExternalCAS{
-			ctx: context.Background(),
-			cfg: &acmeProxyConfig{
-				CaURL:   "https://acme.test.com",
-				Email:   "test@example.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-			},
+	// Use a short-lived parent context so the real CreateCertificate's
+	// internal WithTimeout deadline fires quickly.
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	cas := &ExternalCAS{
+		ctx: ctx,
+		sem: newDynamicSem(1),
+		newACMEClient: func(*acmeProxyConfig) (ACMEClient, error) {
+			return mockClient, nil
 		},
-		mockClient:     mockClient,
-		requestTimeout: 100 * time.Millisecond, // Short timeout for testing
 	}
+	cas.cfg.Store(&acmeProxyConfig{
+		CaURL:   "https://acme.test.com",
+		Email:   "test@example.com",
+		Kid:     "test-kid",
+		HmacKey: "test-hmac",
+	})
 
 	csr := &x509.CertificateRequest{
 		DNSNames: []string{"test.example.com"},
@@ -514,104 +518,38 @@ func TestRenewCertificate_NotImplemented(t *testing.T) {
 
 // mockACMEClient is a mock implementation of ACMEClient for testing
 type mockACMEClient struct {
-	obtainFunc func(certificate.ObtainForCSRRequest) (*certificate.Resource, error)
+	obtainFunc func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error)
 	revokeFunc func([]byte) error
 }
 
-func (m *mockACMEClient) ObtainForCSR(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+func (m *mockACMEClient) ObtainForCSR(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
 	if m.obtainFunc != nil {
-		return m.obtainFunc(req)
+		return m.obtainFunc(ctx, req)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockACMEClient) Revoke(pemBytes []byte) error {
+func (m *mockACMEClient) Revoke(ctx context.Context, pemBytes []byte) error {
 	if m.revokeFunc != nil {
 		return m.revokeFunc(pemBytes)
 	}
 	return errors.New("not implemented")
 }
 
-// testExternalCAS is a test wrapper that allows injecting a mock ACME client
-type testExternalCAS struct {
-	*ExternalCAS
-	mockClient     ACMEClient
-	requestTimeout time.Duration
-}
-
-// Override createLegoClient to return our mock
-func (t *testExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
-	if t.mockClient != nil {
-		return t.mockClient, nil
+// newTestCAS builds an ExternalCAS that uses the provided mock ACME client via
+// the newACMEClient override, exercising the real CreateCertificate and
+// RevokeCertificate methods.
+func newTestCAS(t *testing.T, cfg *acmeProxyConfig, mock ACMEClient) *ExternalCAS {
+	t.Helper()
+	cas := &ExternalCAS{
+		ctx: context.Background(),
+		sem: newDynamicSem(cfg.MaxConcurrentRequestsOrDefault()),
+		newACMEClient: func(*acmeProxyConfig) (ACMEClient, error) {
+			return mock, nil
+		},
 	}
-	return t.ExternalCAS.createLegoClient(cfg)
-}
-
-// CreateCertificate overrides the parent to use custom timeout for testing
-func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*apiv1.CreateCertificateResponse, error) {
-	if err := validateCreateCertificateRequest(req); err != nil {
-		return nil, err
-	}
-
-	acmeClient, err := t.createLegoClient(t.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ACME client: %w", err)
-	}
-
-	// Use custom timeout if specified, otherwise use config timeout
-	timeout := t.cfg.RequestTimeout()
-	if t.requestTimeout > 0 {
-		timeout = t.requestTimeout
-	}
-
-	ctx, cancel := context.WithTimeout(t.ctx, timeout)
-	defer cancel()
-
-	// Build certificate request
-	csrRequest := certificate.ObtainForCSRRequest{
-		CSR:    req.CSR,
-		Bundle: true,
-	}
-	if t.cfg.CertLifetime > 0 {
-		csrRequest.NotAfter = time.Now().Add(time.Duration(t.cfg.CertLifetime) * 24 * time.Hour)
-	}
-
-	// Request certificate with context timeout
-	resultChan := make(chan *certificateResult, 1)
-	go func() {
-		cert, err := acmeClient.ObtainForCSR(csrRequest)
-		if err != nil {
-			resultChan <- &certificateResult{
-				err: fmt.Errorf("failed to obtain certificate: %w", err),
-			}
-			return
-		}
-
-		leaf, intermediates, err := splitCertificateBundle(cert.Certificate)
-		if err != nil {
-			resultChan <- &certificateResult{
-				err: fmt.Errorf("failed to split certificate bundle: %w", err),
-			}
-			return
-		}
-
-		resultChan <- &certificateResult{
-			response: &apiv1.CreateCertificateResponse{
-				Certificate:      leaf,
-				CertificateChain: intermediates,
-			},
-		}
-	}()
-
-	select {
-	case result := <-resultChan:
-		if result.err != nil {
-			return nil, result.err
-		}
-		return result.response, nil
-	case <-ctx.Done():
-		return nil, fmt.Errorf("certificate request timed out: %w", ctx.Err())
-	}
+	cas.cfg.Store(cfg)
+	return cas
 }
 
 // Helper function that generates a self-signed test certificate in PEM format.
@@ -664,7 +602,7 @@ func TestUser_InterfaceMethods(t *testing.T) {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 
-	reg := &registration.Resource{URI: "https://acme.example.com/account/1"}
+	reg := &acme.ExtendedAccount{Location: "https://acme.example.com/account/1"}
 
 	u := &User{
 		Email:        "test@example.com",
@@ -728,17 +666,11 @@ func TestRevokeCertificate_WithMock_Success(t *testing.T) {
 		},
 	}
 
-	cas := &testExternalCAS{
-		ExternalCAS: &ExternalCAS{
-			ctx: context.Background(),
-			cfg: &acmeProxyConfig{
-				CaURL:   "https://acme.test.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-			},
-		},
-		mockClient: mockClient,
-	}
+	cas := newTestCAS(t, &acmeProxyConfig{
+		CaURL:   "https://acme.test.com",
+		Kid:     "test-kid",
+		HmacKey: "test-hmac",
+	}, mockClient)
 
 	cert := createTestCert(t, 42)
 	req := &apiv1.RevokeCertificateRequest{Certificate: cert}
@@ -762,17 +694,11 @@ func TestRevokeCertificate_WithMock_Error(t *testing.T) {
 		},
 	}
 
-	cas := &testExternalCAS{
-		ExternalCAS: &ExternalCAS{
-			ctx: context.Background(),
-			cfg: &acmeProxyConfig{
-				CaURL:   "https://acme.test.com",
-				Kid:     "test-kid",
-				HmacKey: "test-hmac",
-			},
-		},
-		mockClient: mockClient,
-	}
+	cas := newTestCAS(t, &acmeProxyConfig{
+		CaURL:   "https://acme.test.com",
+		Kid:     "test-kid",
+		HmacKey: "test-hmac",
+	}, mockClient)
 
 	cert := createTestCert(t, 99)
 	req := &apiv1.RevokeCertificateRequest{Certificate: cert}
@@ -786,24 +712,120 @@ func TestRevokeCertificate_WithMock_Error(t *testing.T) {
 	}
 }
 
-// RevokeCertificate on testExternalCAS delegates to ExternalCAS.RevokeCertificate
-// but uses the injected mock client via createLegoClient.
-func (t *testExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
-	if err := validateRevokeCertificateRequest(req); err != nil {
-		return nil, err
+func TestCreateCertificate_Coalescing(t *testing.T) {
+	var mu sync.Mutex
+	callCount := 0
+
+	// Pre-generate the chain outside the goroutines to avoid using t inside them.
+	chain := createTestCertPEM(t, 1)
+	chain = append(chain, createTestCertPEM(t, 2)...)
+
+	mockClient := &mockACMEClient{
+		obtainFunc: func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+			mu.Lock()
+			callCount++
+			mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return &certificate.Resource{Certificate: chain}, nil
+		},
 	}
-	acmeClient, err := t.createLegoClient(t.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ACME client: %w", err)
+
+	cfg := &acmeProxyConfig{
+		CaURL:                 "https://acme.test.com",
+		Email:                 "test@example.com",
+		Kid:                   "test-kid",
+		HmacKey:               "test-hmac",
+		CertLifetime:          30,
+		MaxConcurrentRequests: 4,
 	}
-	pemBytes := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: req.Certificate.Raw,
-	})
-	if err := acmeClient.Revoke(pemBytes); err != nil {
-		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
+	cas := newTestCAS(t, cfg, mockClient)
+
+	csr := &x509.CertificateRequest{DNSNames: []string{"test.example.com"}}
+	req := &apiv1.CreateCertificateRequest{CSR: csr, Template: &x509.Certificate{}}
+
+	const n = 5
+	var wg sync.WaitGroup
+	errs := make([]error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			_, errs[i] = cas.CreateCertificate(req)
+		}(i)
 	}
-	return &apiv1.RevokeCertificateResponse{Certificate: req.Certificate}, nil
+	wg.Wait()
+
+	for i, err := range errs {
+		if err != nil {
+			t.Errorf("request %d error: %v", i, err)
+		}
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if callCount != 1 {
+		t.Errorf("ObtainForCSR called %d times, want 1 (coalescing)", callCount)
+	}
+}
+
+func TestCreateCertificate_Serialization(t *testing.T) {
+	var mu sync.Mutex
+	var active, maxActive int
+
+	chain := createTestCertPEM(t, 1)
+	chain = append(chain, createTestCertPEM(t, 2)...)
+
+	mockClient := &mockACMEClient{
+		obtainFunc: func(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+			mu.Lock()
+			active++
+			if active > maxActive {
+				maxActive = active
+			}
+			mu.Unlock()
+
+			time.Sleep(50 * time.Millisecond)
+
+			mu.Lock()
+			active--
+			mu.Unlock()
+
+			return &certificate.Resource{Certificate: chain}, nil
+		},
+	}
+
+	cfg := &acmeProxyConfig{
+		CaURL:                 "https://acme.test.com",
+		Email:                 "test@example.com",
+		Kid:                   "test-kid",
+		HmacKey:               "test-hmac",
+		MaxConcurrentRequests: 1,
+	}
+	cas := newTestCAS(t, cfg, mockClient)
+
+	// Two different-domain CSRs so singleflight does not coalesce them.
+	reqs := []*apiv1.CreateCertificateRequest{
+		{CSR: &x509.CertificateRequest{DNSNames: []string{"a.example.com"}}, Template: &x509.Certificate{}},
+		{CSR: &x509.CertificateRequest{DNSNames: []string{"b.example.com"}}, Template: &x509.Certificate{}},
+	}
+
+	var wg sync.WaitGroup
+	for _, r := range reqs {
+		wg.Add(1)
+		go func(r *apiv1.CreateCertificateRequest) {
+			defer wg.Done()
+			if _, err := cas.CreateCertificate(r); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		}(r)
+	}
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if maxActive > 1 {
+		t.Errorf("max concurrent ObtainForCSR = %d, want 1 (serialized)", maxActive)
+	}
 }
 
 // createTestCert returns a parsed *x509.Certificate (not just PEM bytes).

@@ -1,5 +1,6 @@
 {
-  "address": ":443",
+# Client-facing listener and the name clients use to reach this proxy.
+  "address": "192.168.100.1:443",
   "dnsNames": ["acmeproxy.example.com"],
   "logger": {
     "format": "json"
@@ -8,19 +9,89 @@
     "type": "bbolt",
     "dataSource": "/opt/acme-proxy/db/bbolt"
   },
+
+# Admin web dashboard: enabled when port > 0. Port must not conflict with
+# "address" or the challenge listeners. Credentials default to admin/kambing.
+# TLS: by default the dashboard SERVES THE SAME certificate as the :443
+# client-facing listener (same key tls_key.pem + dnsNames identity, resolved
+# through the shared cert cache — no separate upstream issuance, so the
+# Let's Encrypt 5-certs-per-week budget is never doubled). A copy is kept
+# beside the store; renewal follows tls_max_age_days (default 30) and swaps
+# in without a restart. Alternatively pin tls_cert + tls_key.
+# data_source defaults to metrics.dataSource.
+  "dashboard": {
+    "port": 8443,
+    "username": "admin",
+    "password": "kambing",
+    "tls_max_age_days": 30
+  },
+
+# Client allow-list for ACME requests: one IP or CIDR subnet per line,
+# '#' comments allowed. Re-read on change — no restart needed. Editable
+# from the dashboard (ACL tab). Omitting the block disables the ACL.
+  "acl": {
+    "file": "/opt/acme-proxy/acl.txt"
+  },
+
   "authority": {
     "type": "externalcas",
     "config": {
+# Upstream ACME CA directory URL (required).
+# Tested: Let's Encrypt https://acme-v02.api.letsencrypt.org/directory
+#         ZeroSSL https://api.zerossl.com/acme/v2/directory (needs EAB)
       "ca_url": "",
+
+# Account email registered with the upstream CA (optional but recommended)
       "account_email": "",
+
+# External Account Binding: leave BOTH empty for CAs without EAB (e.g.
+# Let's Encrypt); set BOTH for CAs that require EAB (e.g. ZeroSSL, Sectigo,
+# CertiNext). Setting only one is a config error.
       "eab_kid": "",
       "eab_hmac_key": "",
-      "dns01_txt":{
-        "provider":"",
-        "dns_servers":[],
-        "env_vars":{
-        }
+
+# Challenge solved toward the UPSTREAM CA: auto | http-01 | tls-alpn-01 | dns-01.
+# Independent of the challenge type requested by downstream clients.
+# auto = dns-01 when dns01_txt is fully configured, else http-01.
+# NOTE: ZeroSSL does NOT support tls-alpn-01; Let's Encrypt supports all three.
+      "challenge_type": "auto",
+
+# Challenge listener bind addresses (hot-apply: the idle listener rebinds
+# on the next challenge). Empty bind IP = all interfaces. MUST NOT conflict
+# with "address" on the same IP. External reachability: http-01 needs port 80,
+# tls-alpn-01 needs port 443 (RFC-mandated) reachable from the upstream CA.
+      "http01_bind": "",
+      "http01_port": 80,
+      "tlsalpn01_bind": "",
+      "tlsalpn01_port": 443,
+
+# Max simultaneous upstream ACME operations (issue/revoke); excess queued.
+# Changes apply immediately (hot-resized).
+      "max_concurrent_requests": 1,
+
+# cert_poll_timeout: seconds waiting for issuance after challenge validation
+# (default 30). request_timeout: total seconds per request incl. validation +
+# polling (default 120) — raise both for slow CAs like ZeroSSL.
+# cert_cache_min_validity: minimum remaining validity in days for the cache
+# to serve a repeat request (default 7).
+# cert_cache_max_age: maximum AGE in days of a cached certificate that may
+# still be served; older entries force a fresh issuance (default 30). Keeps
+# renewal cadence bounded so the Let's Encrypt 5-certs-per-week-per-name
+# limit is never tripped, even while upstream certs are still 90 days.
+      "cert_poll_timeout": 30,
+      "request_timeout": 120,
+      "cert_cache_min_validity": 7,
+      "cert_cache_max_age": 30,
+
+# Lego DNS provider config, used when challenge_type is dns-01 (or auto with
+# both provider and env_vars set).
+      "dns01_txt": {
+        "provider": "",
+        "dns_servers": [],
+        "env_vars": {}
       },
+
+# Prometheus metrics sidecar (enabled only when both port and dataSource set).
       "metrics": {
         "port": 9234,
         "dataSource": "/opt/acme-proxy/db/metrics"
@@ -50,5 +121,11 @@
     "maxVersion": 1.3,
     "renegotiation": false
   },
+
+# If true, downstream client challenges are marked valid WITHOUT contacting
+# the client domain — domain control is proven toward the upstream CA.
+# SECURITY: any host that can reach the ACME endpoint (see acl above) can
+# then obtain certs for any name the upstream CA issues.
+  "disableChallengeValidation": false,
   "commonName": "acmeproxy.example.com"
 }

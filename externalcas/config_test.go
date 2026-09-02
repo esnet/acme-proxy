@@ -47,6 +47,30 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			errMsg:  "certlifetime cannot be negative",
 		},
 		{
+			name: "negative cert_poll_timeout",
+			config: acmeProxyConfig{
+				CaURL:           "https://acme.example.com",
+				Email:           "test@example.com",
+				Kid:             "test-kid",
+				HmacKey:         "test-hmac",
+				CertPollTimeout: -1,
+			},
+			wantErr: true,
+			errMsg:  "cert_poll_timeout cannot be negative",
+		},
+		{
+			name: "negative cert_cache_min_validity",
+			config: acmeProxyConfig{
+				CaURL:                "https://acme.example.com",
+				Email:                "test@example.com",
+				Kid:                  "test-kid",
+				HmacKey:              "test-hmac",
+				CertCacheMinValidity: -1,
+			},
+			wantErr: true,
+			errMsg:  "cert_cache_min_validity cannot be negative",
+		},
+		{
 			name: "zero certlifetime is valid",
 			config: acmeProxyConfig{
 				CaURL:        "https://acme.example.com",
@@ -169,9 +193,129 @@ func TestAcmeProxyConfig_Timeouts(t *testing.T) {
 		t.Errorf("HTTPTimeout() = %v, want %v", httpTimeout, 90*time.Second)
 	}
 
-	requestTimeout := config.RequestTimeout()
-	if requestTimeout != 2*time.Minute {
-		t.Errorf("RequestTimeout() = %v, want %v", requestTimeout, 2*time.Minute)
+	requestTimeout := config.RequestTimeoutDuration()
+	if requestTimeout != 120*time.Second {
+		t.Errorf("RequestTimeoutDuration() = %v, want %v", requestTimeout, 120*time.Second)
+	}
+
+	certPollTimeout := config.CertPollTimeoutDuration()
+	if certPollTimeout != 30*time.Second {
+		t.Errorf("CertPollTimeoutDuration() = %v, want %v", certPollTimeout, 30*time.Second)
+	}
+}
+
+func TestAcmeProxyConfig_CertPollTimeoutDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		timeout  int
+		expected time.Duration
+	}{
+		{
+			name:     "default when zero",
+			timeout:  0,
+			expected: 30 * time.Second,
+		},
+		{
+			name:     "custom 3 minutes",
+			timeout:  180,
+			expected: 3 * time.Minute,
+		},
+		{
+			name:     "custom 5 minutes",
+			timeout:  300,
+			expected: 5 * time.Minute,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &acmeProxyConfig{CertPollTimeout: tt.timeout}
+			got := cfg.CertPollTimeoutDuration()
+			if got != tt.expected {
+				t.Errorf("CertPollTimeoutDuration() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_RequestTimeoutDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		timeout  int
+		expected time.Duration
+	}{
+		{
+			name:     "default when zero",
+			timeout:  0,
+			expected: 120 * time.Second,
+		},
+		{
+			name:     "custom 5 minutes for slow CA",
+			timeout:  300,
+			expected: 5 * time.Minute,
+		},
+		{
+			name:     "custom 10 minutes",
+			timeout:  600,
+			expected: 10 * time.Minute,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &acmeProxyConfig{RequestTimeout: tt.timeout}
+			got := cfg.RequestTimeoutDuration()
+			if got != tt.expected {
+				t.Errorf("RequestTimeoutDuration() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_Validate_RequestTimeout(t *testing.T) {
+	cfg := &acmeProxyConfig{CaURL: "https://acme.example.com", RequestTimeout: -1}
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "request_timeout cannot be negative") {
+		t.Errorf("Validate() with negative request_timeout: err = %v, want request_timeout error", err)
+	}
+
+	cfg = &acmeProxyConfig{CaURL: "https://acme.example.com", RequestTimeout: 420}
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("Validate() with request_timeout=420: unexpected error %v", err)
+	}
+}
+
+func TestAcmeProxyConfig_CertCacheMinValidityDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		days     int
+		expected time.Duration
+	}{
+		{
+			name:     "default when zero",
+			days:     0,
+			expected: 7 * 24 * time.Hour,
+		},
+		{
+			name:     "custom 3 days",
+			days:     3,
+			expected: 3 * 24 * time.Hour,
+		},
+		{
+			name:     "custom 30 days",
+			days:     30,
+			expected: 30 * 24 * time.Hour,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &acmeProxyConfig{CertCacheMinValidity: tt.days}
+			got := cfg.CertCacheMinValidityDuration()
+			if got != tt.expected {
+				t.Errorf("CertCacheMinValidityDuration() = %v, want %v", got, tt.expected)
+			}
+		})
 	}
 }
 
@@ -291,38 +435,39 @@ func TestParseConfig_MetricsFieldValues(t *testing.T) {
 
 func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 	tests := []struct {
-		name         string
-		config       acmeProxyConfig
-		wantErr      bool
-		errMsg       string
-		wantUseEAB   bool
-		wantUseDNS01 bool
+		name              string
+		config            acmeProxyConfig
+		wantErr           bool
+		errMsg            string
+		wantUseEAB        bool
+		wantChallengeType string
 	}{
 		{
-			name: "neither EAB nor DNS01 configured",
+			name: "neither EAB nor DNS01 configured - falls back to HTTP01",
 			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 			},
-			wantErr: true,
-			errMsg:  "missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration",
+			wantErr:           false,
+			wantUseEAB:        false,
+			wantChallengeType: "http-01",
 		},
 		{
-			name: "partial EAB - only Kid set",
+			name: "partial EAB - only Kid set - error",
 			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 				Kid:   "test-kid",
 			},
 			wantErr: true,
-			errMsg:  "missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration",
+			errMsg:  "eab_kid and eab_hmac_key must be set together",
 		},
 		{
-			name: "partial EAB - only HmacKey set",
+			name: "partial EAB - only HmacKey set - error",
 			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
 				HmacKey: "test-hmac",
 			},
 			wantErr: true,
-			errMsg:  "missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration",
+			errMsg:  "eab_kid and eab_hmac_key must be set together",
 		},
 		{
 			name: "DNS01-only valid",
@@ -333,27 +478,29 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
 				},
 			},
-			wantErr:      false,
-			wantUseEAB:   false,
-			wantUseDNS01: true,
+			wantErr:           false,
+			wantUseEAB:        false,
+			wantChallengeType: "dns-01",
 		},
 		{
-			name: "partial DNS01 - only Provider set",
+			name: "partial DNS01 - only Provider set - falls back to HTTP01",
 			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 				Lego:  legoConfig{Provider: "route53"},
 			},
-			wantErr: true,
-			errMsg:  "missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration",
+			wantErr:           false,
+			wantUseEAB:        false,
+			wantChallengeType: "http-01",
 		},
 		{
-			name: "partial DNS01 - only Env_Vars set",
+			name: "partial DNS01 - only Env_Vars set - falls back to HTTP01",
 			config: acmeProxyConfig{
 				CaURL: "https://acme.example.com",
 				Lego:  legoConfig{Env_Vars: map[string]string{"AWS_REGION": "us-east-1"}},
 			},
-			wantErr: true,
-			errMsg:  "missing eab or dns01 config. acme-proxy requires atleast one.\nRefer docs https://software.es.net/acme-proxy/configuration",
+			wantErr:           false,
+			wantUseEAB:        false,
+			wantChallengeType: "http-01",
 		},
 		{
 			name: "both EAB and DNS01 configured",
@@ -366,20 +513,20 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
 				},
 			},
-			wantErr:      false,
-			wantUseEAB:   true,
-			wantUseDNS01: true,
+			wantErr:           false,
+			wantUseEAB:        true,
+			wantChallengeType: "dns-01",
 		},
 		{
-			name: "EAB-only sets useEAB flag",
+			name: "EAB-only sets useEAB flag, falls back to HTTP01",
 			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
 				Kid:     "test-kid",
 				HmacKey: "test-hmac",
 			},
-			wantErr:      false,
-			wantUseEAB:   true,
-			wantUseDNS01: false,
+			wantErr:           false,
+			wantUseEAB:        true,
+			wantChallengeType: "http-01",
 		},
 	}
 
@@ -399,8 +546,8 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 			if tt.config.useEAB != tt.wantUseEAB {
 				t.Errorf("useEAB = %v, want %v", tt.config.useEAB, tt.wantUseEAB)
 			}
-			if tt.config.useDNS01 != tt.wantUseDNS01 {
-				t.Errorf("useDNS01 = %v, want %v", tt.config.useDNS01, tt.wantUseDNS01)
+			if tt.config.challengeType != tt.wantChallengeType {
+				t.Errorf("challengeType = %q, want %q", tt.config.challengeType, tt.wantChallengeType)
 			}
 		})
 	}
@@ -408,10 +555,10 @@ func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 
 func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 	tests := []struct {
-		name         string
-		config       string
-		wantUseEAB   bool
-		wantUseDNS01 bool
+		name              string
+		config            string
+		wantUseEAB        bool
+		wantChallengeType string
 	}{
 		{
 			name: "DNS01-only valid JSON",
@@ -422,8 +569,8 @@ func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 					"env_vars": {"AWS_REGION": "us-east-1"}
 				}
 			}`,
-			wantUseEAB:   false,
-			wantUseDNS01: true,
+			wantUseEAB:        false,
+			wantChallengeType: "dns-01",
 		},
 		{
 			name: "both EAB and DNS01 in JSON",
@@ -436,8 +583,16 @@ func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 					"env_vars": {"AWS_REGION": "us-east-1"}
 				}
 			}`,
-			wantUseEAB:   true,
-			wantUseDNS01: true,
+			wantUseEAB:        true,
+			wantChallengeType: "dns-01",
+		},
+		{
+			name: "no DNS01 falls back to HTTP01",
+			config: `{
+				"ca_url": "https://acme.example.com"
+			}`,
+			wantUseEAB:        false,
+			wantChallengeType: "http-01",
 		},
 	}
 
@@ -450,9 +605,412 @@ func TestParseConfig_DNS01AndBothModes(t *testing.T) {
 			if cfg.useEAB != tt.wantUseEAB {
 				t.Errorf("useEAB = %v, want %v", cfg.useEAB, tt.wantUseEAB)
 			}
-			if cfg.useDNS01 != tt.wantUseDNS01 {
-				t.Errorf("useDNS01 = %v, want %v", cfg.useDNS01, tt.wantUseDNS01)
+			if cfg.challengeType != tt.wantChallengeType {
+				t.Errorf("challengeType = %q, want %q", cfg.challengeType, tt.wantChallengeType)
 			}
 		})
+	}
+}
+
+func TestAcmeProxyConfig_Validate_ChallengeType(t *testing.T) {
+	tests := []struct {
+		name              string
+		config            acmeProxyConfig
+		wantErr           bool
+		errMsg            string
+		wantChallengeType string
+	}{
+		{
+			name: "auto with fully configured dns01 resolves to dns-01",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "auto",
+				Lego: legoConfig{
+					Provider: "route53",
+					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
+				},
+			},
+			wantErr:           false,
+			wantChallengeType: "dns-01",
+		},
+		{
+			name: "auto without dns01 resolves to http-01",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "auto",
+			},
+			wantErr:           false,
+			wantChallengeType: "http-01",
+		},
+		{
+			name: "empty challenge type resolves to http-01",
+			config: acmeProxyConfig{
+				CaURL: "https://acme.example.com",
+			},
+			wantErr:           false,
+			wantChallengeType: "http-01",
+		},
+		{
+			name: "explicit http-01 even when dns01 configured",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "http-01",
+				Lego: legoConfig{
+					Provider: "route53",
+					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
+				},
+			},
+			wantErr:           false,
+			wantChallengeType: "http-01",
+		},
+		{
+			name: "explicit tls-alpn-01",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "tls-alpn-01",
+			},
+			wantErr:           false,
+			wantChallengeType: "tls-alpn-01",
+		},
+		{
+			name: "explicit dns-01 with provider and env_vars",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "dns-01",
+				Lego: legoConfig{
+					Provider: "route53",
+					Env_Vars: map[string]string{"AWS_REGION": "us-east-1"},
+				},
+			},
+			wantErr:           false,
+			wantChallengeType: "dns-01",
+		},
+		{
+			name: "explicit dns-01 without env_vars is OK",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "dns-01",
+				Lego: legoConfig{
+					Provider: "route53",
+				},
+			},
+			wantErr:           false,
+			wantChallengeType: "dns-01",
+		},
+		{
+			name: "explicit dns-01 without provider errors",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "dns-01",
+			},
+			wantErr: true,
+			errMsg:  "challenge_type dns-01 requires dns01_txt.provider",
+		},
+		{
+			name: "invalid challenge type errors",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				ChallengeType: "bogus",
+			},
+			wantErr: true,
+			errMsg:  "invalid challenge_type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+				return
+			}
+			if tt.config.challengeType != tt.wantChallengeType {
+				t.Errorf("challengeType = %q, want %q", tt.config.challengeType, tt.wantChallengeType)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_Validate_EABPair(t *testing.T) {
+	tests := []struct {
+		name       string
+		config     acmeProxyConfig
+		wantErr    bool
+		errMsg     string
+		wantUseEAB bool
+	}{
+		{
+			name: "both kid and hmac set enables EAB",
+			config: acmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				Kid:     "kid",
+				HmacKey: "hmac",
+			},
+			wantErr:    false,
+			wantUseEAB: true,
+		},
+		{
+			name: "neither set disables EAB",
+			config: acmeProxyConfig{
+				CaURL: "https://acme.example.com",
+			},
+			wantErr:    false,
+			wantUseEAB: false,
+		},
+		{
+			name: "kid only errors",
+			config: acmeProxyConfig{
+				CaURL: "https://acme.example.com",
+				Kid:   "kid",
+			},
+			wantErr: true,
+			errMsg:  "eab_kid and eab_hmac_key must be set together",
+		},
+		{
+			name: "hmac only errors",
+			config: acmeProxyConfig{
+				CaURL:   "https://acme.example.com",
+				HmacKey: "hmac",
+			},
+			wantErr: true,
+			errMsg:  "eab_kid and eab_hmac_key must be set together",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				if !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+				return
+			}
+			if tt.config.useEAB != tt.wantUseEAB {
+				t.Errorf("useEAB = %v, want %v", tt.config.useEAB, tt.wantUseEAB)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_Validate_Ports(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  acmeProxyConfig
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "zero ports are valid (defaults)",
+			config: acmeProxyConfig{
+				CaURL: "https://acme.example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid http01 port",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Port: 8080,
+			},
+			wantErr: false,
+		},
+		{
+			name: "negative http01 port errors",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Port: -1,
+			},
+			wantErr: true,
+			errMsg:  "http01_port must be between 1 and 65535",
+		},
+		{
+			name: "http01 port too large errors",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Port: 70000,
+			},
+			wantErr: true,
+			errMsg:  "http01_port must be between 1 and 65535",
+		},
+		{
+			name: "valid tlsalpn01 port",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				TLSALPN01Port: 8443,
+			},
+			wantErr: false,
+		},
+		{
+			name: "negative tlsalpn01 port errors",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				TLSALPN01Port: -1,
+			},
+			wantErr: true,
+			errMsg:  "tlsalpn01_port must be between 1 and 65535",
+		},
+		{
+			name: "tlsalpn01 port too large errors",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				TLSALPN01Port: 70000,
+			},
+			wantErr: true,
+			errMsg:  "tlsalpn01_port must be between 1 and 65535",
+		},
+		{
+			name: "valid http01 bind ip",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Bind: "192.168.1.10",
+				HTTP01Port: 8080,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid http01 bind ipv6",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Bind: "::1",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid http01 bind errors",
+			config: acmeProxyConfig{
+				CaURL:      "https://acme.example.com",
+				HTTP01Bind: "not-an-ip",
+			},
+			wantErr: true,
+			errMsg:  `http01_bind "not-an-ip" is not a valid IP address`,
+		},
+		{
+			name: "valid tlsalpn01 bind ip",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				TLSALPN01Bind: "10.0.0.5",
+				TLSALPN01Port: 8443,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid tlsalpn01 bind errors",
+			config: acmeProxyConfig{
+				CaURL:         "https://acme.example.com",
+				TLSALPN01Bind: "acme.example.com",
+			},
+			wantErr: true,
+			errMsg:  `tlsalpn01_bind "acme.example.com" is not a valid IP address`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_Validate_MaxConcurrentRequests(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  acmeProxyConfig
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name: "zero is valid (defaults to 1)",
+			config: acmeProxyConfig{
+				CaURL: "https://acme.example.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "positive value is valid",
+			config: acmeProxyConfig{
+				CaURL:                 "https://acme.example.com",
+				MaxConcurrentRequests: 5,
+			},
+			wantErr: false,
+		},
+		{
+			name: "negative value errors",
+			config: acmeProxyConfig{
+				CaURL:                 "https://acme.example.com",
+				MaxConcurrentRequests: -1,
+			},
+			wantErr: true,
+			errMsg:  "max_concurrent_requests cannot be negative",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && !strings.Contains(err.Error(), tt.errMsg) {
+				t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestAcmeProxyConfig_Defaults(t *testing.T) {
+	cfg := &acmeProxyConfig{}
+	if got := cfg.MaxConcurrentRequestsOrDefault(); got != 1 {
+		t.Errorf("MaxConcurrentRequestsOrDefault() = %d, want 1", got)
+	}
+	if got := cfg.HTTP01PortOrDefault(); got != 80 {
+		t.Errorf("HTTP01PortOrDefault() = %d, want 80", got)
+	}
+	if got := cfg.TLSALPN01PortOrDefault(); got != 443 {
+		t.Errorf("TLSALPN01PortOrDefault() = %d, want 443", got)
+	}
+	if got := cfg.HTTP01BindAddr(); got != ":80" {
+		t.Errorf("HTTP01BindAddr() = %q, want %q", got, ":80")
+	}
+	if got := cfg.TLSALPN01BindAddr(); got != ":443" {
+		t.Errorf("TLSALPN01BindAddr() = %q, want %q", got, ":443")
+	}
+
+	cfg = &acmeProxyConfig{MaxConcurrentRequests: 7, HTTP01Port: 8080, TLSALPN01Port: 8443}
+	if got := cfg.MaxConcurrentRequestsOrDefault(); got != 7 {
+		t.Errorf("MaxConcurrentRequestsOrDefault() = %d, want 7", got)
+	}
+	if got := cfg.HTTP01PortOrDefault(); got != 8080 {
+		t.Errorf("HTTP01PortOrDefault() = %d, want 8080", got)
+	}
+	if got := cfg.TLSALPN01PortOrDefault(); got != 8443 {
+		t.Errorf("TLSALPN01PortOrDefault() = %d, want 8443", got)
+	}
+
+	// Bind addresses combine the optional bind IP with the effective port.
+	cfg = &acmeProxyConfig{HTTP01Bind: "203.0.113.10", HTTP01Port: 8080, TLSALPN01Bind: "10.0.0.5"}
+	if got := cfg.HTTP01BindAddr(); got != "203.0.113.10:8080" {
+		t.Errorf("HTTP01BindAddr() = %q, want %q", got, "203.0.113.10:8080")
+	}
+	if got := cfg.TLSALPN01BindAddr(); got != "10.0.0.5:443" {
+		t.Errorf("TLSALPN01BindAddr() = %q, want %q", got, "10.0.0.5:443")
 	}
 }

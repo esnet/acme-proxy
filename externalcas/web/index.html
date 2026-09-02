@@ -1,0 +1,1437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ACME Proxy — Admin</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b9dff' stroke-width='2'%3E%3Cpath d='M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0c1017;--bg2:#10151f;--panel:#131926;--border:#222b3b;--border2:#1a212e;
+  --text:#e8ecf3;--muted:#8b95a7;--accent:#5b9dff;--accent-deep:#2f66d0;
+  --green:#3fdca2;--red:#f88282;--amber:#f5b83d;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer;background:none;border:none;color:inherit;padding:0}
+input{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+a{color:var(--accent)}
+.hidden{display:none !important}
+.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--muted)}
+
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(1100px 520px at 50% -8%,rgba(91,157,255,.09),transparent 70%),var(--bg)}
+.login-card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:30px 28px;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.login-brand{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px;color:var(--accent)}
+.login-brand svg{flex:none}
+.login-title{font-size:17px;font-weight:650;text-align:center}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin:4px 0 22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:550;color:var(--muted);margin-bottom:6px}
+.input{width:100%;padding:9px 12px;border-radius:8px;background:#0d1219;border:1px solid var(--border);
+  color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
+.input::placeholder{color:#5b6577}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,157,255,.16)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 14px;border-radius:8px;
+  font-weight:550;font-size:13.5px;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--accent-deep);color:#fff}
+.btn-primary:hover{background:#3a74e2}
+.btn-primary:disabled{opacity:.6;cursor:default}
+.btn-ghost{border-color:var(--border);color:var(--muted)}
+.btn-ghost:hover{color:var(--text);border-color:#33405a;background:rgba(255,255,255,.03)}
+.btn-block{width:100%;padding:10px 14px}
+.btn:focus-visible,.nav-btn:focus-visible,.input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.login-error{color:var(--red);font-size:13px;margin:0 0 14px;min-height:0}
+
+.topbar{position:sticky;top:0;z-index:20;background:rgba(12,16,23,.86);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border)}
+.topbar-inner{display:flex;align-items:center;gap:18px;max-width:1280px;margin:0 auto;padding:0 20px;height:56px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:650;font-size:14.5px;white-space:nowrap}
+.brand svg{color:var(--accent);flex:none}
+.nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-btn{padding:7px 12px;border-radius:8px;color:var(--muted);font-size:13.5px;font-weight:500;
+  white-space:nowrap;transition:color .15s,background .15s}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,.045)}
+.nav-btn.active{color:var(--accent);background:rgba(91,157,255,.10)}
+@media(max-width:560px){.brand span{display:none}.topbar-inner{gap:10px;padding:0 12px}}
+
+main{max-width:1280px;margin:0 auto;padding:24px 20px 56px}
+.tab-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.tab-title{font-size:19px;font-weight:650}
+.search{width:280px;max-width:100%}
+@media(max-width:560px){.search{width:100%}}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;
+  position:relative;overflow:hidden;transition:transform .15s,border-color .15s}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--sc,var(--accent))}
+.stat:hover{transform:translateY(-1px);border-color:#2b3547}
+.stat .v{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+.c-green{--sc:var(--green)}.c-red{--sc:var(--red)}.c-amber{--sc:var(--amber)}.c-blue{--sc:var(--accent)}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:980px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 16px;border-bottom:1px solid var(--border)}
+.panel-head h2{font-size:13.5px;font-weight:600;letter-spacing:.02em}
+.panel-note{font-size:12.5px;color:var(--muted);font-weight:400}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  font-weight:600;padding:9px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 16px;border-bottom:1px solid var(--border2);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background .12s,opacity .25s}
+tbody tr:hover{background:rgba(255,255,255,.022)}
+tbody tr.row-out{opacity:0}
+.td-strong{font-weight:550}
+.cell-sans{max-width:280px;white-space:normal;overflow-wrap:break-word;color:var(--muted);font-size:13px}
+.cell-reason{font-family:var(--mono);font-size:12px;color:var(--red);max-width:520px;white-space:normal;
+  overflow-wrap:anywhere;word-break:break-word;line-height:1.6;padding:6px 0;vertical-align:top}
+.cell-time{white-space:nowrap;color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.cell-mono{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+.cell-num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.cell-act{text-align:right;white-space:nowrap}
+.red{color:var(--red)}
+.latest-sub{display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap}
+.cache-yes{display:inline-flex;align-items:center;gap:6px;color:var(--green);font-size:12.5px}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;box-shadow:0 0 6px rgba(63,220,162,.45)}
+.rowlink{cursor:pointer}
+.rowlink:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.detail-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.detail-domain{font-family:var(--mono);font-size:19px;font-weight:600;word-break:break-all;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 14px}
+.chip .v{font-size:16px;font-weight:650;font-variant-numeric:tabular-nums;line-height:1.2}
+.chip .l{font-size:12px;color:var(--muted)}
+.chip-green .v{color:var(--green)}
+.chip-red .v{color:var(--red)}
+.chip .badge{margin-left:2px}
+#certs-detail .panel{margin-bottom:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:10px 20px;padding:14px 16px}
+.kv-k{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;white-space:nowrap;padding-top:3px}
+.skel-chip{display:inline-block;width:92px;height:37px;border-radius:10px;margin:0 10px 0 0;
+  background:linear-gradient(90deg,#1a2130 25%,#232c3d 50%,#1a2130 75%);background-size:200% 100%;
+  animation:shimmer 1.3s linear infinite}
+.pager{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--border)}
+.pg-count{font-size:12.5px;color:var(--muted);margin-right:auto;font-variant-numeric:tabular-nums}
+.pg-btn{padding:4px 10px;border-radius:7px;border:1px solid var(--border);color:var(--muted);font-size:12.5px;
+  transition:color .15s,background .15s,border-color .15s}
+.pg-btn:hover:not(:disabled){color:var(--text);border-color:#33405a;background:rgba(255,255,255,.04)}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pg-of{font-size:12.5px;color:var(--muted);padding:0 2px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pg-per{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin-left:8px}
+.pg-sel{background:#0d1219;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12.5px;padding:3px 6px;outline:none;cursor:pointer}
+.pg-sel:focus-visible{border-color:var(--accent)}
+.btn-danger{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;
+  border:1px solid rgba(248,130,130,.35);color:var(--red);font-size:12.5px;font-weight:550;
+  transition:background .15s,border-color .15s}
+.btn-danger:hover:not(:disabled){background:rgba(248,130,130,.10);border-color:rgba(248,130,130,.55)}
+.btn-danger:disabled{opacity:.5;cursor:default}
+.btn-danger:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;
+  font-size:12px;font-weight:500;line-height:1.6;white-space:nowrap}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.b-green{background:rgba(52,211,153,.12);color:var(--green)}
+.b-red{background:rgba(248,113,113,.12);color:var(--red)}
+.b-amber{background:rgba(251,191,36,.12);color:var(--amber)}
+.b-neutral{background:rgba(148,160,180,.13);color:#a7b1c4}
+
+.feed{list-style:none;margin:0;padding:2px 0}
+.feed li{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:9px 16px;border-bottom:1px solid var(--border2)}
+.feed li:last-child{border-bottom:0}
+.feed li:hover{background:rgba(255,255,255,.022)}
+.feed-time{color:var(--muted);font-size:12px;min-width:58px;font-variant-numeric:tabular-nums}
+.feed-ip{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.feed-text{flex:1;min-width:160px;font-size:13px}
+.feed-text .badge{margin-right:6px}
+
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:38px 16px;color:var(--muted)}
+.empty svg{opacity:.45}
+.empty p{font-size:13px}
+
+.tab-head-right{display:flex;align-items:center;gap:14px;min-width:0}
+#acl-file{max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acl-toolbar{padding:14px 16px 12px}
+.acl-warn{display:flex;align-items:center;gap:8px;padding:7px 11px;border-radius:8px;margin-bottom:10px;
+  background:rgba(245,184,61,.07);border:1px solid rgba(245,184,61,.22);border-left:3px solid var(--amber);
+  color:#e3bd77;font-size:12.5px}
+.acl-warn svg{flex:none}
+.acl-help{font-size:12.5px;color:var(--muted)}
+.acl-invalid{margin-top:12px;padding:9px 12px;border-radius:8px;background:rgba(248,130,130,.06);
+  border:1px solid rgba(248,130,130,.25);border-left:3px solid var(--red)}
+.acl-invalid-title{color:var(--red);font-size:12.5px;font-weight:600;margin-bottom:5px}
+.acl-invalid-lines{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:12px;color:var(--red)}
+.acl-invalid-lines li{padding:1px 0;word-break:break-all}
+.acl-text{display:block;width:100%;min-height:50vh;padding:14px 16px;background:#0d1219;color:var(--text);
+  border:none;border-top:1px solid var(--border);font-family:var(--mono);font-size:12.5px;line-height:1.75;
+  resize:vertical;outline:none;overflow:auto;white-space:pre}
+.acl-text:focus{box-shadow:inset 0 0 0 2px rgba(91,157,255,.25)}
+.acl-meta{padding:8px 16px;border-top:1px solid var(--border);font-family:var(--mono);font-size:12px;
+  color:var(--muted);font-variant-numeric:tabular-nums}
+
+.set-wrap{max-width:880px}
+.skel-pad{padding:18px 16px}
+.settings-file{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+.settings-file .mono{color:#a7b1c4}
+.settings-note{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin:0 0 18px}
+.settings-note svg{flex:none;color:var(--green)}
+.note{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border-radius:9px;font-size:13px;line-height:1.5;margin-bottom:12px}
+.note svg{flex:none;margin-top:2px}
+.note strong{font-weight:600}
+.note-err{background:rgba(248,130,130,.08);border:1px solid rgba(248,130,130,.3);border-left:3px solid var(--red);color:#f2a4a4}
+.note-err strong{color:var(--red)}
+.note .mono{color:inherit;word-break:break-word}
+.set-card{margin-bottom:16px}
+.set-body{padding:16px}
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+.f-grid .wide{grid-column:1 / -1}
+@media(max-width:700px){.f-grid{grid-template-columns:1fr}}
+.f label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;font-weight:550;color:var(--muted);margin-bottom:6px}
+.f .hint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.45}
+.f-sub{grid-column:1 / -1;display:flex;align-items:center;gap:10px;margin-top:4px;
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.f-sub::after{content:'';flex:1;height:1px;background:var(--border)}
+select.input{appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b95a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:14px}
+select.input option{background:#131926;color:var(--text)}
+.secret{position:relative}
+.secret .input{padding-right:44px}
+.peek{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:32px;height:28px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:color .15s,background .15s}
+.peek:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.peek:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.peek .i-eye-off{display:none}
+.peek.peek-on .i-eye{display:none}
+.peek.peek-on .i-eye-off{display:block}
+.kv-edit{display:flex;flex-direction:column;gap:8px}
+.kv-row{display:grid;grid-template-columns:minmax(96px,1fr) 1.6fr auto;gap:8px;align-items:center}
+.kv-add{align-self:flex-start;padding:4px 10px;font-size:12.5px}
+.kv-x{width:32px;height:36px;border-radius:8px;border:1px solid var(--border);color:var(--muted);
+  display:inline-flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s,background .15s}
+.kv-x:hover{color:var(--red);border-color:rgba(248,130,130,.45);background:rgba(248,130,130,.08)}
+.kv-x:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+.card-note{margin:16px 0 0;padding-top:12px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--muted);line-height:1.5}
+.savebar{position:sticky;bottom:14px;z-index:15;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:4px;padding:10px 14px;background:rgba(19,25,38,.94);backdrop-filter:blur(8px);
+  border:1px solid #2b3547;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.savebar-note{font-size:12.5px;color:var(--muted)}
+.savebar-actions{display:flex;gap:8px}
+@media(max-width:560px){.savebar{flex-direction:column;align-items:stretch;text-align:center}.savebar-actions{justify-content:center}}
+
+.skel{display:block;height:12px;border-radius:6px;margin:8px 0;
+  background:linear-gradient(90deg,#1a2130 25%,#232c3d 50%,#1a2130 75%);background-size:200% 100%;
+  animation:shimmer 1.3s linear infinite}
+.skel-inline{display:inline-block;width:64px;height:16px;margin:6px 0}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.skel,.skel-chip{animation:none}tbody tr{transition:none}}
+
+#toast{position:fixed;bottom:20px;right:20px;z-index:50;max-width:340px;background:#1a2130;
+  border:1px solid #33405a;border-left:3px solid var(--amber);border-radius:10px;padding:10px 14px;
+  font-size:13px;box-shadow:0 12px 32px rgba(0,0,0,.45);opacity:0;transform:translateY(8px);
+  pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:none}
+noscript{display:block;padding:24px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <div class="login-card">
+    <div class="login-brand">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+    </div>
+    <h1 class="login-title">ACME Proxy</h1>
+    <p class="login-sub">Sign in to the admin console</p>
+    <form id="login-form" novalidate>
+      <div class="field">
+        <label for="login-user">Username</label>
+        <input class="input" id="login-user" name="username" autocomplete="username" autofocus>
+      </div>
+      <div class="field">
+        <label for="login-pass">Password</label>
+        <input class="input" id="login-pass" name="password" type="password" autocomplete="current-password">
+      </div>
+      <p class="login-error" id="login-error"></p>
+      <button class="btn btn-primary btn-block" id="login-btn" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span>ACME Proxy</span>
+      </div>
+      <nav class="nav" aria-label="Sections">
+        <button class="nav-btn" data-nav="overview">Overview</button>
+        <button class="nav-btn" data-nav="certs">Certificates</button>
+        <button class="nav-btn" data-nav="failed">Failed Requests</button>
+        <button class="nav-btn" data-nav="revoked">Revoked</button>
+        <button class="nav-btn" data-nav="cached">Cache</button>
+        <button class="nav-btn" data-nav="requests">Requests</button>
+        <button class="nav-btn" data-nav="acl">ACL</button>
+        <button class="nav-btn" data-nav="settings">Settings</button>
+      </nav>
+      <button class="btn btn-ghost" id="signout">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="tab-overview">
+      <div class="stats">
+        <div class="stat c-blue"><div class="v" id="st-issued"><span class="skel skel-inline"></span></div><div class="l">Issued</div></div>
+        <div class="stat c-red"><div class="v" id="st-failed"><span class="skel skel-inline"></span></div><div class="l">Failed</div></div>
+        <div class="stat c-red"><div class="v" id="st-revoked"><span class="skel skel-inline"></span></div><div class="l">Revoked</div></div>
+        <div class="stat c-amber"><div class="v" id="st-cached"><span class="skel skel-inline"></span></div><div class="l">Cached</div></div>
+        <div class="stat c-green"><div class="v" id="st-24h"><span class="skel skel-inline"></span></div><div class="l">Issued last 24h</div></div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <div class="panel-head"><h2>Expiring within 7 days</h2></div>
+          <div class="tw"><table>
+            <thead><tr><th>Common Name</th><th>SANs</th><th>Serial</th><th>Expires</th></tr></thead>
+            <tbody id="tb-expiring"></tbody>
+          </table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Recent activity</h2></div>
+          <ul class="feed" id="feed"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-certs" class="hidden">
+      <div id="certs-list">
+        <div class="tab-head">
+          <h1 class="tab-title">Certificates</h1>
+          <input class="input search" id="q-certs" type="search" placeholder="Search domains…" aria-label="Search domains">
+        </div>
+        <div class="panel">
+          <div class="tw"><table>
+            <thead><tr><th>Domain</th><th>Requests</th><th>Unique IPs</th><th>Last Requested</th><th>Latest Cert</th><th>Cached</th></tr></thead>
+            <tbody id="tb-certs"></tbody>
+          </table></div>
+          <div class="pager" id="pg-certs"></div>
+        </div>
+      </div>
+      <div id="certs-detail" class="hidden">
+        <div class="tab-head">
+          <div class="detail-top">
+            <button class="btn btn-ghost" id="certs-back" type="button">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+              All domains
+            </button>
+            <h1 class="detail-domain" id="cd-domain"></h1>
+          </div>
+        </div>
+        <div class="chips" id="cd-chips"></div>
+        <div class="panel hidden" id="cd-cache-panel">
+          <div class="panel-head">
+            <h2>Cached certificate</h2>
+            <button class="btn-danger" id="cd-del-cache" type="button">Delete cache</button>
+          </div>
+          <div class="kv" id="cd-cache-kv"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Requests</h2></div>
+          <div class="tw"><table>
+            <thead><tr><th>Time</th><th>Client IP</th><th>Status</th><th>Duration</th><th>Serial</th><th>Validity</th><th>Reason</th></tr></thead>
+            <tbody id="tb-cd-requests"></tbody>
+          </table></div>
+          <div class="pager" id="pg-cd"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-failed" class="hidden">
+      <div class="tab-head">
+        <h1 class="tab-title">Failed Requests</h1>
+        <input class="input search" id="q-failed" type="search" placeholder="Search name, IP, reason…" aria-label="Search failed requests">
+      </div>
+      <div class="panel">
+        <div class="tw"><table>
+          <thead><tr><th>Time</th><th>Common Name</th><th>SANs</th><th>Client IP</th><th>Duration</th><th>Reason</th></tr></thead>
+          <tbody id="tb-failed"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="tab-revoked" class="hidden">
+      <div class="tab-head"><h1 class="tab-title">Revoked</h1></div>
+      <div class="panel">
+        <div class="tw"><table>
+          <thead><tr><th>Common Name</th><th>SANs</th><th>Serial</th><th>Client IP</th><th>Issued At</th><th>Expires</th><th>Status</th></tr></thead>
+          <tbody id="tb-revoked"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="tab-cached" class="hidden">
+      <div class="tab-head"><h1 class="tab-title">Cache</h1></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Cached certificates</h2><span class="panel-note">Certificates served from cache without contacting the upstream CA.</span></div>
+        <div class="tw"><table>
+          <thead><tr><th>Common Name</th><th>SANs</th><th>Serial</th><th>Expires At</th><th></th></tr></thead>
+          <tbody id="tb-cached"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="tab-requests" class="hidden">
+      <div class="tab-head">
+        <h1 class="tab-title">Requests</h1>
+        <input class="input search" id="q-requests" type="search" placeholder="Search IP, kind, detail…" aria-label="Search requests">
+      </div>
+      <div class="panel">
+        <div class="tw"><table>
+          <thead><tr><th>Time</th><th>IP</th><th>Kind</th><th>Detail</th></tr></thead>
+          <tbody id="tb-requests"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="tab-acl" class="hidden">
+      <div class="tab-head">
+        <h1 class="tab-title">ACL</h1>
+        <div class="tab-head-right hidden" id="acl-head-right">
+          <span class="mono muted" id="acl-file"></span>
+          <button class="btn btn-primary" id="acl-save" type="button">Save</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div id="acl-none" class="hidden">
+          <div class="empty">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>
+            <p>No ACL file configured. Add an "acl" block with a "file" path to ca.json.</p>
+          </div>
+        </div>
+        <div id="acl-editor" class="hidden">
+          <div class="acl-toolbar">
+            <div class="acl-warn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <span>Restricting access too narrowly can lock out your own ACME clients.</span>
+            </div>
+            <p class="acl-help">One IP or CIDR subnet per line. Lines starting with # are comments. Changes apply to new requests immediately — no restart needed.</p>
+            <div class="acl-invalid hidden" id="acl-invalid">
+              <p class="acl-invalid-title">Not saved — invalid entries</p>
+              <ul class="acl-invalid-lines" id="acl-invalid-lines"></ul>
+            </div>
+          </div>
+          <textarea class="acl-text" id="acl-text" spellcheck="false" wrap="off" aria-label="ACL file contents"></textarea>
+          <div class="acl-meta" id="acl-count"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="hidden">
+      <div class="tab-head">
+        <h1 class="tab-title">Settings</h1>
+      </div>
+      <div class="set-wrap">
+        <div id="settings-skel" class="panel hidden">
+          <div class="skel-pad">
+            <span class="skel" style="width:34%"></span>
+            <span class="skel" style="width:72%"></span>
+            <span class="skel" style="width:56%"></span>
+            <span class="skel" style="width:64%"></span>
+            <span class="skel" style="width:42%"></span>
+          </div>
+        </div>
+        <div id="settings-body" class="hidden">
+          <p class="settings-file">Editing <span class="mono" id="settings-file-path"></span> — a backup is written to <span class="mono">ca.json.bak-settings</span> on every save; comments in ca.json are replaced by the generated file.</p>
+          <div class="note note-err hidden" id="set-err" role="alert">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            <span><strong>Not saved.</strong> <span id="set-err-text"></span></span>
+          </div>
+          <p class="settings-note">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+            <span>All changes apply immediately on save — no restart needed. Values are also persisted to ca.json so they survive restarts.</span>
+          </p>
+
+          <div class="panel set-card">
+            <div class="panel-head"><h2>Upstream CA</h2><span class="panel-note">Directory and account credentials</span></div>
+            <div class="set-body">
+              <div class="f-grid">
+                <div class="f wide">
+                  <label for="f-ca-url">Directory URL</label>
+                  <input class="input mono" id="f-ca-url" data-path="authority.config.ca_url" spellcheck="false" autocomplete="off" placeholder="https://acme-v02.api.letsencrypt.org/directory">
+                </div>
+                <div class="f">
+                  <label for="f-email">Account email</label>
+                  <input class="input" id="f-email" type="email" data-path="authority.config.account_email" spellcheck="false" autocomplete="off" placeholder="ops@example.com">
+                </div>
+                <div class="f">
+                  <label for="f-eab-kid">EAB key ID</label>
+                  <input class="input" id="f-eab-kid" data-path="authority.config.eab_kid" spellcheck="false" autocomplete="off">
+                </div>
+                <div class="f wide">
+                  <label for="f-eab-hmac">EAB HMAC key</label>
+                  <div class="secret">
+                    <input class="input mono" id="f-eab-hmac" type="password" data-path="authority.config.eab_hmac_key" spellcheck="false" autocomplete="new-password">
+                    <button type="button" class="peek" data-name="EAB HMAC key" aria-label="Show EAB HMAC key">
+                      <svg class="i-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <svg class="i-eye-off" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.4 10.4 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.6 9.6 0 0 1 12 4c6.5 0 10 7 10 7a18.4 18.4 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <p class="card-note">Changing the CA URL, email, or EAB keys re-registers the ACME account on the next request.</p>
+            </div>
+          </div>
+
+          <div class="panel set-card">
+            <div class="panel-head"><h2>Challenges</h2><span class="panel-note">How domain control is proven</span></div>
+            <div class="set-body">
+              <div class="f-grid">
+                <div class="f wide">
+                  <label for="f-challenge">Challenge type</label>
+                  <select class="input" id="f-challenge" data-path="authority.config.challenge_type">
+                    <option value="auto">auto</option>
+                    <option value="http-01">http-01</option>
+                    <option value="tls-alpn-01">tls-alpn-01</option>
+                    <option value="dns-01">dns-01</option>
+                  </select>
+                  <p class="hint" id="challenge-desc"></p>
+                </div>
+                <div class="f-sub">DNS-01</div>
+                <div class="f">
+                  <label for="f-dns-provider">Provider</label>
+                  <input class="input" id="f-dns-provider" data-path="authority.config.dns01_txt.provider" spellcheck="false" autocomplete="off" placeholder="cloudflare">
+                  <p class="hint">DNS provider plugin used for TXT records.</p>
+                </div>
+                <div class="f">
+                  <label for="f-dns-servers">DNS servers</label>
+                  <input class="input mono" id="f-dns-servers" data-path="authority.config.dns01_txt.dns_servers" data-type="csv" spellcheck="false" autocomplete="off" placeholder="1.1.1.1, 8.8.8.8">
+                  <p class="hint">Comma-separated resolvers for DNS-01 lookups.</p>
+                </div>
+                <div class="f wide">
+                  <label>Environment variables</label>
+                  <div class="kv-edit" id="env-vars" data-path="authority.config.dns01_txt.env_vars" data-type="kv"></div>
+                  <button type="button" class="btn btn-ghost kv-add" id="env-add">+ Add variable</button>
+                  <p class="hint">Credentials passed to the provider plugin, e.g. CF_API_TOKEN.</p>
+                </div>
+                <div class="f-sub">Listeners</div>
+                <div class="f">
+                  <label for="f-http-bind">HTTP-01 bind</label>
+                  <input class="input" id="f-http-bind" data-path="authority.config.http01_bind" spellcheck="false" autocomplete="off" placeholder="0.0.0.0">
+                  <p class="hint">Empty binds all interfaces. Applied on the next challenge; the idle listener rebinds automatically.</p>
+                </div>
+                <div class="f">
+                  <label for="f-http-port">HTTP-01 port</label>
+                  <input class="input" id="f-http-port" type="number" data-path="authority.config.http01_port" data-type="number">
+                  <p class="hint">Applied on the next challenge; the idle listener rebinds automatically.</p>
+                </div>
+                <div class="f">
+                  <label for="f-alpn-bind">TLS-ALPN-01 bind</label>
+                  <input class="input" id="f-alpn-bind" data-path="authority.config.tlsalpn01_bind" spellcheck="false" autocomplete="off" placeholder="0.0.0.0">
+                  <p class="hint">Empty binds all interfaces. Applied on the next challenge; the idle listener rebinds automatically.</p>
+                </div>
+                <div class="f">
+                  <label for="f-alpn-port">TLS-ALPN-01 port</label>
+                  <input class="input" id="f-alpn-port" type="number" data-path="authority.config.tlsalpn01_port" data-type="number">
+                  <p class="hint">Applied on the next challenge; the idle listener rebinds automatically.</p>
+                </div>
+                <div class="f">
+                  <label for="f-maxconc">Max concurrent requests</label>
+                  <input class="input" id="f-maxconc" type="number" min="1" data-path="authority.config.max_concurrent_requests" data-type="number">
+                  <p class="hint">Upstream ACME operations allowed in parallel. Takes effect immediately.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel set-card">
+            <div class="panel-head"><h2>Timeouts &amp; cache</h2><span class="panel-note">Upstream limits and certificate cache</span></div>
+            <div class="set-body">
+              <div class="f-grid">
+                <div class="f">
+                  <label for="f-poll">Cert poll timeout (seconds)</label>
+                  <input class="input" id="f-poll" type="number" data-path="authority.config.cert_poll_timeout" data-type="number">
+                  <p class="hint">How long to keep polling the CA for the new certificate after a challenge succeeds.</p>
+                </div>
+                <div class="f">
+                  <label for="f-reqto">Request timeout (seconds)</label>
+                  <input class="input" id="f-reqto" type="number" data-path="authority.config.request_timeout" data-type="number">
+                  <p class="hint">Overall limit for a single upstream ACME operation.</p>
+                </div>
+                <div class="f">
+                  <label for="f-minval">Min validity for cache (days)</label>
+                  <input class="input" id="f-minval" type="number" data-path="authority.config.cert_cache_min_validity" data-type="number">
+                  <p class="hint">Re-issue instead of serving cache when fewer than this many days of validity remain.</p>
+                </div>
+                <div class="f">
+                  <label for="f-maxage">Max cache age (days)</label>
+                  <input class="input" id="f-maxage" type="number" data-path="authority.config.cert_cache_max_age" data-type="number">
+                  <p class="hint">Always re-issue once a cached certificate is older than this.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel set-card">
+            <div class="panel-head"><h2>Dashboard</h2><span class="panel-note">This admin console</span></div>
+            <div class="set-body">
+              <div class="f-grid">
+                <div class="f">
+                  <label for="f-user">Username</label>
+                  <input class="input" id="f-user" data-path="dashboard.username" spellcheck="false" autocomplete="off">
+                </div>
+                <div class="f">
+                  <label for="f-pass">Password</label>
+                  <div class="secret">
+                    <input class="input" id="f-pass" type="password" data-path="dashboard.password" spellcheck="false" autocomplete="new-password">
+                    <button type="button" class="peek" data-name="password" aria-label="Show password">
+                      <svg class="i-eye" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <svg class="i-eye-off" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.4 10.4 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.6 9.6 0 0 1 12 4c6.5 0 10 7 10 7a18.4 18.4 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                    </button>
+                  </div>
+                  <p class="hint">Applies immediately — the next login uses the new credentials.</p>
+                </div>
+                <div class="f">
+                  <label for="f-tlsage">TLS session max age (days)</label>
+                  <input class="input" id="f-tlsage" type="number" data-path="dashboard.tls_max_age_days" data-type="number">
+                  <p class="hint">Dashboard TLS sessions older than this are renegotiated.</p>
+                </div>
+                <div class="f">
+                  <label for="f-dashport">Port</label>
+                  <input class="input" id="f-dashport" type="number" data-path="dashboard.port" data-type="number">
+                  <p class="hint">The dashboard listener rebinds automatically on save.</p>
+                </div>
+                <div class="f wide">
+                  <label for="f-dashbind">Bind address</label>
+                  <input class="input" id="f-dashbind" data-path="dashboard.bind" spellcheck="false" autocomplete="off" placeholder="0.0.0.0">
+                  <p class="hint">Empty binds all interfaces. The dashboard listener rebinds automatically on save.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel set-card">
+            <div class="panel-head"><h2>ACL</h2><span class="panel-note">Access allow-list</span></div>
+            <div class="set-body">
+              <div class="f-grid">
+                <div class="f wide">
+                  <label for="f-aclfile">ACL file</label>
+                  <input class="input mono" id="f-aclfile" data-path="acl.file" spellcheck="false" autocomplete="off">
+                  <p class="hint">Hot-reloaded — changing it switches the active allow-list immediately.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="savebar">
+            <span class="savebar-note" id="savebar-note" aria-live="polite">All changes saved</span>
+            <div class="savebar-actions">
+              <button class="btn btn-ghost" id="settings-reset" type="button" disabled>Reset</button>
+              <button class="btn btn-primary" id="settings-save" type="button" disabled>Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript>This dashboard requires JavaScript.</noscript>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const TABS = ['overview','certs','failed','revoked','cached','requests','acl','settings'];
+const state = { tab:'overview', authed:false, certsMode:'list', loaded:{}, data:{}, filters:{failed:'',requests:''} };
+const acl = { saved:'' };
+const certsList = { page:1, per_page:25, q:'', total:0, total_pages:1, data:null };
+const certsDetail = { domain:null, row:{}, page:1, per_page:25, total:0, total_pages:1, data:null };
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseDate(s){ if(!s) return null; const d = new Date(s); return isNaN(d) ? null : d; }
+function absTime(s){ const d = parseDate(s); return d ? d.toLocaleString() : ''; }
+function relTime(s){
+  const d = parseDate(s); if(!d) return '—';
+  const sec = (d - Date.now()) / 1000, a = Math.abs(sec);
+  if(a < 10) return 'just now';
+  let v, u;
+  if(a < 60){ v = Math.round(a); u = 's'; }
+  else if(a < 3600){ v = Math.round(a/60); u = 'm'; }
+  else if(a < 86400){ v = Math.round(a/3600); u = 'h'; }
+  else { v = Math.round(a/86400); u = 'd'; }
+  return sec > 0 ? 'in ' + v + u : v + u + ' ago';
+}
+function fmtDur(v){
+  const n = Number(v);
+  if(v === null || v === undefined || v === '' || isNaN(n)) return '—';
+  if(n < 60) return n.toFixed(1) + 's';
+  return Math.floor(n/60) + 'm ' + Math.round(n%60) + 's';
+}
+function num(v){ return (v === null || v === undefined) ? '—' : Number(v).toLocaleString('en-US'); }
+function sansText(v){ return Array.isArray(v) ? v.join(', ') : (v || ''); }
+function matches(q){ for(let i = 1; i < arguments.length; i++){ if(String(arguments[i] || '').toLowerCase().includes(q)) return true; } return false; }
+
+function emptyRow(cols, text){
+  return '<tr><td colspan="' + cols + '"><div class="empty">' +
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>' +
+    '<p>' + esc(text) + '</p></div></td></tr>';
+}
+function skelRow(cols, n){
+  let out = '';
+  for(let i = 0; i < n; i++){
+    out += '<tr>';
+    for(let c = 0; c < cols; c++) out += '<td><span class="skel"></span></td>';
+    out += '</tr>';
+  }
+  return out;
+}
+function certStatus(expiresAt){
+  const d = parseDate(expiresAt);
+  if(!d) return ['unknown', 'b-neutral'];
+  if(d <= Date.now()) return ['expired', 'b-red'];
+  if(d - Date.now() < 7*86400000) return ['expiring soon', 'b-amber'];
+  return ['valid', 'b-green'];
+}
+function certBadge(expiresAt){
+  const d = parseDate(expiresAt);
+  return d && d <= Date.now() ? '<span class="badge b-red">expired</span>' : '<span class="badge b-green">valid</span>';
+}
+function fmtDay(s){
+  const d = parseDate(s);
+  return d ? d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+}
+function validityCell(r){
+  if(!r.issued_at && !r.expires_at) return '<span class="muted">—</span>';
+  const d = parseDate(r.expires_at), red = !!(d && d <= Date.now());
+  return '<span class="cell-time' + (red ? ' red' : '') + '" title="' + esc(absTime(r.issued_at)) + ' → ' + esc(absTime(r.expires_at)) + '">' +
+    esc(fmtDay(r.issued_at)) + ' → ' + esc(fmtDay(r.expires_at)) + '</span>';
+}
+function statusCell(r){
+  if(!r.status) return '<span class="muted">—</span>';
+  return String(r.status).toLowerCase() === 'success'
+    ? '<span class="badge b-green">success</span>'
+    : '<span class="badge b-red">' + esc(r.status) + '</span>';
+}
+function pagerHTML(p, unit){
+  const tp = Math.max(1, p.total_pages || 1), first = p.page <= 1, last = p.page >= tp;
+  return '<span class="pg-count">' + num(p.total) + ' ' + (p.total === 1 ? unit.slice(0, -1) : unit) + '</span>' +
+    '<button type="button" class="pg-btn" data-pg="first"' + (first ? ' disabled' : '') + '>First</button>' +
+    '<button type="button" class="pg-btn" data-pg="prev"' + (first ? ' disabled' : '') + '>Prev</button>' +
+    '<span class="pg-of">Page ' + p.page + ' of ' + tp + '</span>' +
+    '<button type="button" class="pg-btn" data-pg="next"' + (last ? ' disabled' : '') + '>Next</button>' +
+    '<button type="button" class="pg-btn" data-pg="last"' + (last ? ' disabled' : '') + '>Last</button>' +
+    '<label class="pg-per">Per page <select class="pg-sel" aria-label="Rows per page">' +
+    [10, 25, 50, 100].map(n => '<option value="' + n + '"' + (n === p.per_page ? ' selected' : '') + '>' + n + '</option>').join('') +
+    '</select></label>';
+}
+function bindPager(el, p, onChange){
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.pg-btn');
+    if(!b || b.disabled) return;
+    const tp = Math.max(1, p.total_pages || 1), a = b.dataset.pg;
+    const np = a === 'first' ? 1 : a === 'prev' ? p.page - 1 : a === 'next' ? p.page + 1 : tp;
+    if(np >= 1 && np <= tp && np !== p.page){ p.page = np; onChange(); }
+  });
+  el.addEventListener('change', e => {
+    if(e.target.tagName !== 'SELECT') return;
+    p.per_page = Number(e.target.value) || p.per_page;
+    p.page = 1;
+    onChange();
+  });
+}
+
+let toastTimer = null;
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+class AuthError extends Error {}
+
+async function api(path, opts){
+  const res = await fetch(path, Object.assign({ credentials:'same-origin', headers:{ 'Accept':'application/json' } }, opts));
+  if(res.status === 401){ showLogin(); throw new AuthError(); }
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const ct = res.headers.get('Content-Type') || '';
+  return ct.includes('application/json') ? res.json() : null;
+}
+
+const loaders = {
+  overview: () => api('/api/overview'),
+  failed:   () => api('/api/failed'),
+  revoked:  () => api('/api/revoked'),
+  cached:   () => api('/api/cached'),
+  requests: () => api('/api/requests'),
+  acl: async () => {
+    try { return await api('/api/acl'); }
+    catch(e){ if(!(e instanceof AuthError) && e.message === 'HTTP 404') return { missing:true }; throw e; }
+  },
+  settings: () => api('/api/settings')
+};
+
+function skeleton(t){
+  if(t === 'overview'){
+    ['st-issued','st-failed','st-revoked','st-cached','st-24h'].forEach(id => { $('#' + id).innerHTML = '<span class="skel skel-inline"></span>'; });
+    $('#tb-expiring').innerHTML = skelRow(4, 3);
+    $('#feed').innerHTML = new Array(4).fill('<li><span class="skel skel-inline"></span><span class="skel skel-inline"></span><span class="skel" style="flex:1;margin:8px 0"></span></li>').join('');
+  } else if(t === 'certs'){
+    if(state.certsMode === 'detail'){
+      $('#tb-cd-requests').innerHTML = skelRow(7, 5);
+      $('#cd-chips').innerHTML = '<span class="skel-chip"></span>'.repeat(5);
+      $('#cd-cache-panel').classList.add('hidden');
+    } else {
+      $('#tb-certs').innerHTML = skelRow(6, 5);
+    }
+  } else if(t === 'revoked'){
+    $('#tb-revoked').innerHTML = skelRow(7, 5);
+  } else if(t === 'failed'){
+    $('#tb-failed').innerHTML = skelRow(6, 5);
+  } else if(t === 'cached'){
+    $('#tb-cached').innerHTML = skelRow(4, 4);
+  } else if(t === 'requests'){
+    $('#tb-requests').innerHTML = skelRow(4, 6);
+  } else if(t === 'settings'){
+    $('#settings-skel').classList.remove('hidden');
+    $('#settings-body').classList.add('hidden');
+  }
+}
+
+function renderOverview(){
+  const d = state.data.overview || {};
+  $('#st-issued').textContent = num(d.issued_total);
+  $('#st-failed').textContent = num(d.failed_total);
+  $('#st-revoked').textContent = num(d.revoked_total);
+  $('#st-cached').textContent = num(d.cached_total);
+  $('#st-24h').textContent = num(d.issued_last_24h);
+
+  const rows = Array.isArray(d.expiring_within_7d) ? d.expiring_within_7d : [];
+  $('#tb-expiring').innerHTML = rows.length ? rows.map(r =>
+    '<tr><td class="td-strong">' + (esc(r.common_name) || '—') + '</td>' +
+    '<td class="cell-sans">' + (esc(sansText(r.sans)) || '—') + '</td>' +
+    '<td class="cell-mono">' + (esc(r.serial) || '—') + '</td>' +
+    '<td class="cell-time" title="' + esc(absTime(r.expires_at)) + '">' + esc(relTime(r.expires_at)) + '</td></tr>'
+  ).join('') : emptyRow(4, 'Nothing expiring in the next 7 days');
+
+  const feed = Array.isArray(d.recent) ? d.recent : [];
+  $('#feed').innerHTML = feed.length ? feed.map(e =>
+    '<li><span class="feed-time" title="' + esc(absTime(e.at)) + '">' + esc(relTime(e.at)) + '</span>' +
+    '<span class="feed-ip">' + (esc(e.ip) || '—') + '</span>' +
+    '<span class="feed-text">' + (e.kind ? '<span class="badge b-neutral">' + esc(e.kind) + '</span>' : '') +
+    esc(e.detail || e.kind || '') + '</span></li>'
+  ).join('') : '<li><div class="empty">' +
+    '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></svg>' +
+    '<p>No recent activity</p></div></li>';
+}
+
+function renderCertTable(tbodyId, rows, q, emptyText){
+  const list = (Array.isArray(rows) ? rows : [])
+    .filter(r => !q || matches(q, r.common_name, sansText(r.sans), r.serial, r.client_ip))
+    .slice().sort((a, b) => String(b.recorded_at || '').localeCompare(String(a.recorded_at || '')));
+  if(!list.length){
+    $(tbodyId).innerHTML = emptyRow(7, rows && rows.length ? 'No matches for this search' : emptyText);
+    return;
+  }
+  $(tbodyId).innerHTML = list.map(r => {
+    const [label, cls] = certStatus(r.expires_at);
+    return '<tr><td class="td-strong">' + (esc(r.common_name) || '—') + '</td>' +
+      '<td class="cell-sans">' + (esc(sansText(r.sans)) || '—') + '</td>' +
+      '<td class="cell-mono">' + (esc(r.serial) || '—') + '</td>' +
+      '<td class="cell-mono">' + (esc(r.client_ip) || '—') + '</td>' +
+      '<td class="cell-time" title="' + esc(absTime(r.issued_at)) + '">' + esc(relTime(r.issued_at)) + '</td>' +
+      '<td class="cell-time" title="' + esc(absTime(r.expires_at)) + '">' + esc(relTime(r.expires_at)) + '</td>' +
+      '<td><span class="badge ' + cls + '">' + label + '</span></td></tr>';
+  }).join('');
+}
+
+function renderCertsList(){
+  const d = certsList.data || {};
+  certsList.page = d.page || certsList.page;
+  certsList.per_page = d.per_page || certsList.per_page;
+  certsList.total = d.total || 0;
+  certsList.total_pages = d.total_pages || 1;
+  const rows = Array.isArray(d.domains) ? d.domains : [];
+  $('#tb-certs').innerHTML = rows.length ? rows.map(r => {
+    const hasCert = r.serial || r.expires_at;
+    return '<tr class="rowlink" data-domain="' + esc(r.domain) + '" tabindex="0">' +
+      '<td class="td-strong">' + (esc(r.domain) || '—') + '</td>' +
+      '<td class="cell-num" title="' + esc(num(r.success_count) + ' ok / ' + num(r.failure_count) + ' failed') + '">' + num(r.request_count) + '</td>' +
+      '<td class="cell-num">' + num(r.unique_ips) + '</td>' +
+      '<td class="cell-time" title="' + esc(absTime(r.last_requested_at)) + '">' + esc(relTime(r.last_requested_at)) + '</td>' +
+      '<td>' + (hasCert
+        ? '<div class="cell-mono">' + (esc(r.serial) || '—') + '</div>' +
+          '<div class="latest-sub"><span class="cell-time" title="' + esc(absTime(r.expires_at)) + '">' + esc(relTime(r.expires_at)) + '</span>' + certBadge(r.expires_at) + '</div>'
+        : '<span class="badge b-neutral">none</span>') + '</td>' +
+      '<td>' + (r.cached
+        ? '<span class="cache-yes"><span class="dot"></span>yes</span>'
+        : '<span class="muted">no</span>') + '</td></tr>';
+  }).join('') : emptyRow(6, certsList.q ? 'No domains match this search' : 'No certificate activity yet');
+  $('#pg-certs').innerHTML = pagerHTML(certsList, 'domains');
+}
+
+function renderCertsDetail(){
+  const d = certsDetail.data || {};
+  certsDetail.page = d.page || certsDetail.page;
+  certsDetail.per_page = d.per_page || certsDetail.per_page;
+  certsDetail.total = d.total || 0;
+  certsDetail.total_pages = d.total_pages || 1;
+  const row = certsDetail.row || {}, cc = d.cached_cert || null;
+  $('#cd-domain').textContent = d.domain || certsDetail.domain || '—';
+  $('#cd-chips').innerHTML =
+    '<div class="chip"><span class="v">' + num(d.total) + '</span><span class="l">requests</span></div>' +
+    '<div class="chip chip-green"><span class="v">' + num(row.success_count) + '</span><span class="l">succeeded</span></div>' +
+    '<div class="chip chip-red"><span class="v">' + num(row.failure_count) + '</span><span class="l">failed</span></div>' +
+    '<div class="chip"><span class="v">' + num(row.unique_ips) + '</span><span class="l">unique IPs</span></div>' +
+    '<div class="chip"><span class="v">' + (cc ? 'yes' : 'no') + '</span><span class="l">cached</span>' + (cc ? certBadge(cc.expires_at) : '') + '</div>';
+  const panel = $('#cd-cache-panel');
+  if(cc){
+    panel.classList.remove('hidden');
+    $('#cd-cache-kv').innerHTML =
+      '<div class="kv-k">SANs</div><div class="cell-sans">' + (esc(sansText(cc.sans)) || '—') + '</div>' +
+      '<div class="kv-k">Serial</div><div class="cell-mono">' + (esc(cc.serial) || '—') + '</div>' +
+      '<div class="kv-k">Expires</div><div><span class="cell-time" title="' + esc(absTime(cc.expires_at)) + '">' + esc(relTime(cc.expires_at)) + '</span> ' + certBadge(cc.expires_at) + '</div>';
+  } else {
+    panel.classList.add('hidden');
+  }
+  const rows = (Array.isArray(d.requests) ? d.requests : [])
+    .slice().sort((a, b) => String(b.recorded_at || '').localeCompare(String(a.recorded_at || '')));
+  $('#tb-cd-requests').innerHTML = rows.length ? rows.map(r =>
+    '<tr>' +
+    '<td class="cell-time" title="' + esc(absTime(r.recorded_at)) + '">' + esc(relTime(r.recorded_at)) + '</td>' +
+    '<td class="cell-mono">' + (esc(r.client_ip) || '—') + '</td>' +
+    '<td>' + statusCell(r) + '</td>' +
+    '<td class="cell-time">' + esc(fmtDur(r.duration_seconds)) + '</td>' +
+    '<td class="cell-mono">' + (esc(r.serial) || '—') + '</td>' +
+    '<td>' + validityCell(r) + '</td>' +
+    '<td class="cell-reason">' + (esc(r.error) || '—') + '</td></tr>'
+  ).join('') : emptyRow(7, 'No requests recorded for this domain');
+  $('#pg-cd').innerHTML = pagerHTML(certsDetail, 'requests');
+}
+
+let certsSeq = 0;
+async function loadCerts(silent, forceList){
+  const mode = forceList ? 'list' : state.certsMode, mySeq = ++certsSeq;
+  if(!silent) skeleton('certs');
+  try {
+    const d = mode === 'detail'
+      ? await api('/api/certs/domains/' + encodeURIComponent(certsDetail.domain) + '?page=' + certsDetail.page + '&per_page=' + certsDetail.per_page)
+      : await api('/api/certs/domains?page=' + certsList.page + '&per_page=' + certsList.per_page + (certsList.q ? '&q=' + encodeURIComponent(certsList.q) : ''));
+    if(mySeq !== certsSeq) return;
+    if(mode === 'detail') certsDetail.data = d; else certsList.data = d;
+    if(mode === 'detail') renderCertsDetail(); else renderCertsList();
+  } catch(e){
+    if(e instanceof AuthError) return;
+    if(mySeq !== certsSeq) return;
+    toast('Failed to load data, retrying…');
+  }
+}
+
+function openCertsDetail(domain){
+  const rows = certsList.data && Array.isArray(certsList.data.domains) ? certsList.data.domains : [];
+  certsDetail.row = rows.find(r => r.domain === domain) || {};
+  certsDetail.domain = domain;
+  certsDetail.page = 1;
+  certsDetail.data = null;
+  state.certsMode = 'detail';
+  $('#cd-domain').textContent = domain;
+  $('#certs-list').classList.add('hidden');
+  $('#certs-detail').classList.remove('hidden');
+  loadCerts();
+}
+
+function closeCertsDetail(){
+  state.certsMode = 'list';
+  $('#certs-detail').classList.add('hidden');
+  $('#certs-list').classList.remove('hidden');
+  loadCerts(true);
+}
+
+function resetCertsView(){
+  state.certsMode = 'list';
+  certsList.page = 1;
+  certsList.q = '';
+  certsList.data = null;
+  certsDetail.domain = null;
+  certsDetail.row = {};
+  certsDetail.data = null;
+  certsDetail.page = 1;
+  $('#q-certs').value = '';
+  $('#certs-detail').classList.add('hidden');
+  $('#certs-list').classList.remove('hidden');
+}
+
+function renderRevoked(){
+  renderCertTable('#tb-revoked', state.data.revoked, '', 'No revoked certificates');
+}
+
+function renderFailed(){
+  const q = state.filters.failed;
+  const list = (Array.isArray(state.data.failed) ? state.data.failed : [])
+    .filter(r => !q || matches(q, r.common_name, sansText(r.sans), r.client_ip, r.error))
+    .slice().sort((a, b) => String(b.recorded_at || '').localeCompare(String(a.recorded_at || '')));
+  if(!list.length){
+    $('#tb-failed').innerHTML = emptyRow(6, state.data.failed && state.data.failed.length ? 'No matches for this search' : 'No failed requests');
+    return;
+  }
+  $('#tb-failed').innerHTML = list.map(r =>
+    '<tr><td class="cell-time" title="' + esc(absTime(r.recorded_at)) + '">' + esc(relTime(r.recorded_at)) + '</td>' +
+    '<td class="td-strong">' + (esc(r.common_name) || '—') + '</td>' +
+    '<td class="cell-sans">' + (esc(sansText(r.sans)) || '—') + '</td>' +
+    '<td class="cell-mono">' + (esc(r.client_ip) || '—') + '</td>' +
+    '<td class="cell-time">' + esc(fmtDur(r.duration_seconds)) + '</td>' +
+    '<td class="cell-reason">' + (esc(r.error) || '—') + '</td></tr>'
+  ).join('');
+}
+
+function renderCached(){
+  const rows = Array.isArray(state.data.cached) ? state.data.cached : [];
+  $('#tb-cached').innerHTML = rows.length ? rows.map(r =>
+    '<tr><td class="td-strong">' + (esc(r.common_name) || '—') + '</td>' +
+    '<td class="cell-sans">' + (esc(sansText(r.sans)) || '—') + '</td>' +
+    '<td class="cell-mono">' + (esc(r.serial) || '—') + '</td>' +
+    '<td class="cell-time" title="' + esc(absTime(r.expires_at)) + '">' + esc(relTime(r.expires_at)) + '</td>' +
+    '<td class="cell-act"><button type="button" class="btn-danger" data-sans="' + esc(sansText(r.sans)) + '">Delete</button></td></tr>'
+  ).join('') : emptyRow(5, 'No cached certificates');
+}
+
+function renderRequests(){
+  const q = state.filters.requests;
+  const list = Array.isArray(state.data.requests) ? state.data.requests : [];
+  const shown = list.filter(r => !q || matches(q, r.ip, r.kind, r.detail));
+  if(!shown.length){
+    $('#tb-requests').innerHTML = emptyRow(4, list.length ? 'No matches for this search' : 'No requests logged yet');
+    return;
+  }
+  $('#tb-requests').innerHTML = shown.map(r =>
+    '<tr><td class="cell-time" title="' + esc(absTime(r.at)) + '">' + esc(relTime(r.at)) + '</td>' +
+    '<td class="cell-mono">' + (esc(r.ip) || '—') + '</td>' +
+    '<td>' + (r.kind ? '<span class="badge b-neutral">' + esc(r.kind) + '</span>' : '—') + '</td>' +
+    '<td>' + (esc(r.detail) || '—') + '</td></tr>'
+  ).join('');
+}
+
+function aclDirty(){ return $('#acl-text').value !== acl.saved; }
+
+function updateAclCounts(){
+  const v = $('#acl-text').value, parts = v.split('\n');
+  let entries = 0;
+  for(const l of parts){ const t = l.trim(); if(t && t.charAt(0) !== '#') entries++; }
+  const lines = parts.length - (v.slice(-1) === '\n' ? 1 : 0);
+  $('#acl-count').textContent = lines + (lines === 1 ? ' line · ' : ' lines · ') + entries + (entries === 1 ? ' entry' : ' entries');
+}
+
+function renderAcl(){
+  const d = state.data.acl, missing = !!(d && d.missing), show = !!d && !missing;
+  $('#acl-head-right').classList.toggle('hidden', !show);
+  $('#acl-none').classList.toggle('hidden', !missing);
+  $('#acl-editor').classList.toggle('hidden', !show);
+  if(!show) return;
+  $('#acl-file').textContent = d.file || '';
+  $('#acl-file').title = d.file || '';
+  if(!aclDirty()){
+    $('#acl-text').value = d.content == null ? '' : String(d.content);
+    acl.saved = $('#acl-text').value;
+    updateAclCounts();
+  }
+}
+
+async function saveAcl(){
+  const btn = $('#acl-save');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res = await api('/api/acl', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ content: $('#acl-text').value })
+    });
+    if(res && res.error){
+      $('#acl-invalid-lines').innerHTML = (Array.isArray(res.invalid) ? res.invalid : []).map(l => '<li>' + esc(l) + '</li>').join('');
+      $('#acl-invalid').classList.remove('hidden');
+    } else {
+      $('#acl-invalid').classList.add('hidden');
+      acl.saved = $('#acl-text').value;
+      toast('ACL saved');
+    }
+  } catch(e){
+    if(!(e instanceof AuthError)) toast('ACL save failed, try again');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Save';
+}
+
+const renders = { overview: renderOverview, failed: renderFailed, revoked: renderRevoked, cached: renderCached, requests: renderRequests, acl: renderAcl, settings: renderSettings };
+
+async function loadTab(t, silent){
+  if(t === 'certs'){ loadCerts(silent); return; }
+  if(t === 'acl' && state.loaded.acl && aclDirty()) return;
+  if(t === 'settings' && state.loaded.settings && changedFields().length) return;
+  if(!state.loaded[t] && !silent) skeleton(t);
+  try {
+    state.data[t] = await loaders[t]();
+    state.loaded[t] = true;
+    renders[t]();
+  } catch(e){
+    if(e instanceof AuthError) return;
+    toast('Failed to load data, retrying…');
+    if(!state.loaded[t]) renders[t]();
+  }
+}
+
+function switchTab(t){
+  state.tab = t;
+  history.replaceState(null, '', '#' + t);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === t));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + t));
+  loadTab(t);
+}
+
+function showLogin(){
+  state.authed = false;
+  state.loaded = {};
+  state.data = {};
+  resetCertsView();
+  $('#app').classList.add('hidden');
+  $('#login').classList.remove('hidden');
+  $('#login-error').textContent = '';
+  $('#login-pass').value = '';
+  $('#login-btn').disabled = false;
+  $('#login-btn').textContent = 'Sign in';
+}
+
+function showApp(){
+  state.authed = true;
+  resetCertsView();
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  switchTab(state.tab);
+}
+
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = $('#login-btn'), err = $('#login-error');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  err.textContent = '';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: $('#login-user').value, password: $('#login-pass').value })
+    });
+    if(res.status === 204 || (res.ok && res.status !== 401)){
+      state.tab = 'overview';
+      state.loaded = {};
+      state.data = {};
+      showApp();
+      return;
+    }
+    err.textContent = res.status === 401 ? 'Invalid username or password' : 'Sign in failed (' + res.status + ')';
+  } catch(_){
+    err.textContent = 'Network error, try again';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Sign in';
+});
+
+$('#signout').addEventListener('click', async () => {
+  try {
+    const res = await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+    if(res.ok || res.status === 401){ showLogin(); return; }
+    toast('Sign out failed');
+  } catch(_){
+    toast('Sign out failed');
+  }
+});
+
+document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.nav)));
+
+[['q-failed','failed'],['q-requests','requests']].forEach(([id, key]) => {
+  $('#' + id).addEventListener('input', e => {
+    state.filters[key] = e.target.value.trim().toLowerCase();
+    if(state.loaded[key]) renders[key]();
+  });
+});
+
+let certsSearchTimer = null;
+$('#q-certs').addEventListener('input', e => {
+  clearTimeout(certsSearchTimer);
+  certsSearchTimer = setTimeout(() => {
+    const q = e.target.value.trim();
+    if(q === certsList.q) return;
+    certsList.q = q;
+    certsList.page = 1;
+    loadCerts(true);
+  }, 300);
+});
+
+$('#tb-certs').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-domain]');
+  if(tr) openCertsDetail(tr.dataset.domain);
+});
+$('#tb-certs').addEventListener('keydown', e => {
+  if(e.key !== 'Enter' && e.key !== ' ') return;
+  const tr = e.target.closest('tr[data-domain]');
+  if(tr){ e.preventDefault(); openCertsDetail(tr.dataset.domain); }
+});
+$('#certs-back').addEventListener('click', closeCertsDetail);
+bindPager($('#pg-certs'), certsList, () => loadCerts());
+bindPager($('#pg-cd'), certsDetail, () => loadCerts());
+
+$('#cd-del-cache').addEventListener('click', async () => {
+  const d = certsDetail.data, cc = d && d.cached_cert;
+  if(!cc) return;
+  const btn = $('#cd-del-cache');
+  btn.disabled = true;
+  try {
+    await api('/api/cached/' + encodeURIComponent(sansText(cc.sans)), { method:'DELETE' });
+    d.cached_cert = null;
+    renderCertsDetail();
+    toast('Cache deleted — next request for this domain will obtain a new certificate');
+    loadCerts(true, true);
+  } catch(e){
+    if(e instanceof AuthError) return;
+    if(e.message === 'HTTP 404'){
+      d.cached_cert = null;
+      renderCertsDetail();
+      toast('Nothing cached for this domain');
+      loadCerts(true, true);
+    } else {
+      toast('Delete failed, try again');
+    }
+  }
+  btn.disabled = false;
+});
+
+$('#tb-cached').addEventListener('click', async e => {
+  const btn = e.target.closest('button[data-sans]');
+  if(!btn) return;
+  const sans = btn.dataset.sans, tr = btn.closest('tr');
+  btn.disabled = true;
+  try {
+    await api('/api/cached/' + encodeURIComponent(sans), { method:'DELETE' });
+    const arr = Array.isArray(state.data.cached) ? state.data.cached : [];
+    const i = arr.findIndex(x => sansText(x.sans) === sans);
+    if(i > -1) arr.splice(i, 1);
+    tr.classList.add('row-out');
+    setTimeout(renderCached, 250);
+    toast('Cache deleted — next request for this domain will obtain a new certificate');
+  } catch(err){
+    if(err instanceof AuthError) return;
+    btn.disabled = false;
+    toast(err.message === 'HTTP 404' ? 'Nothing cached for this domain' : 'Delete failed, try again');
+  }
+});
+
+$('#acl-text').addEventListener('input', updateAclCounts);
+$('#acl-save').addEventListener('click', saveAcl);
+
+const SETTINGS_CHALLENGES = {
+  'auto':'Let the proxy pick the best supported challenge for each request.',
+  'http-01':'Serve the validation token over plain HTTP — the port must be reachable from the internet.',
+  'tls-alpn-01':'Serve the validation token over TLS-ALPN — for setups where TLS terminates at a proxy.',
+  'dns-01':'Create DNS TXT records through the provider below — no inbound ports required.'
+};
+
+function getPath(obj, path){ return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+
+function fieldSaved(el){
+  let v = getPath(state.data.settings, el.dataset.path);
+  if(v == null) v = el.dataset.type === 'csv' ? [] : el.dataset.type === 'kv' ? {} : '';
+  return v;
+}
+
+function fieldCurrent(el){
+  const t = el.dataset.type;
+  if(t === 'kv'){
+    const o = {};
+    el.querySelectorAll('.kv-row').forEach(r => {
+      const k = r.querySelector('.kv-key').value.trim();
+      if(k) o[k] = r.querySelector('.kv-val').value;
+    });
+    return o;
+  }
+  if(t === 'csv') return el.value.split(',').map(s => s.trim()).filter(Boolean);
+  if(t === 'number'){ const v = el.value.trim(); return v === '' ? '' : Number(v); }
+  return el.value;
+}
+
+function fieldDirty(el){ return JSON.stringify(fieldCurrent(el)) !== JSON.stringify(fieldSaved(el)); }
+
+function changedFields(){
+  return Array.prototype.filter.call(document.querySelectorAll('#tab-settings [data-path]'), fieldDirty);
+}
+
+function settingsPayload(){
+  const out = {};
+  changedFields().forEach(el => {
+    const parts = el.dataset.path.split('.');
+    let node = out;
+    for(let i = 0; i < parts.length - 1; i++){
+      node[parts[i]] = node[parts[i]] || {};
+      node = node[parts[i]];
+    }
+    node[parts[parts.length - 1]] = fieldCurrent(el);
+  });
+  return out;
+}
+
+function kvRowHtml(k, v){
+  return '<div class="kv-row">' +
+    '<input class="input mono kv-key" placeholder="NAME" spellcheck="false" autocomplete="off" value="' + esc(k) + '">' +
+    '<input class="input mono kv-val" placeholder="value" spellcheck="false" autocomplete="off" value="' + esc(v) + '">' +
+    '<button type="button" class="kv-x" aria-label="Remove variable" title="Remove">' +
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>' +
+    '</button></div>';
+}
+
+function kvRowsHtml(o){
+  const keys = Object.keys(o || {});
+  return keys.map(k => kvRowHtml(k, o[k])).join('') || kvRowHtml('', '');
+}
+
+function updateChallengeDesc(){
+  const sel = $('#f-challenge');
+  if(sel) $('#challenge-desc').textContent = SETTINGS_CHALLENGES[sel.value] || '';
+}
+
+function updateSavebar(){
+  const n = changedFields().length;
+  const save = $('#settings-save'), reset = $('#settings-reset');
+  save.textContent = n ? 'Save changes (' + n + ')' : 'Save changes';
+  save.disabled = n === 0;
+  reset.disabled = n === 0;
+  $('#savebar-note').textContent = n === 0 ? 'All changes saved' : n + (n === 1 ? ' unsaved change' : ' unsaved changes');
+  updateChallengeDesc();
+}
+
+function prefillSettings(){
+  document.querySelectorAll('#tab-settings [data-path]').forEach(el => {
+    const v = fieldSaved(el);
+    if(el.dataset.type === 'kv') el.innerHTML = kvRowsHtml(v);
+    else if(el.dataset.type === 'csv') el.value = Array.isArray(v) ? v.join(', ') : '';
+    else el.value = String(v);
+  });
+  updateSavebar();
+}
+
+function renderSettings(){
+  const d = state.data.settings || {};
+  const fp = $('#settings-file-path');
+  fp.textContent = d.file || '';
+  fp.title = d.file || '';
+  $('#settings-skel').classList.add('hidden');
+  $('#settings-body').classList.remove('hidden');
+  $('#set-err').classList.add('hidden');
+  prefillSettings();
+}
+
+async function saveSettings(){
+  const payload = settingsPayload();
+  if(!Object.keys(payload).length) return;
+  const save = $('#settings-save'), reset = $('#settings-reset');
+  save.disabled = true;
+  reset.disabled = true;
+  save.textContent = 'Saving…';
+  try {
+    const res = await api('/api/settings', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(res && res.error){
+      $('#set-err-text').textContent = res.error;
+      $('#set-err').classList.remove('hidden');
+    } else {
+      $('#set-err').classList.add('hidden');
+      toast('Settings applied');
+      try {
+        state.data.settings = await api('/api/settings');
+        prefillSettings();
+      } catch(_){}
+    }
+  } catch(e){
+    if(!(e instanceof AuthError)) toast('Settings save failed, try again');
+  }
+  updateSavebar();
+}
+
+$('#tab-settings').addEventListener('input', e => {
+  if(e.target.closest('[data-path]')) updateSavebar();
+});
+
+$('#tab-settings').addEventListener('click', e => {
+  const peek = e.target.closest('.peek');
+  if(peek){
+    const inp = peek.parentElement.querySelector('input');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    peek.classList.toggle('peek-on', show);
+    peek.setAttribute('aria-label', (show ? 'Hide ' : 'Show ') + peek.dataset.name);
+    return;
+  }
+  const x = e.target.closest('.kv-x');
+  if(x){
+    const box = x.closest('.kv-edit');
+    x.closest('.kv-row').remove();
+    if(!box.querySelector('.kv-row')) box.innerHTML = kvRowHtml('', '');
+    updateSavebar();
+    return;
+  }
+  if(e.target.closest('#env-add')){
+    const box = $('#env-vars');
+    box.insertAdjacentHTML('beforeend', kvRowHtml('', ''));
+    box.lastElementChild.querySelector('.kv-key').focus();
+    updateSavebar();
+  }
+});
+
+$('#settings-reset').addEventListener('click', () => {
+  $('#set-err').classList.add('hidden');
+  prefillSettings();
+});
+$('#settings-save').addEventListener('click', saveSettings);
+
+setInterval(() => {
+  if(!state.authed || document.visibilityState !== 'visible') return;
+  if(state.tab === 'overview' || state.tab === 'requests') loadTab(state.tab, true);
+}, 15000);
+
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && state.authed && (state.tab === 'overview' || state.tab === 'requests')){
+    loadTab(state.tab, true);
+  }
+});
+
+(async function init(){
+  const h = location.hash.replace('#', '');
+  if(TABS.includes(h)) state.tab = h;
+  try {
+    state.data.overview = await api('/api/overview');
+    state.loaded.overview = true;
+    showApp();
+  } catch(e){
+    if(e instanceof AuthError) return;
+    showApp();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# min	hour	day	month	weekday	command
+*	*	*	*	*	step ca renew --force /var/local/step/site.crt /var/local/step/site.key

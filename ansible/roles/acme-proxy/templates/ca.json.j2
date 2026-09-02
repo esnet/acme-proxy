@@ -15,6 +15,20 @@
       "account_email": "{{ acme_proxy_account_email }}",
       "eab_kid": "{{ acme_proxy_eab_kid }}",
       "eab_hmac_key": "{{ acme_proxy_eab_hmac_key }}",
+      "challenge_type": "{{ acme_proxy_challenge_type | default('auto') }}",
+      "http01_bind": "{{ acme_proxy_http01_bind | default('') }}",
+      "http01_port": {{ acme_proxy_http01_port | default(80) }},
+      "tlsalpn01_bind": "{{ acme_proxy_tlsalpn01_bind | default('') }}",
+      "tlsalpn01_port": {{ acme_proxy_tlsalpn01_port | default(443) }},
+      "max_concurrent_requests": {{ acme_proxy_max_concurrent_requests | default(1) }},
+      "cert_poll_timeout": {{ acme_proxy_cert_poll_timeout | default(30) }},
+      "request_timeout": {{ acme_proxy_request_timeout | default(120) }},
+      "cert_cache_min_validity": {{ acme_proxy_cert_cache_min_validity | default(7) }},
+      "dns01_txt": {
+        "provider": "{{ acme_proxy_dns01_provider | default('') }}",
+        "dns_servers": {{ acme_proxy_dns01_servers | default([]) | to_json }},
+        "env_vars": {{ acme_proxy_dns01_env_vars | default({}) | to_json }}
+      },
       "metrics": {
         "enabled": {{ acme_proxy_metrics_enabled | lower }},
         "port": {{ acme_proxy_metrics_port }},
@@ -45,5 +59,6 @@
     "maxVersion": {{ acme_proxy_tls_max_version }},
     "renegotiation": {{ acme_proxy_tls_renegotiation | lower }}
   },
+  "disableChallengeValidation": {{ acme_proxy_disable_challenge_validation | default(false) | lower }},
   "commonName": "{{ acme_proxy_common_name }}"
 }

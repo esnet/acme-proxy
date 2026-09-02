@@ -13,8 +13,26 @@
 
     # Optional — override role defaults as needed.
     # acme_proxy_version: latest
+    # EAB: leave both empty for CAs without EAB (e.g. Let's Encrypt).
     # acme_proxy_eab_kid: ""
     # acme_proxy_eab_hmac_key: ""
+    # Challenge solved toward the upstream CA: auto | http-01 | tls-alpn-01 | dns-01
+    # (ZeroSSL does not support tls-alpn-01.)
+    # acme_proxy_challenge_type: "auto"
+    # Challenge listener bind IPs (empty = all interfaces); set to avoid
+    # conflicts with acme_proxy_address (client-facing listener).
+    # acme_proxy_http01_bind: ""
+    # acme_proxy_http01_port: 80
+    # acme_proxy_tlsalpn01_bind: ""
+    # acme_proxy_tlsalpn01_port: 443
+    # acme_proxy_max_concurrent_requests: 1
+    # acme_proxy_cert_poll_timeout: 30
+    # acme_proxy_request_timeout: 120
+    # acme_proxy_cert_cache_min_validity: 7
+    # DNS-01 (for challenge_type dns-01):
+    # acme_proxy_dns01_provider: ""
+    # acme_proxy_dns01_servers: []
+    # acme_proxy_dns01_env_vars: {}
 
   roles:
     - acme-proxy

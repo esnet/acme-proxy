@@ -21,3 +21,4 @@ pyproject.toml
 .zed
 dcv-dev.json
 citest-ca.json
+probe*

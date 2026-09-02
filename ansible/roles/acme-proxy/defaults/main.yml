@@ -19,10 +19,46 @@ acme_proxy_common_name: "{{ acme_proxy_dns_names | first }}"
 acme_proxy_log_format: json
 
 # Upstream ACME CA — must be set for the service to function
+# EAB: leave both empty for CAs without EAB (e.g. Let's Encrypt);
+# set both for CAs that require it (e.g. ZeroSSL, Sectigo, CertiNext).
 acme_proxy_ca_url: ""
 acme_proxy_account_email: ""
 acme_proxy_eab_kid: ""
 acme_proxy_eab_hmac_key: ""
+
+# Challenge solved toward the UPSTREAM CA (independent of client challenges):
+# auto | http-01 | tls-alpn-01 | dns-01
+# NOTE: ZeroSSL does not support tls-alpn-01.
+acme_proxy_challenge_type: "auto"
+
+# Challenge listener bind IPs (empty = all interfaces). Set to a dedicated IP
+# when the challenge ports would conflict with the client-facing listener
+# (acme_proxy_address). External CA still validates on public 80/443 —
+# combine with DNAT/LB forwarding when using non-default local ports.
+acme_proxy_http01_bind: ""
+acme_proxy_http01_port: 80
+acme_proxy_tlsalpn01_bind: ""
+acme_proxy_tlsalpn01_port: 443
+
+# Concurrency: max simultaneous upstream ACME operations; excess queued.
+acme_proxy_max_concurrent_requests: 1
+
+# cert_poll_timeout: seconds to wait for issuance after challenge validation.
+# request_timeout: total seconds for one request to the external CA incl.
+# challenge validation + polling — raise for slow CAs like ZeroSSL
+# (keep above cert_poll_timeout + challenge validation time).
+# cert_cache_min_validity: min remaining validity (days) to serve cached cert.
+acme_proxy_cert_poll_timeout: 30
+acme_proxy_request_timeout: 120
+acme_proxy_cert_cache_min_validity: 7
+
+# DNS-01 (used when challenge_type is dns-01, or auto with provider+env_vars).
+# acme_proxy_dns01_provider: lego DNS provider CLI flag (e.g. "cloudflare")
+# acme_proxy_dns01_servers: []  # authoritative NS addresses, e.g. ["8.8.8.8"]
+# acme_proxy_dns01_env_vars: {} # provider auth env vars, e.g. {CF_DNS_API_TOKEN: "..."}
+acme_proxy_dns01_provider: ""
+acme_proxy_dns01_servers: []
+acme_proxy_dns01_env_vars: {}
 
 # Metrics
 acme_proxy_metrics_enabled: true
@@ -38,6 +74,12 @@ acme_proxy_tls_renegotiation: false
 # Set to false only if you have verified the library is already present
 # or are supplying a statically-linked binary.
 acme_proxy_install_pcsc: true
+
+# If true, client challenges are marked valid without resolving/reaching the
+# client domain (domain control is proven toward the upstream CA). SECURITY:
+# any host that can reach the ACME provisioner can then obtain certs —
+# restrict network access to the ACME endpoint accordingly.
+acme_proxy_disable_challenge_validation: false
 
 # Systemd service state
 acme_proxy_service_enabled: true

@@ -1,0 +1,82 @@
+{
+# Client-facing listener and the name clients use to reach this proxy.
+  "address": "192.168.100.1:443",
+  "dnsNames": ["acmeproxy.example.com"],
+  "logger": {
+    "format": "json"
+  },
+  "db": {
+    "type": "bbolt",
+    "dataSource": "/opt/acme-proxy/db/bbolt"
+  },
+
+# Admin web dashboard (see ca.json for the full option reference). Shares
+# the :443 certificate by default — no separate issuance.
+  "dashboard": {
+    "port": 8443,
+    "username": "admin",
+    "password": "kambing",
+    "tls_max_age_days": 30
+  },
+
+# Client allow-list for ACME requests (see ca.json for reference).
+  "acl": {
+    "file": "/opt/acme-proxy/acl.txt"
+  },
+
+  "authority": {
+    "type": "externalcas",
+    "config": {
+# Let's Encrypt production directory.
+      "ca_url": "https://acme-v02.api.letsencrypt.org/directory",
+      "account_email": "certadmin@example.com",
+# Let's Encrypt does not use EAB — leave both empty.
+      "eab_kid": "",
+      "eab_hmac_key": "",
+      "challenge_type": "http-01",
+      "http01_bind": "10.11.11.217",
+      "http01_port": 80,
+      "tlsalpn01_bind": "10.11.11.217",
+      "tlsalpn01_port": 443,
+      "max_concurrent_requests": 1,
+      "cert_poll_timeout": 30,
+      "request_timeout": 120,
+      "cert_cache_min_validity": 7,
+      "cert_cache_max_age": 30,
+      "dns01_txt": {
+        "provider": "",
+        "dns_servers": [],
+        "env_vars": {}
+      },
+      "metrics": {
+        "port": 9234,
+        "dataSource": "/opt/acme-proxy/db/metrics"
+      }
+    },
+    "provisioners": [
+      {
+        "type": "ACME",
+        "name": "acme",
+        "claims": {
+          "enableSSHCA": false,
+          "disableRenewal": false,
+          "allowRenewalAfterExpiry": false,
+          "disableSmallstepExtensions": true
+        },
+        "options": {
+          "x509": {},
+          "ssh": {}
+        }
+      }
+    ],
+    "template": {},
+    "backdate": "1m0s"
+  },
+  "tls": {
+    "minVersion": 1.2,
+    "maxVersion": 1.3,
+    "renegotiation": false
+  },
+  "disableChallengeValidation": true,
+  "commonName": "acmeproxy.example.com"
+}

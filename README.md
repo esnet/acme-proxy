@@ -12,7 +12,7 @@ This architecture addresses typical enterprise constraints that prevent direct c
 
 **HTTP-01 Challenge Limitations:**
 
-- Security policies prohibit exposing port 80 to the public internet.
+- Direct HTTP-01 usage keeps a web service on port 80 open to the internet whenever a certificate is issued or renewed, which security policies often disallow. acme-proxy reduces this to a challenge-only listener that exists solely while a request is in flight (see below), and DNS-01 or EAB modes remove the port 80 requirement entirely.
 
 **DNS-01 Challenge Limitations:**
 
@@ -26,8 +26,9 @@ For more information on security considerations when using DNS-01 TXT challenge:
 
 <br>**How acme-proxy mitigates security risks**
 
-1. HTTP/80 exposure is limited to a trusted internal host rather than the global internet which is the case when using LetsEncrypt.
-2. No distributing DNS related api key or tsig key to ACME clients.
+1. When solving HTTP-01 toward the upstream CA, the challenge web server on port 80 runs only for the duration of the challenge. It starts when a certificate request begins and closes automatically as soon as the last challenge completes, so port 80 is not held open permanently.
+2. While it is running, the listener answers only ACME challenge token requests. There is no general-purpose web service or application code to attack, and unlike using Let's Encrypt directly there is nothing listening on port 80 the rest of the time. The listener can be scoped with `http01_bind` or fronted by DNAT/port-forwarding from the edge. If your policy forbids exposing port 80 even briefly, use DNS-01 or EAB instead.
+3. No distributing DNS related api key or tsig key to ACME clients.
 
 
 ## How It Works
@@ -39,9 +40,19 @@ For more information on security considerations when using DNS-01 TXT challenge:
 3. Once validation succeeds, `acme-proxy` forwards the certificate signing request to an external certificate authority for signing
 4. `acme-proxy` retrieves the signed certificate bundle and returns it to your server
 
-<br>To get signed certificates from an external CA `acme-proxy` supports two modes of operations:
+<br>To get signed certificates from an external CA `acme-proxy` supports three modes of operations:
 
-### 1. External Account Binding (EAB)
+### 1. HTTP-01 (no EAB required)
+
+`acme-proxy` answers the upstream CA's HTTP-01 validation by serving `/.well-known/acme-challenge/` on port 80. Key properties:
+
+- **No EAB needed.** Works with Let's Encrypt out of the box (a plain account email is enough), and is also supported by ZeroSSL and other public CAs.
+- **Transient challenge server.** The port 80 listener is started only when a certificate request begins and closes itself as soon as the last challenge completes. Port 80 is never held open while the proxy is idle.
+- **No DNS credentials of any kind.** This is the simplest mode when the proxy's public IP can accept inbound connections on port 80, either directly or via DNAT/port-forward from the edge.
+
+Select it with `"challenge_type": "http-01"` (or leave `auto`, which falls back to HTTP-01 when no DNS provider is configured).
+
+### 2. External Account Binding (EAB)
 
 Some commercial certificate authorities allow their customers to validate their apex domain (example.com) once and issue an EAB key.  Using this key customers can get certs for *.example.com without having to validate every domain or subdomain (say foo.example.com) individually.
 
@@ -49,7 +60,7 @@ Some commercial certificate authorities allow their customers to validate their 
 
 **Note:** LetsEncrypt does not support EAB. However, commercial CAs such as Sectigo, ZeroSSL, DigiCert do.
 
-### 2. DNS01-TXT
+### 3. DNS01-TXT
 
 [Lego](https://go-acme.github.io/lego/) is a well known ACME client which supports over 200 DNS providers to solve DNS01-TXT challenge. Using one of the Lego providers, acme-proxy authenticates with your DNS server and temporarily places a TXT record which the external CA can verify before issuing a signed certificate. The key benefit of using this mode is that your DNS server's API key or TSIG key lives only on acme-proxy and thus circumvents the need for distributing those credentials to all your servers.
 
@@ -75,8 +86,10 @@ Next steps:
      - dnsNames: Your ACME proxy hostname
      - ca_url: Your upstream ACME CA URL
      - account_email: Your account email
-     - eab_kid: External Account Binding Key ID
-     - eab_hmac_key: External Account Binding HMAC key
+     - eab_kid / eab_hmac_key: only if your CA requires EAB
+       (leave both empty for Let's Encrypt)
+     - challenge_type: auto | http-01 | tls-alpn-01 | dns-01
+       (challenge solved toward the upstream CA)
 
   2. Start the service:
      sudo systemctl start acme-proxy
@@ -100,7 +113,7 @@ SERVICE_GROUP="${SERVICE_GROUP:-acme-proxy}"
 
 ## Configure
 
-Review and update configuration options in [ca.json](./ca.json) before starting the acme-proxy server.
+Review and update configuration options in [ca.json](./ca.json) before starting the acme-proxy server. `ca.json` supports `#` comments outside of string literals, so you can annotate the config in place.
 
 ```sh
 vim ca.json
@@ -160,6 +173,18 @@ To get certificates signed from LetsEncrypt use the following config options
 | `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
 | `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
 
+## Admin Dashboard, ACL & Runtime Settings
+
+![Admin dashboard](images/acme-proxy-dashboard.png)
+
+This fork adds an operational layer on top of the proxy, all configured via top-level `ca.json` blocks:
+
+- **Web dashboard** (`dashboard` block): login-protected console on its own port (default `8443` when enabled). It shows overview stats, domain-grouped certificate history with per-domain request details (client IP, timestamps, status, failure reasons), failed-request analysis, revocation history, certificate cache management with per-domain cache deletion, a live ACME request log, an ACL editor, and a settings editor. HTTPS is automatic: the dashboard serves the same certificate as the client-facing `:443` listener (shared key and identity, resolved through the cert cache), so it never causes an extra upstream issuance. The certificate is renewed in the background and swapped without a restart. Credentials default to `admin`/`kambing`.
+- **Client ACL** (`acl` block): a plain-text allow-list (`acl.file`) of IPs and CIDR subnets (one per line, `#` comments) that gates every ACME request. It is hot-reloaded on file change, editable from the dashboard, and fails closed if the configured file becomes unreadable. It honors `X-Forwarded-For` behind a reverse proxy.
+- **Runtime settings**: the dashboard Settings tab edits a safe subset of `ca.json` and applies the changes without restarting the daemon. This covers the upstream CA identity (with automatic ACME account re-registration), challenge type and DNS provider, timeouts, cache bounds (`cert_cache_max_age`, `cert_cache_min_validity`), concurrency limit, dashboard credentials, port and TLS files, and the ACL path. Saves are validated end to end before anything is written, and every save keeps a backup at `ca.json.bak-settings`.
+- **Bounded certificate cache**: cached certificates stop being served after `cert_cache_max_age` days (default `30`), which keeps the renewal cadence predictable and safely inside upstream rate limits such as Let's Encrypt's 5 certificates per week per name. The HTTP-01 challenge listener also closes itself when idle, so port 80 is exposed only while a challenge is in flight.
+
+See the [configuration reference](docs/content/configuration.md) for the full field list.
 
 ### Starting acme-proxy
 

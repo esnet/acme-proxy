@@ -1,0 +1,298 @@
+package provisioner
+
+import (
+	"bytes"
+	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/smallstep/linkedca"
+
+	"github.com/smallstep/certificates/authority/poolhttp"
+	"github.com/smallstep/certificates/internal/httptransport"
+	"github.com/smallstep/certificates/middleware/requestid"
+	"github.com/smallstep/certificates/templates"
+	"github.com/smallstep/certificates/webhook"
+)
+
+var ErrWebhookDenied = errors.New("webhook server did not allow request")
+
+type WebhookSetter interface {
+	SetWebhook(string, any)
+}
+
+type WebhookController struct {
+	client        HTTPClient
+	wrapTransport httptransport.Wrapper
+	webhooks      []*Webhook
+	certType      linkedca.Webhook_CertType
+	options       []webhook.RequestBodyOption
+	TemplateData  WebhookSetter
+}
+
+// Enrich fetches data from remote servers and adds returned data to the
+// templateData
+func (wc *WebhookController) Enrich(ctx context.Context, req *webhook.RequestBody) error {
+	if wc == nil {
+		return nil
+	}
+
+	// Apply extra options in the webhook controller
+	for _, fn := range wc.options {
+		if err := fn(req); err != nil {
+			return err
+		}
+	}
+
+	for _, wh := range wc.webhooks {
+		if wh.Kind != linkedca.Webhook_ENRICHING.String() {
+			continue
+		}
+		if !wc.isCertTypeOK(wh) {
+			continue
+		}
+
+		whCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+		defer cancel() //nolint:gocritic // every request canceled with its own timeout
+
+		resp, err := wh.DoWithContext(whCtx, wc.client, wc.wrapTransport, req, wc.TemplateData)
+		if err != nil {
+			return err
+		}
+		if !resp.Allow {
+			if resp.Error != nil {
+				return resp.Error
+			}
+			return ErrWebhookDenied
+		}
+		wc.TemplateData.SetWebhook(wh.Name, resp.Data)
+	}
+	return nil
+}
+
+// Authorize checks that all remote servers allow the request
+func (wc *WebhookController) Authorize(ctx context.Context, req *webhook.RequestBody) error {
+	if wc == nil {
+		return nil
+	}
+
+	// Apply extra options in the webhook controller
+	for _, fn := range wc.options {
+		if err := fn(req); err != nil {
+			return err
+		}
+	}
+
+	for _, wh := range wc.webhooks {
+		if wh.Kind != linkedca.Webhook_AUTHORIZING.String() {
+			continue
+		}
+		if !wc.isCertTypeOK(wh) {
+			continue
+		}
+
+		whCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+		defer cancel() //nolint:gocritic // every request canceled with its own timeout
+
+		resp, err := wh.DoWithContext(whCtx, wc.client, wc.wrapTransport, req, wc.TemplateData)
+		if err != nil {
+			return err
+		}
+		if !resp.Allow {
+			if resp.Error != nil {
+				return resp.Error
+			}
+			return ErrWebhookDenied
+		}
+	}
+	return nil
+}
+
+func (wc *WebhookController) isCertTypeOK(wh *Webhook) bool {
+	if wc.certType == linkedca.Webhook_ALL {
+		return true
+	}
+	if wh.CertType == linkedca.Webhook_ALL.String() || wh.CertType == "" {
+		return true
+	}
+	return wc.certType.String() == wh.CertType
+}
+
+type Webhook struct {
+	ID                   string `json:"id"`
+	Name                 string `json:"name"`
+	URL                  string `json:"url"`
+	Kind                 string `json:"kind"`
+	DisableTLSClientAuth bool   `json:"disableTLSClientAuth,omitempty"`
+	CertType             string `json:"certType"`
+	Secret               string `json:"-"`
+	BearerToken          string `json:"-"`
+	BasicAuth            struct {
+		Username string
+		Password string
+	} `json:"-"`
+}
+
+// Validate validates a webhook, only name, url and kind are required.
+func (w *Webhook) Validate() error {
+	if w == nil {
+		return nil
+	}
+
+	// name
+	if w.Name == "" {
+		return errors.New("webhook name is required")
+	}
+
+	// url
+	parsedURL, err := url.Parse(w.URL)
+	if err != nil {
+		return errors.New("webhook url is invalid")
+	}
+	if parsedURL.Host == "" {
+		return errors.New("webhook url is invalid")
+	}
+	if parsedURL.Scheme != "https" {
+		return errors.New("webhook url must use https")
+	}
+	if parsedURL.User != nil {
+		return errors.New("webhook url may not contain username or password")
+	}
+
+	// kind
+	if w.Kind == "" {
+		return errors.New("webhook kind is required")
+	}
+	w.Kind = strings.ToUpper(w.Kind)
+	kind, ok := linkedca.Webhook_Kind_value[w.Kind]
+	if !ok || kind == 0 {
+		return errors.New("webhook kind is invalid")
+	}
+
+	return nil
+}
+
+// TransportWrapper wraps the set of functions mapping [http.Transport] references to
+// [http.RoundTripper].
+type TransportWrapper = httptransport.Wrapper
+
+func (w *Webhook) DoWithContext(ctx context.Context, client HTTPClient, tw TransportWrapper, reqBody *webhook.RequestBody, data any) (*webhook.ResponseBody, error) {
+	tmpl, err := template.New("url").Funcs(templates.StepFuncMap()).Parse(w.URL)
+	if err != nil {
+		return nil, err
+	}
+	buf := &bytes.Buffer{}
+	if err := tmpl.Execute(buf, data); err != nil {
+		return nil, err
+	}
+	webhookURL := buf.String()
+
+	/*
+		Sending the token to the webhook server is a security risk. A K8sSA
+		token can be reused multiple times. The webhook can misuse it to get
+		fake certificates. A webhook can misuse any other token to get its own
+		certificate before responding.
+		switch tmpl := data.(type) {
+		case x509util.TemplateData:
+			reqBody.Token = tmpl[x509util.TokenKey]
+		case sshutil.TemplateData:
+			reqBody.Token = tmpl[sshutil.TokenKey]
+		}
+	*/
+
+	reqBody.Timestamp = time.Now()
+
+	reqBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	retries := 1
+retry:
+
+	req, err := http.NewRequestWithContext(ctx, "POST", webhookURL, bytes.NewReader(reqBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	if requestID, ok := requestid.FromContext(ctx); ok {
+		req.Header.Set("X-Request-Id", requestID)
+	}
+
+	secret, err := base64.StdEncoding.DecodeString(w.Secret)
+	if err != nil {
+		return nil, err
+	}
+	h := hmac.New(sha256.New, secret)
+	h.Write(reqBytes)
+	sig := h.Sum(nil)
+	req.Header.Set("X-Smallstep-Signature", hex.EncodeToString(sig))
+	req.Header.Set("X-Smallstep-Webhook-ID", w.ID)
+
+	if w.BearerToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", w.BearerToken))
+	} else if w.BasicAuth.Username != "" || w.BasicAuth.Password != "" {
+		req.SetBasicAuth(w.BasicAuth.Username, w.BasicAuth.Password)
+	}
+
+	if w.DisableTLSClientAuth {
+		var transport *http.Transport
+		if ct, ok := client.(poolhttp.Transporter); ok {
+			transport = ct.Transport()
+		} else {
+			transport = httptransport.New()
+		}
+
+		if transport.TLSClientConfig != nil {
+			transport.TLSClientConfig.GetClientCertificate = nil
+			transport.TLSClientConfig.Certificates = nil
+		}
+
+		client = &http.Client{
+			Transport: tw(transport),
+		}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, err
+		} else if retries > 0 {
+			retries--
+			time.Sleep(time.Second)
+			goto retry
+		}
+		return nil, err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Failed to close body of response from %s", w.URL)
+		}
+	}()
+	if resp.StatusCode >= 500 && retries > 0 {
+		retries--
+		time.Sleep(time.Second)
+		goto retry
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("Webhook server responded with %d", resp.StatusCode)
+	}
+
+	respBody := &webhook.ResponseBody{}
+	if err := json.NewDecoder(resp.Body).Decode(respBody); err != nil {
+		return nil, err
+	}
+
+	return respBody, nil
+}
