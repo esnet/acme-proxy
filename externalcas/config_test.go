@@ -58,6 +58,72 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "negative cert_obtain_timeout",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				CertObtainTimeout: -1,
+			},
+			wantErr: true,
+			errMsg:  "cert_obtain_timeout cannot be negative",
+		},
+		{
+			name: "cert_obtain_timeout at or above request timeout",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				CertObtainTimeout: 120,
+			},
+			wantErr: true,
+			errMsg:  "cert_obtain_timeout (2m0s) must be less than request_timeout (2m0s)",
+		},
+		{
+			name: "cert_obtain_timeout below request timeout is valid",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				CertObtainTimeout: 90,
+			},
+			wantErr: false,
+		},
+		{
+			name: "negative request_timeout",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				RequestTimeoutSec: -1,
+			},
+			wantErr: true,
+			errMsg:  "request_timeout cannot be negative",
+		},
+		{
+			name: "cert_obtain_timeout above default request timeout is valid when request_timeout is raised",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				CertObtainTimeout: 300,
+				RequestTimeoutSec: 330,
+			},
+			wantErr: false,
+		},
+		{
+			name: "cert_obtain_timeout at a raised request_timeout is rejected",
+			config: acmeProxyConfig{
+				CaURL:             "https://acme.example.com",
+				Kid:               "test-kid",
+				HmacKey:           "test-hmac",
+				CertObtainTimeout: 330,
+				RequestTimeoutSec: 330,
+			},
+			wantErr: true,
+			errMsg:  "cert_obtain_timeout (5m30s) must be less than request_timeout (5m30s)",
+		},
+		{
 			name: "metrics enabled without valid datasource",
 			config: acmeProxyConfig{
 				CaURL:   "https://acme.example.com",
@@ -172,6 +238,23 @@ func TestAcmeProxyConfig_Timeouts(t *testing.T) {
 	requestTimeout := config.RequestTimeout()
 	if requestTimeout != 2*time.Minute {
 		t.Errorf("RequestTimeout() = %v, want %v", requestTimeout, 2*time.Minute)
+	}
+
+	obtainTimeout := config.ObtainTimeout()
+	if obtainTimeout != 30*time.Second {
+		t.Errorf("ObtainTimeout() default = %v, want %v", obtainTimeout, 30*time.Second)
+	}
+
+	config.CertObtainTimeout = 90
+	obtainTimeout = config.ObtainTimeout()
+	if obtainTimeout != 90*time.Second {
+		t.Errorf("ObtainTimeout() with cert_obtain_timeout=90 = %v, want %v", obtainTimeout, 90*time.Second)
+	}
+
+	config.RequestTimeoutSec = 330
+	requestTimeout = config.RequestTimeout()
+	if requestTimeout != 330*time.Second {
+		t.Errorf("RequestTimeout() with request_timeout=330 = %v, want %v", requestTimeout, 330*time.Second)
 	}
 }
 
