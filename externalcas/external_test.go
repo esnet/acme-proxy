@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/acme"
+	"github.com/go-acme/lego/v5/certificate"
 	"github.com/smallstep/certificates/cas/apiv1"
 )
 
@@ -518,14 +518,14 @@ type mockACMEClient struct {
 	revokeFunc func([]byte) error
 }
 
-func (m *mockACMEClient) ObtainForCSR(req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
+func (m *mockACMEClient) ObtainForCSR(ctx context.Context, req certificate.ObtainForCSRRequest) (*certificate.Resource, error) {
 	if m.obtainFunc != nil {
 		return m.obtainFunc(req)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockACMEClient) Revoke(pemBytes []byte) error {
+func (m *mockACMEClient) Revoke(ctx context.Context, pemBytes []byte) error {
 	if m.revokeFunc != nil {
 		return m.revokeFunc(pemBytes)
 	}
@@ -579,7 +579,7 @@ func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest)
 	// Request certificate with context timeout
 	resultChan := make(chan *certificateResult, 1)
 	go func() {
-		cert, err := acmeClient.ObtainForCSR(csrRequest)
+		cert, err := acmeClient.ObtainForCSR(ctx, csrRequest)
 		if err != nil {
 			resultChan <- &certificateResult{
 				err: fmt.Errorf("failed to obtain certificate: %w", err),
@@ -664,7 +664,7 @@ func TestUser_InterfaceMethods(t *testing.T) {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 
-	reg := &registration.Resource{URI: "https://acme.example.com/account/1"}
+	reg := &acme.ExtendedAccount{Location: "https://acme.example.com/account/1"}
 
 	u := &User{
 		Email:        "test@example.com",
@@ -800,7 +800,7 @@ func (t *testExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest)
 		Type:  "CERTIFICATE",
 		Bytes: req.Certificate.Raw,
 	})
-	if err := acmeClient.Revoke(pemBytes); err != nil {
+	if err := acmeClient.Revoke(t.ctx, pemBytes); err != nil {
 		return nil, fmt.Errorf("failed to revoke certificate: %w", err)
 	}
 	return &apiv1.RevokeCertificateResponse{Certificate: req.Certificate}, nil

@@ -14,13 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-acme/lego/v4/certcrypto"
-	"github.com/go-acme/lego/v4/certificate"
-	"github.com/go-acme/lego/v4/challenge"
-	"github.com/go-acme/lego/v4/challenge/dns01"
-	"github.com/go-acme/lego/v4/lego"
-	"github.com/go-acme/lego/v4/providers/dns"
-	"github.com/go-acme/lego/v4/registration"
+	"github.com/go-acme/lego/v5/certificate"
+	"github.com/go-acme/lego/v5/challenge"
+	"github.com/go-acme/lego/v5/challenge/dns01"
+	"github.com/go-acme/lego/v5/lego"
+	"github.com/go-acme/lego/v5/providers/dns"
+	"github.com/go-acme/lego/v5/registration"
 	"github.com/smallstep/certificates/cas/apiv1"
 )
 
@@ -46,6 +45,15 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 			return nil, fmt.Errorf("failed to create DNS provider %q: %w", cfg.Lego.Provider, err)
 		}
 		cas.dnsProvider = provider
+
+		// When DNS servers are configured, use them as the recursive nameservers lego
+		// queries to confirm the challenge TXT record has propagated, instead of the
+		// host's default resolver.
+		if len(cfg.Lego.DnsServersList) > 0 {
+			dns01.SetDefaultClient(dns01.NewClient(&dns01.Options{
+				RecursiveNameservers: cfg.Lego.DnsServersList,
+			}))
+		}
 	}
 	if err := StartMetricsServer(cfg.Metrics, cfg.CaURL); err != nil {
 		return nil, err
@@ -106,7 +114,6 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 	// Configure lego client
 	clientConfig := lego.NewConfig(user)
 	clientConfig.CADirURL = cfg.CaURL
-	clientConfig.Certificate.KeyType = certcrypto.EC256 // gitleaks:allow
 	clientConfig.HTTPClient = &http.Client{
 		Timeout: cfg.HTTPTimeout(),
 	}
@@ -119,11 +126,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 
 	// Lego provider configuration when using dns01 challenge
 	if cfg.useDNS01 {
-		var opts []dns01.ChallengeOption
-		if len(cfg.Lego.DnsServersList) > 0 {
-			opts = append(opts, dns01.AddRecursiveNameservers(cfg.Lego.DnsServersList))
-		}
-		if err := client.Challenge.SetDNS01Provider(c.dnsProvider, opts...); err != nil {
+		if err := client.Challenge.SetDNS01Provider(c.dnsProvider); err != nil {
 			return nil, fmt.Errorf("failed to set DNS-01 provider: %w", err)
 		}
 	}
@@ -131,7 +134,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 	// Account registration — EAB takes precedence when configured
 	if cfg.useEAB {
 		regStart := time.Now()
-		reg, err := client.Registration.RegisterWithExternalAccountBinding(registration.RegisterEABOptions{
+		reg, err := client.Registration.RegisterWithExternalAccountBinding(c.ctx, registration.RegisterEABOptions{
 			TermsOfServiceAgreed: true,
 			Kid:                  cfg.Kid,
 			HmacEncoded:          cfg.HmacKey,
@@ -145,7 +148,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 		user.Registration = reg
 	} else {
 		regStart := time.Now()
-		reg, err := client.Registration.Register(registration.RegisterOptions{
+		reg, err := client.Registration.Register(c.ctx, registration.RegisterOptions{
 			TermsOfServiceAgreed: true,
 		})
 		if metricsEnabled {
@@ -203,7 +206,7 @@ func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*a
 		}()
 
 		start := time.Now()
-		cert, err := acmeClient.ObtainForCSR(csrRequest)
+		cert, err := acmeClient.ObtainForCSR(ctx, csrRequest)
 		duration := time.Since(start)
 
 		if err != nil {
@@ -324,7 +327,7 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 	)
 
 	revokeStart := time.Now()
-	revokeErr := acmeClient.Revoke(pemBytes)
+	revokeErr := acmeClient.Revoke(c.ctx, pemBytes)
 	revokeDuration := time.Since(revokeStart)
 
 	if revokeErr != nil {
