@@ -2,9 +2,6 @@ package externalcas
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -38,9 +35,9 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 		return nil, err
 	}
 	cas.cfg = cfg
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	key, err := loadAccountKey(cfg.AccountKeyFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
+		return nil, err
 	}
 	cas.account = &User{Email: cfg.Email, key: key}
 	if cfg.useDNS01 {

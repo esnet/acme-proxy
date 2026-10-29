@@ -75,12 +75,47 @@ Fields under `authority.config` are specific to acme-proxy.
 | `authority.config.certlifetime` | No | Request certificate with a max lifetime period if supported by upstream CA |
 | `authority.config.eab_kid` | Yes | External Account Binding Key ID, obtained from your CA's account portal. |
 | `authority.config.eab_hmac_key` | Yes | External Account Binding HMAC key, obtained from your CA's account portal. |
+| `authority.config.account_key_file` | No | Path to the upstream ACME account key. Created if missing. See [Upstream Account Key](#upstream-account-key). |
 | `authority.config.dns01_txt.provider` | Yes | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag  |
 | `authority.config.dns01_txt.dns_servers` | No | Use your authoritative DNS server's addresses to avoid caching/TTL problems |
 | `authority.config.dns01_txt.env_vars` | Yes | Environment variables specific to your Lego DNS Provider for authentication |
 | `authority.config.metrics.port` | No | Metrics port. Default: `9234`. |
 | `authority.config.metrics.datasource` | No | Prometheus metrics datastore. Default: `/opt/acme-proxy/db/metrics`. |
 | `commonName` | Yes | Common name for the proxy's own TLS certificate. Should match `dnsNames[0]`. |
+
+### Upstream Account Key
+
+acme-proxy uses one upstream ACME account for all requests. The account is identified by its key. EAB credentials are only used to register it.
+
+`account_key_file` keeps the account across restarts. A missing file is created with a new P-256 key and mode `0600`. The parent directory must exist. An existing file is only read. An unreadable or invalid file stops startup. Without the setting, a new account is registered on every restart, which fails on CAs with single-use EAB keys such as Google Trust Services.
+
+Back up the key. Replacing it registers a new account, which requires a new EAB key on single-use CAs.
+
+```json
+"authority": {
+  "type": "externalcas",
+  "config": {
+    "account_key_file": "/opt/acme-proxy/db/account.key",
+    ...
+  }
+}
+```
+
+On Kubernetes, store the key in a Secret and mount it read-only at the `account_key_file` path:
+
+```sh
+openssl ecparam -name prime256v1 -genkey -noout > account.key
+kubectl create secret generic acme-proxy-account --from-file=account.key
+```
+
+```yaml
+# "account_key_file": "/opt/acme-proxy/account/account.key"
+volumeMounts:
+  - {name: account-key, mountPath: /opt/acme-proxy/account, readOnly: true}
+volumes:
+  - name: account-key
+    secret: {secretName: acme-proxy-account, defaultMode: 0440}   # readable via the pod's fsGroup
+```
 
 ### Upstream CA URLs
 

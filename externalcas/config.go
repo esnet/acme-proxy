@@ -31,6 +31,9 @@ type acmeProxyConfig struct {
 	Kid     string `json:"eab_kid"`
 	HmacKey string `json:"eab_hmac_key"`
 
+	// Path to the upstream ACME account key; created on first start if missing (optional)
+	AccountKeyFile string `json:"account_key_file,omitempty"`
+
 	// Certificate lifetime in days (optional)
 	CertLifetime int `json:"certlifetime,omitempty"`
 
