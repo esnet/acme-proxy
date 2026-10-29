@@ -131,6 +131,8 @@ Refer to the [documentation](https://software.es.net/acme-proxy/configuration) f
 }
 ```
 
+To keep the same upstream ACME account across restarts, set `account_key_file` in `authority.config`. acme-proxy creates the key there on first start, or reads a key you provide. This is required for CAs with single-use EAB keys, such as Google Trust Services. See the [configuration docs](https://software.es.net/acme-proxy/configuration#upstream-account-key) for details.
+
 Most commercial certificate authorities (such as Sectigo) support certificate issuance over external account binding. You will need to get EAB credentials i.e HMAC Key and Key ID associated with your account. To get signed certs from CertiNext/InCommon use `https://acme-us.certinext.io/v1/directory` as shown below
 
 ```json

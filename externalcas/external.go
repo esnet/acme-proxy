@@ -2,9 +2,6 @@ package externalcas
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -12,8 +9,10 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/go-acme/lego/v5/acme"
 	"github.com/go-acme/lego/v5/certificate"
 	"github.com/go-acme/lego/v5/challenge"
 	"github.com/go-acme/lego/v5/challenge/dns01"
@@ -36,6 +35,11 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 		return nil, err
 	}
 	cas.cfg = cfg
+	key, err := loadAccountKey(cfg.AccountKeyFile)
+	if err != nil {
+		return nil, err
+	}
+	cas.account = &User{Email: cfg.Email, key: key}
 	if cfg.useDNS01 {
 		for k, v := range cfg.Lego.Env_Vars {
 			os.Setenv(k, v)
@@ -92,6 +96,11 @@ type ExternalCAS struct {
 	ctx         context.Context
 	cfg         *acmeProxyConfig
 	dnsProvider challenge.Provider
+
+	// account is the single upstream ACME account shared by every request.
+	// accountMu guards its one-time resolution or registration.
+	accountMu sync.Mutex
+	account   *User
 }
 
 func (c *ExternalCAS) Type() apiv1.Type {
@@ -100,19 +109,72 @@ func (c *ExternalCAS) Type() apiv1.Type {
 
 // createLegoClient creates a fresh lego ACME client with clean state.
 // This ensures no stale nonces or other protocol state from previous requests.
+// Every client shares the same upstream account, resolved or registered once.
 func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err := c.ensureAccount(cfg); err != nil {
+		return nil, err
+	}
+	client, err := c.newLegoClient(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
+		return nil, err
+	}
+	return &legoClientAdapter{certClient: client.Certificate}, nil
+}
+
+// ensureAccount looks up the upstream account for the account key and registers
+// it if the lookup fails. Registering is safe either way: RFC 8555 §7.3 requires
+// a CA to return the existing account when the key is already registered, which
+// covers CAs that do not support the lookup. It runs once per process; a failed
+// attempt is retried on the next request.
+func (c *ExternalCAS) ensureAccount(cfg *acmeProxyConfig) error {
+	c.accountMu.Lock()
+	defer c.accountMu.Unlock()
+	if c.account.Registration != nil {
+		return nil
 	}
 
-	user := &User{
-		Email: cfg.Email,
-		key:   privateKey,
+	client, err := c.newLegoClient(cfg)
+	if err != nil {
+		return err
 	}
 
-	// Configure lego client
-	clientConfig := lego.NewConfig(user)
+	regStart := time.Now()
+	reg, lookupErr := client.Registration.ResolveAccountByKey(c.ctx)
+	if lookupErr != nil {
+		var problem *acme.ProblemDetails
+		if !errors.As(lookupErr, &problem) || problem.Type != acme.AccountDoesNotExistErrorType {
+			slog.Warn("upstream account lookup failed; registering instead", "error", lookupErr)
+		}
+		reg, err = registerAccount(c.ctx, client, cfg)
+	}
+	if metricsEnabled {
+		acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
+	}
+	if err != nil {
+		return fmt.Errorf("lego acme client registration failed with CA: %w", errors.Join(err, lookupErr))
+	}
+
+	slog.Info("using upstream ACME account", "account", reg.Location)
+	c.account.Registration = reg
+	return nil
+}
+
+// registerAccount creates a new upstream account, binding it to the EAB
+// credentials when configured.
+func registerAccount(ctx context.Context, client *lego.Client, cfg *acmeProxyConfig) (*acme.ExtendedAccount, error) {
+	if cfg.useEAB {
+		return client.Registration.RegisterWithExternalAccountBinding(ctx, registration.RegisterEABOptions{
+			TermsOfServiceAgreed: true,
+			Kid:                  cfg.Kid,
+			HmacEncoded:          cfg.HmacKey,
+		})
+	}
+	return client.Registration.Register(ctx, registration.RegisterOptions{TermsOfServiceAgreed: true})
+}
+
+// newLegoClient builds a lego client for the shared upstream account.
+func (c *ExternalCAS) newLegoClient(cfg *acmeProxyConfig) (*lego.Client, error) {
+	clientConfig := lego.NewConfig(c.account)
 	clientConfig.CADirURL = cfg.CaURL
 	clientConfig.HTTPClient = &http.Client{
 		Timeout: cfg.HTTPTimeout(),
@@ -130,38 +192,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 			return nil, fmt.Errorf("failed to set DNS-01 provider: %w", err)
 		}
 	}
-
-	// Account registration — EAB takes precedence when configured
-	if cfg.useEAB {
-		regStart := time.Now()
-		reg, err := client.Registration.RegisterWithExternalAccountBinding(c.ctx, registration.RegisterEABOptions{
-			TermsOfServiceAgreed: true,
-			Kid:                  cfg.Kid,
-			HmacEncoded:          cfg.HmacKey,
-		})
-		if metricsEnabled {
-			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
-		}
-		if err != nil {
-			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
-		}
-		user.Registration = reg
-	} else {
-		regStart := time.Now()
-		reg, err := client.Registration.Register(c.ctx, registration.RegisterOptions{
-			TermsOfServiceAgreed: true,
-		})
-		if metricsEnabled {
-			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
-		}
-		if err != nil {
-			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
-		}
-		user.Registration = reg
-	}
-
-	// Wrap in our interface adapter
-	return &legoClientAdapter{certClient: client.Certificate}, nil
+	return client, nil
 }
 
 // CreateCertificate requests a certificate from the external ACME CA
