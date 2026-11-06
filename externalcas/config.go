@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const defaultAccountKeyPath = "/opt/acme-proxy/db/account.key"
+
 // Configuration bits for a DNS provider as per Lego docs
 type legoConfig struct {
 	Provider       string            `json:"provider"`
@@ -31,6 +33,9 @@ type acmeProxyConfig struct {
 	Kid     string `json:"eab_kid"`
 	HmacKey string `json:"eab_hmac_key"`
 
+	// Path where the upstream ACME account private key is persisted.
+	AccountKeyPath string `json:"account_key_path,omitempty"`
+
 	// Certificate lifetime in days (optional)
 	CertLifetime int `json:"certlifetime,omitempty"`
 
@@ -50,6 +55,9 @@ type acmeProxyConfig struct {
 func (c *acmeProxyConfig) Validate() error {
 	if c.CaURL == "" {
 		return errors.New("ca_url is required")
+	}
+	if c.AccountKeyPath == "" {
+		c.AccountKeyPath = defaultAccountKeyPath
 	}
 	if c.Kid != "" && c.HmacKey != "" {
 		c.useEAB = true

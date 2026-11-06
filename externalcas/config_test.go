@@ -289,6 +289,40 @@ func TestParseConfig_MetricsFieldValues(t *testing.T) {
 	}
 }
 
+func TestParseConfig_AccountKeyPath(t *testing.T) {
+	t.Run("default", func(t *testing.T) {
+		cfg, err := parseConfig([]byte(`{
+			"ca_url": "https://acme.example.com",
+			"eab_kid": "kid",
+			"eab_hmac_key": "hmac"
+		}`))
+		if err != nil {
+			t.Fatalf("parseConfig() unexpected error: %v", err)
+		}
+		if cfg.AccountKeyPath != defaultAccountKeyPath {
+			t.Errorf("AccountKeyPath = %q, want %q", cfg.AccountKeyPath, defaultAccountKeyPath)
+		}
+	})
+
+	t.Run("configured", func(t *testing.T) {
+		const path = "/var/lib/acme-proxy/account.key"
+		cfg, err := parseConfig([]byte(`{
+			"ca_url": "https://acme.example.com",
+			"dns01_txt": {
+				"provider": "manual",
+				"env_vars": {"DUMMY": "1"}
+			},
+			"account_key_path": "` + path + `"
+		}`))
+		if err != nil {
+			t.Fatalf("parseConfig() unexpected error: %v", err)
+		}
+		if cfg.AccountKeyPath != path {
+			t.Errorf("AccountKeyPath = %q, want %q", cfg.AccountKeyPath, path)
+		}
+	})
+}
+
 func TestAcmeProxyConfig_Validate_ModeFlags(t *testing.T) {
 	tests := []struct {
 		name         string

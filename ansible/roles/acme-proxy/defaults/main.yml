@@ -23,6 +23,7 @@ acme_proxy_ca_url: ""
 acme_proxy_account_email: ""
 acme_proxy_eab_kid: ""
 acme_proxy_eab_hmac_key: ""
+acme_proxy_account_key_path: "{{ acme_proxy_db_dir }}/account.key"
 
 # Metrics
 acme_proxy_metrics_enabled: true

@@ -26,6 +26,7 @@ Since acme-proxy uses step-ca as the ACME server much of the required configurat
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "account_key_path": "/opt/acme-proxy/db/account.key",
       "dns01_txt": {
         "provider": "",
         "dns_servers": [],
@@ -75,6 +76,7 @@ Fields under `authority.config` are specific to acme-proxy.
 | `authority.config.certlifetime` | No | Request certificate with a max lifetime period if supported by upstream CA |
 | `authority.config.eab_kid` | Yes | External Account Binding Key ID, obtained from your CA's account portal. |
 | `authority.config.eab_hmac_key` | Yes | External Account Binding HMAC key, obtained from your CA's account portal. |
+| `authority.config.account_key_path` | No | Path for the upstream ACME account private key. The key and its registration metadata (`<path>.account.json`) are persisted with owner-only permissions. Default: `/opt/acme-proxy/db/account.key`. Keep both files on persistent storage; changing the path creates a new upstream account. If either file is lost or damaged, startup fails rather than silently registering another account. |
 | `authority.config.dns01_txt.provider` | Yes | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag  |
 | `authority.config.dns01_txt.dns_servers` | No | Use your authoritative DNS server's addresses to avoid caching/TTL problems |
 | `authority.config.dns01_txt.env_vars` | Yes | Environment variables specific to your Lego DNS Provider for authentication |

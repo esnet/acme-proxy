@@ -15,6 +15,7 @@
       "account_email": "",
       "eab_kid": "",
       "eab_hmac_key": "",
+      "account_key_path": "/opt/acme-proxy/db/account.key",
       "dns01_txt":{
         "provider":"",
         "dns_servers":[],

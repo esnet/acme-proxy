@@ -2,9 +2,6 @@ package externalcas
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -55,6 +52,10 @@ func New(ctx context.Context, opts apiv1.Options) (*ExternalCAS, error) {
 			}))
 		}
 	}
+	cas.accountStore, err = newACMEAccountStore(cfg.AccountKeyPath, cfg)
+	if err != nil {
+		return nil, err
+	}
 	if err := StartMetricsServer(cfg.Metrics, cfg.CaURL); err != nil {
 		return nil, err
 	}
@@ -89,29 +90,28 @@ type certificateResult struct {
 
 // ExternalCAS implements the CertificateAuthorityService interface using an external CA
 type ExternalCAS struct {
-	ctx         context.Context
-	cfg         *acmeProxyConfig
-	dnsProvider challenge.Provider
+	ctx          context.Context
+	cfg          *acmeProxyConfig
+	dnsProvider  challenge.Provider
+	accountStore *acmeAccountStore
 }
 
 func (c *ExternalCAS) Type() apiv1.Type {
 	return apiv1.ExternalCAS
 }
 
-// createLegoClient creates a fresh lego ACME client with clean state.
+// createLegoClient creates a fresh lego client while reusing the persisted ACME account.
 // This ensures no stale nonces or other protocol state from previous requests.
 func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
-	}
-
-	user := &User{
-		Email: cfg.Email,
-		key:   privateKey,
+	if c.accountStore == nil {
+		return nil, errors.New("ACME account store is not initialized")
 	}
 
 	// Configure lego client
+	user, err := c.accountStore.newUser(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load upstream ACME account: %w", err)
+	}
 	clientConfig := lego.NewConfig(user)
 	clientConfig.CADirURL = cfg.CaURL
 	clientConfig.HTTPClient = &http.Client{
@@ -131,33 +131,32 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 		}
 	}
 
-	// Account registration — EAB takes precedence when configured
-	if cfg.useEAB {
+	// Account registration — EAB takes precedence when configured. The account
+	// store serializes first-use registration and reuses the saved key and URL.
+	err = c.accountStore.ensureRegistration(cfg, user, func(user *User) error {
 		regStart := time.Now()
-		reg, err := client.Registration.RegisterWithExternalAccountBinding(c.ctx, registration.RegisterEABOptions{
-			TermsOfServiceAgreed: true,
-			Kid:                  cfg.Kid,
-			HmacEncoded:          cfg.HmacKey,
-		})
+		var regErr error
+		if cfg.useEAB {
+			user.Registration, regErr = client.Registration.RegisterWithExternalAccountBinding(c.ctx, registration.RegisterEABOptions{
+				TermsOfServiceAgreed: true,
+				Kid:                  cfg.Kid,
+				HmacEncoded:          cfg.HmacKey,
+			})
+		} else {
+			user.Registration, regErr = client.Registration.Register(c.ctx, registration.RegisterOptions{
+				TermsOfServiceAgreed: true,
+			})
+		}
 		if metricsEnabled {
 			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
 		}
-		if err != nil {
-			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
+		if regErr != nil {
+			return fmt.Errorf("lego acme client registration failed with CA: %w", regErr)
 		}
-		user.Registration = reg
-	} else {
-		regStart := time.Now()
-		reg, err := client.Registration.Register(c.ctx, registration.RegisterOptions{
-			TermsOfServiceAgreed: true,
-		})
-		if metricsEnabled {
-			acmeRoundtripDuration.WithLabelValues("register").Observe(time.Since(regStart).Seconds())
-		}
-		if err != nil {
-			return nil, fmt.Errorf("lego acme client registration failed with CA: %w", err)
-		}
-		user.Registration = reg
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load or register upstream ACME account: %w", err)
 	}
 
 	// Wrap in our interface adapter

@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -26,9 +27,10 @@ func TestNew(t *testing.T) {
 	opts := apiv1.Options{
 		Type: "externalcas",
 		Config: mustMarshalConfig(t, &acmeProxyConfig{
-			CaURL:   "https://acme.example.com",
-			Kid:     "test-kid",
-			HmacKey: "test-hmac",
+			CaURL:          "https://acme.example.com",
+			Kid:            "test-kid",
+			HmacKey:        "test-hmac",
+			AccountKeyPath: filepath.Join(t.TempDir(), "account.key"),
 		}),
 	}
 
@@ -94,7 +96,8 @@ func TestNew_DNS01OnlyConfig(t *testing.T) {
 	// "manual" is the one Lego provider that requires no env vars and no network calls.
 	// It satisfies dns.NewDNSChallengeProviderByName without hitting any external service.
 	cfg := mustMarshalConfig(t, &acmeProxyConfig{
-		CaURL: "https://acme.example.com",
+		CaURL:          "https://acme.example.com",
+		AccountKeyPath: filepath.Join(t.TempDir(), "account.key"),
 		Lego: legoConfig{
 			Provider: "manual",
 			Env_Vars: map[string]string{"DUMMY": "1"},
