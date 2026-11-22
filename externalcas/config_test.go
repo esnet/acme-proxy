@@ -1,6 +1,7 @@
 package externalcas
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -56,6 +57,28 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 				CertLifetime: 0,
 			},
 			wantErr: false,
+		},
+		{
+			name: "negative timeout",
+			config: acmeProxyConfig{
+				CaURL:          "https://acme.example.com",
+				Kid:            "test-kid",
+				HmacKey:        "test-hmac",
+				TimeoutSeconds: -1,
+			},
+			wantErr: true,
+			errMsg:  "timeout cannot be negative",
+		},
+		{
+			name: "timeout overflows duration",
+			config: acmeProxyConfig{
+				CaURL:          "https://acme.example.com",
+				Kid:            "test-kid",
+				HmacKey:        "test-hmac",
+				TimeoutSeconds: math.MaxInt64/int64(time.Second) + 1,
+			},
+			wantErr: true,
+			errMsg:  "timeout is too large",
 		},
 		{
 			name: "metrics enabled without valid datasource",
@@ -161,17 +184,18 @@ func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
 	})
 }
 
-func TestAcmeProxyConfig_Timeouts(t *testing.T) {
+func TestAcmeProxyConfig_Timeout(t *testing.T) {
 	config := acmeProxyConfig{}
-
-	httpTimeout := config.HTTPTimeout()
-	if httpTimeout != 90*time.Second {
-		t.Errorf("HTTPTimeout() = %v, want %v", httpTimeout, 90*time.Second)
+	if got, want := config.timeout(), 300*time.Second; got != want {
+		t.Errorf("timeout() = %v, want %v", got, want)
 	}
 
-	requestTimeout := config.RequestTimeout()
-	if requestTimeout != 2*time.Minute {
-		t.Errorf("RequestTimeout() = %v, want %v", requestTimeout, 2*time.Minute)
+	configured, err := parseConfig([]byte(`{"ca_url":"https://acme.example.com","eab_kid":"test-kid","eab_hmac_key":"test-hmac","timeout":1800}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := configured.timeout(), 30*time.Minute; got != want {
+		t.Errorf("timeout() = %v, want %v", got, want)
 	}
 }
 

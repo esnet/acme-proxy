@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -33,6 +34,12 @@ type acmeProxyConfig struct {
 
 	// Certificate lifetime in days (optional)
 	CertLifetime int `json:"certlifetime,omitempty"`
+
+	// TimeoutSeconds is the total upstream issuance budget in seconds (default 300).
+	// Directory discovery, account registration, validation, finalization, and certificate retrieval share it.
+	// For DNS-01 TXT challenges, consider a higher timeout to give Lego time to create
+	// the TXT records, wait for propagation, and clean them up. Timing varies by DNS provider.
+	TimeoutSeconds int64 `json:"timeout,omitzero"`
 
 	// Lego provider connection variables for dns01 TXT challenge
 	Lego legoConfig `json:"dns01_txt"`
@@ -64,6 +71,12 @@ func (c *acmeProxyConfig) Validate() error {
 	if c.CertLifetime < 0 {
 		return errors.New("certlifetime cannot be negative")
 	}
+	if c.TimeoutSeconds < 0 {
+		return errors.New("timeout cannot be negative")
+	}
+	if c.TimeoutSeconds > math.MaxInt64/int64(time.Second) {
+		return errors.New("timeout is too large")
+	}
 
 	// Consider Metrics enabled only when port & datasource both are defined
 	if c.Metrics.Port > 0 && c.Metrics.DataSource != "" {
@@ -76,18 +89,15 @@ func (c *acmeProxyConfig) Validate() error {
 	return nil
 }
 
-// HTTPTimeout returns the timeout for HTTP client operations
-func (c *acmeProxyConfig) HTTPTimeout() time.Duration {
-	return 90 * time.Second
-}
-
-// RequestTimeout returns the timeout for certificate request operations
-func (c *acmeProxyConfig) RequestTimeout() time.Duration {
-	return 2 * time.Minute
+func (c *acmeProxyConfig) timeout() time.Duration {
+	if c.TimeoutSeconds == 0 {
+		return 300 * time.Second
+	}
+	return time.Duration(c.TimeoutSeconds) * time.Second
 }
 
 // parseConfig is a helper function which reads ca.json file as rawjson and validates
-// acme-proxy specific configuration bits under the `authority` section of the config
+// acme-proxy specific configuration bits under the `authority` section of the ca.json file
 func parseConfig(raw json.RawMessage) (*acmeProxyConfig, error) {
 	var cfg acmeProxyConfig
 	if err := json.Unmarshal(raw, &cfg); err != nil {

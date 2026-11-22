@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -100,7 +101,8 @@ func (c *ExternalCAS) Type() apiv1.Type {
 
 // createLegoClient creates a fresh lego ACME client with clean state.
 // This ensures no stale nonces or other protocol state from previous requests.
-func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
+func (c *ExternalCAS) createLegoClient(ctx context.Context) (ACMEClient, error) {
+	cfg := c.cfg
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ECDSA key: %w", err)
@@ -114,8 +116,11 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 	// Configure lego client
 	clientConfig := lego.NewConfig(user)
 	clientConfig.CADirURL = cfg.CaURL
+	timeout := cfg.timeout()
+	clientConfig.Certificate.Timeout = timeout
 	clientConfig.HTTPClient = &http.Client{
-		Timeout: cfg.HTTPTimeout(),
+		Timeout:   timeout,
+		Transport: acmeTransport{ctx: ctx},
 	}
 
 	// Create lego client
@@ -134,7 +139,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 	// Account registration — EAB takes precedence when configured
 	if cfg.useEAB {
 		regStart := time.Now()
-		reg, err := client.Registration.RegisterWithExternalAccountBinding(c.ctx, registration.RegisterEABOptions{
+		reg, err := client.Registration.RegisterWithExternalAccountBinding(ctx, registration.RegisterEABOptions{
 			TermsOfServiceAgreed: true,
 			Kid:                  cfg.Kid,
 			HmacEncoded:          cfg.HmacKey,
@@ -148,7 +153,7 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 		user.Registration = reg
 	} else {
 		regStart := time.Now()
-		reg, err := client.Registration.Register(c.ctx, registration.RegisterOptions{
+		reg, err := client.Registration.Register(ctx, registration.RegisterOptions{
 			TermsOfServiceAgreed: true,
 		})
 		if metricsEnabled {
@@ -164,22 +169,58 @@ func (c *ExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error)
 	return &legoClientAdapter{certClient: client.Certificate}, nil
 }
 
+// acmeTransport cancels HTTP calls when the ACME operation ends. Lego's
+// constructor fetches the directory without using the operation context.
+type acmeTransport struct {
+	ctx context.Context
+}
+
+func (t acmeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx, cancel := context.WithCancelCause(req.Context())
+	stop := context.AfterFunc(t.ctx, func() { cancel(context.Cause(t.ctx)) })
+	if err := context.Cause(t.ctx); err != nil {
+		cancel(err)
+	}
+
+	release := func() {
+		stop()
+		cancel(nil)
+	}
+	resp, err := http.DefaultTransport.RoundTrip(req.WithContext(ctx))
+	if err != nil {
+		release()
+		return nil, err
+	}
+	resp.Body = &acmeResponseBody{ReadCloser: resp.Body, release: release}
+	return resp, nil
+}
+
+type acmeResponseBody struct {
+	io.ReadCloser
+	release func()
+}
+
+func (b *acmeResponseBody) Close() error {
+	defer b.release()
+	return b.ReadCloser.Close()
+}
+
 // CreateCertificate requests a certificate from the external ACME CA
 func (c *ExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest) (*apiv1.CreateCertificateResponse, error) {
 	if err := validateCreateCertificateRequest(req); err != nil {
 		return nil, err
 	}
 
+	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.timeout())
+	defer cancel()
+
 	// Create a fresh ACME client for this request
 	// This eliminates any stale nonce or protocol state issues
 	slog.Debug("creating fresh ACME client for certificate request")
-	acmeClient, err := c.createLegoClient(c.cfg)
+	acmeClient, err := c.createLegoClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lego ACME client: %w", err)
 	}
-
-	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.RequestTimeout())
-	defer cancel()
 
 	slog.Info("processing certificate request", "domains", req.CSR.DNSNames)
 
@@ -309,7 +350,7 @@ func (c *ExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest) (*a
 
 	// Create a fresh ACME client for this revocation request
 	slog.Debug("creating fresh ACME client for certificate revocation")
-	acmeClient, err := c.createLegoClient(c.cfg)
+	acmeClient, err := c.createLegoClient(c.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ACME client: %w", err)
 	}

@@ -159,6 +159,7 @@ To get certificates signed from LetsEncrypt use the following config options
 | `dns01_txt.provider`    | [Lego Provider](https://go-acme.github.io/lego/dns/index.html) CLI Flag name |
 | `dns01_txt.dns_servers` | Use your authoritative DNS server's addresses to avoid caching/TTL problems  |
 | `dns01_txt.env_vars`    | Environment variables specific to your Lego DNS Provider for authentication  |
+| `timeout`               | total time for upstream CA to finalize order & return signed cert (default `300`) |
 
 
 ### Starting acme-proxy

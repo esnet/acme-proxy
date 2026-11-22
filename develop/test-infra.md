@@ -18,7 +18,7 @@ touch /opt/acme-proxy/ca.json
 chown -R 65532:65532 /opt/acme-proxy
 ```
 
-3. We can claim a free domain for one testing purposes using one of the following free DNS providers which are also supported by Lego! I created a free account & called dibs on `acme-proxy.duckdns.org`
+3. We can claim a free domain for testing purposes using one of the following free DNS providers which are also supported by Lego! I created a free account & called dibs on `acme-proxy.duckdns.org`
 
 - [DuckDNS](https://www.duckdns.org/)
 - [IPv64](https://ipv64.net)
@@ -58,7 +58,7 @@ docker run -d --name acme-proxy.duckdns.org \
 docker run \
   --name ci-test.acme-proxy.duckdns.org \
   --network acme-proxy-testbridge \
-  goacme/lego:v5.3.1 run \
+  goacme/lego:v5.6.0 run \
     --server https://acme-proxy.duckdns.org/acme/acme/directory \
     --domains ci-test.acme-proxy.duckdns.org \
     --email certadmins@duckdns.org \
@@ -66,7 +66,9 @@ docker run \
     --http
 ```
 
-5. teardown and cleanup
+Note -  If the `ca_url` in ca.json from step 5 is pointing to LetsEncrypt Staging endpoint, then append the `--tls-skip-verify` flag to the lego command in step 6.
+
+7. teardown and cleanup
 ```sh
 docker kill acme-proxy
 docker rm lego-acme.networkninja.dev acme-proxy-test.networkninja.dev
