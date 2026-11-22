@@ -1,6 +1,7 @@
 package externalcas
 
 import (
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -58,70 +59,26 @@ func TestAcmeProxyConfig_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "negative cert_obtain_timeout",
+			name: "negative timeout",
 			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				CertObtainTimeout: -1,
+				CaURL:          "https://acme.example.com",
+				Kid:            "test-kid",
+				HmacKey:        "test-hmac",
+				TimeoutSeconds: -1,
 			},
 			wantErr: true,
-			errMsg:  "cert_obtain_timeout cannot be negative",
+			errMsg:  "timeout cannot be negative",
 		},
 		{
-			name: "cert_obtain_timeout at or above request timeout",
+			name: "timeout overflows duration",
 			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				CertObtainTimeout: 120,
+				CaURL:          "https://acme.example.com",
+				Kid:            "test-kid",
+				HmacKey:        "test-hmac",
+				TimeoutSeconds: math.MaxInt64/int64(time.Second) + 1,
 			},
 			wantErr: true,
-			errMsg:  "cert_obtain_timeout (2m0s) must be less than request_timeout (2m0s)",
-		},
-		{
-			name: "cert_obtain_timeout below request timeout is valid",
-			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				CertObtainTimeout: 90,
-			},
-			wantErr: false,
-		},
-		{
-			name: "negative request_timeout",
-			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				RequestTimeoutSec: -1,
-			},
-			wantErr: true,
-			errMsg:  "request_timeout cannot be negative",
-		},
-		{
-			name: "cert_obtain_timeout above default request timeout is valid when request_timeout is raised",
-			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				CertObtainTimeout: 300,
-				RequestTimeoutSec: 330,
-			},
-			wantErr: false,
-		},
-		{
-			name: "cert_obtain_timeout at a raised request_timeout is rejected",
-			config: acmeProxyConfig{
-				CaURL:             "https://acme.example.com",
-				Kid:               "test-kid",
-				HmacKey:           "test-hmac",
-				CertObtainTimeout: 330,
-				RequestTimeoutSec: 330,
-			},
-			wantErr: true,
-			errMsg:  "cert_obtain_timeout (5m30s) must be less than request_timeout (5m30s)",
+			errMsg:  "timeout is too large",
 		},
 		{
 			name: "metrics enabled without valid datasource",
@@ -227,34 +184,18 @@ func TestAcmeProxyConfig_Validate_MetricsEnabled(t *testing.T) {
 	})
 }
 
-func TestAcmeProxyConfig_Timeouts(t *testing.T) {
+func TestAcmeProxyConfig_Timeout(t *testing.T) {
 	config := acmeProxyConfig{}
-
-	httpTimeout := config.HTTPTimeout()
-	if httpTimeout != 90*time.Second {
-		t.Errorf("HTTPTimeout() = %v, want %v", httpTimeout, 90*time.Second)
+	if got, want := config.timeout(), 300*time.Second; got != want {
+		t.Errorf("timeout() = %v, want %v", got, want)
 	}
 
-	requestTimeout := config.RequestTimeout()
-	if requestTimeout != 2*time.Minute {
-		t.Errorf("RequestTimeout() = %v, want %v", requestTimeout, 2*time.Minute)
+	configured, err := parseConfig([]byte(`{"ca_url":"https://acme.example.com","eab_kid":"test-kid","eab_hmac_key":"test-hmac","timeout":1800}`))
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	obtainTimeout := config.ObtainTimeout()
-	if obtainTimeout != 30*time.Second {
-		t.Errorf("ObtainTimeout() default = %v, want %v", obtainTimeout, 30*time.Second)
-	}
-
-	config.CertObtainTimeout = 90
-	obtainTimeout = config.ObtainTimeout()
-	if obtainTimeout != 90*time.Second {
-		t.Errorf("ObtainTimeout() with cert_obtain_timeout=90 = %v, want %v", obtainTimeout, 90*time.Second)
-	}
-
-	config.RequestTimeoutSec = 330
-	requestTimeout = config.RequestTimeout()
-	if requestTimeout != 330*time.Second {
-		t.Errorf("RequestTimeout() with request_timeout=330 = %v, want %v", requestTimeout, 330*time.Second)
+	if got, want := configured.timeout(), 30*time.Minute; got != want {
+		t.Errorf("timeout() = %v, want %v", got, want)
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -381,6 +383,46 @@ func TestCreateCertificate_Timeout(t *testing.T) {
 	}
 }
 
+func TestCreateCertificate_DirectoryUsesOperationContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprint(w, "{")
+		w.(http.Flusher).Flush()
+		cancel()
+
+		// Leave the directory response incomplete so cancellation must
+		// interrupt the body read as well as the initial HTTP call.
+		select {
+		case <-r.Context().Done():
+		case <-time.After(3 * time.Second):
+		}
+	}))
+	defer server.Close()
+
+	// Trust the test server's certificate for the duration of this test.
+	transport := http.DefaultTransport
+	http.DefaultTransport = server.Client().Transport
+	t.Cleanup(func() { http.DefaultTransport = transport })
+
+	cas := &ExternalCAS{
+		ctx: ctx,
+		cfg: &acmeProxyConfig{
+			CaURL:          server.URL,
+			TimeoutSeconds: 2,
+		},
+	}
+	_, err := cas.CreateCertificate(&apiv1.CreateCertificateRequest{
+		CSR:      &x509.CertificateRequest{},
+		Template: &x509.Certificate{},
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("CreateCertificate() = %v, want cancellation during directory discovery", err)
+	}
+}
+
 func Test_splitCertificateBundle(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -540,11 +582,11 @@ type testExternalCAS struct {
 }
 
 // Override createLegoClient to return our mock
-func (t *testExternalCAS) createLegoClient(cfg *acmeProxyConfig) (ACMEClient, error) {
+func (t *testExternalCAS) createLegoClient(ctx context.Context) (ACMEClient, error) {
 	if t.mockClient != nil {
 		return t.mockClient, nil
 	}
-	return t.ExternalCAS.createLegoClient(cfg)
+	return t.ExternalCAS.createLegoClient(ctx)
 }
 
 // CreateCertificate overrides the parent to use custom timeout for testing
@@ -553,19 +595,18 @@ func (t *testExternalCAS) CreateCertificate(req *apiv1.CreateCertificateRequest)
 		return nil, err
 	}
 
-	acmeClient, err := t.createLegoClient(t.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create ACME client: %w", err)
-	}
-
-	// Use custom timeout if specified, otherwise use config timeout
-	timeout := t.cfg.RequestTimeout()
+	timeout := t.cfg.timeout()
 	if t.requestTimeout > 0 {
 		timeout = t.requestTimeout
 	}
 
 	ctx, cancel := context.WithTimeout(t.ctx, timeout)
 	defer cancel()
+
+	acmeClient, err := t.createLegoClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ACME client: %w", err)
+	}
 
 	// Build certificate request
 	csrRequest := certificate.ObtainForCSRRequest{
@@ -792,7 +833,7 @@ func (t *testExternalCAS) RevokeCertificate(req *apiv1.RevokeCertificateRequest)
 	if err := validateRevokeCertificateRequest(req); err != nil {
 		return nil, err
 	}
-	acmeClient, err := t.createLegoClient(t.cfg)
+	acmeClient, err := t.createLegoClient(t.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ACME client: %w", err)
 	}
