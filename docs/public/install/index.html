@@ -1,47 +1,50 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
-<head>
-  <!--
-Made with Book Theme
-https://github.com/alex-shpak/hugo-book
--->
+<html lang="en" dir="ltr"
+    data-theme="light"
+    data-layout="centered">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  
+  <meta name="generator" content="Hugo 0.170.1">
+  <meta name="generator-theme" content="Book Theme: https://github.com/alex-shpak/hugo-book">
+
+
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
-Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.
+<meta name="description" content="Install There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended) The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2e3440">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://docs.acme-proxy.es.net/install/">
+<meta name="color-scheme" content="light dark">
+<meta name="format-detection" content="telephone=no"><meta property="og:url" content="http://localhost:1313/install/">
 	<meta property="og:site_name" content="acme-proxy">
 	<meta property="og:title" content="Install">
-	<meta property="og:description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
-Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
+	<meta property="og:description" content="Install There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended) The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
 	<meta property="og:locale" content="en">
 	<meta property="og:type" content="article">
-		<meta property="article:modified_time" content="2026-08-08T21:42:04-05:00">
+		<meta property="article:section" content="getting-started">
 
 
 	<meta itemprop="name" content="Install">
-	<meta itemprop="description" content="Install# There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
-Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended)# The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
-	<meta itemprop="dateModified" content="2026-08-08T21:42:04-05:00">
-	<meta itemprop="wordCount" content="441">
+	<meta itemprop="description" content="Install There are a few methods for produciton installation. The install script is recommended for most deployments due to it’s simplicity.
+Method Best for Install script Standard Linux servers, systemd environments Build from source Development, or architectures not covered by releases Docker Standalone container-based deployments Install Script (Recommended) The install script downloads the appropriate release binary, creates a dedicated service user, installs a ca.json template, and registers a hardened systemd service unit.">
+	<meta itemprop="wordCount" content="563">
 
-<title>Install | acme-proxy</title>
-<link rel="icon" href="/favicon.png" >
+<title>Install • acme-proxy</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.png" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
 <link rel="manifest" href="/manifest.json">
-<link rel="canonical" href="http://docs.acme-proxy.es.net/install/">
-<link rel="stylesheet" href="/book.min.4d6d5ad3b0ae85d2a15b20ab217863f70db543e46314629e239ced759e674898.css" integrity="sha256-TW1a07CuhdKhWyCrIXhj9w21Q&#43;RjFGKeI5ztdZ5nSJg=" crossorigin="anonymous">
+<link rel="canonical" href="http://localhost:1313/install/">
+<link rel="stylesheet" href="/book.min.744580663b76732a2e0d75f87cbd539117d0ba6f0564f993fe275aa1967a6766.css" integrity="sha256-dEWAZjt2cyouDXX4fL1TkRfQum8FZPmT/idaoZZ6Z2Y=" crossorigin="anonymous">
 
 
-  <script defer src="/fuse.min.js"></script>
-  <script defer src="/en.search.min.0828a380e7ec55ef6d1f81209159f3c99edd3b04016c5814de4f0ea2a34b099f.js" integrity="sha256-CCijgOfsVe9tH4EgkVnzyZ7dOwQBbFgU3k8OoqNLCZ8=" crossorigin="anonymous"></script>
-
+<script type="module" src="/en.search.min.e6ce9daea50b7485960ff23c0fd90de407693b15976eff8b77511d1e222df010.js" integrity="sha256-5s6drqULdIWWD/I8D9kN5AdpOxWXbv&#43;Ld1EdHiIt8BA=" crossorigin="anonymous"></script>
   <script defer src="/sw.min.6f6f90fcb8eb1c49ec389838e6b801d0de19430b8e516902f8d75c3c8bd98739.js" integrity="sha256-b2&#43;Q/LjrHEnsOJg45rgB0N4ZQwuOUWkC&#43;NdcPIvZhzk=" crossorigin="anonymous"></script>
-
-
 
   <style>
   pre {
@@ -73,12 +76,11 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 </style>
 
 </head>
-<body dir="ltr" class="book-kind-page book-type-page">
-  <input type="checkbox" class="hidden toggle" id="menu-control" />
-  <input type="checkbox" class="hidden toggle" id="toc-control" />
-  <main class="container flex">
+
+<body dir="ltr" class="book-kind-page book-type-getting-started">
+  <div class="book-container flex">
     
-<aside class="book-menu">
+<aside class="book-menu" aria-label="Menu">
   <div class="book-menu-content">
     
   <nav>
@@ -87,23 +89,20 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
   </a>
 </h2>
 
-
 <div class="book-search hidden">
-  <input id="book-search-input" type="text" 
+  <input id="book-search-input" type="text" role="searchbox" enterkeyhint="search"
     placeholder="Search"
     aria-label="Search"
-    maxlength="64" data-hotkeys="s/" />
+    maxlength="64" />
   <div class="book-search-spinner hidden"></div>
-  <ul id="book-search-results"></ul>
+  <ul id="book-search-results" aria-live="polite"></ul>
 </div>
 <script>document.querySelector(".book-search").classList.remove("hidden")</script>
 
 
 
 
-
-
-<ul><li><a href="/">Home</a></li></ul>
+<ul><li><a href="/" title="Home">Home</a></li></ul>
 
 
 
@@ -113,6 +112,20 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 
 
   
+  <ul>
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a>
+      Getting Started</a>
+  
+
+          
   <ul>
     
       
@@ -157,6 +170,25 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
         </li>
       
     
+  </ul>
+
+        </li>
+      
+    
+      
+        <li class="book-section-flat" >
+          
+  
+  
+
+  
+    <a>
+      Client Guides</a>
+  
+
+          
+  <ul>
+    
       
         <li>
           
@@ -187,6 +219,12 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
     
   </ul>
 
+        </li>
+      
+    
+  </ul>
+
+
 
 
 
@@ -197,6 +235,9 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 
 
 <ul><li><a href="https://github.com/esnet/acme-proxy" target="_blank" rel="noopener">GitHub</a></li></ul>
+
+
+
 
 
 
@@ -214,67 +255,38 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 </aside>
  
 
-    <div class="book-page">
-      <header class="book-header hidden">
-        
-  <div class="flex align-center justify-between">
-  <label for="menu-control">
-    <img src="/icons/menu.svg" class="book-icon" alt="Menu" />
+    <header class="book-header hidden">
+      
+  <div class="flex align-center justify-between gap">
+  <input type="checkbox" class="toggle" id="menu-control" />
+  <label for="menu-control" aria-label="Menu">
+    <svg class="book-icon" aria-hidden="true"><use href="/iconset.min.075abc2f4b2a115c7499b9f31325aecb3d24f471b1e8f41b8a634e4913b10214.svg#menu"></use></svg>
   </label>
 
-  <h3>Install</h3>
+  <h2 class="book-brand">
+  <a class="flex" style="flex-direction: column; align-items: flex-start;" href="/"><img src="/esnet-logo.png" alt="ESnet" style="height: 48px; width: auto;" /><span>acme-proxy</span>
+  </a>
+</h2>
 
-  <label for="toc-control">
-    
-    <img src="/icons/toc.svg" class="book-icon" alt="Table of Contents" />
-    
+
+  
+  <input type="checkbox" class="toggle" id="toc-control" />
+  <label for="toc-control" aria-label="Table of Contents">
+    <svg class="book-icon" aria-hidden="true"><use href="/iconset.min.075abc2f4b2a115c7499b9f31325aecb3d24f471b1e8f41b8a634e4913b10214.svg#toc"></use></svg>
   </label>
+  
 </div>
 
-
-  
-  <aside class="hidden">
-    
-  
-<nav id="TableOfContents">
-  <ul>
-    <li><a href="#install">Install</a>
-      <ul>
-        <li><a href="#install-script-recommended">Install Script (Recommended)</a>
-          <ul>
-            <li><a href="#environment-variable-overrides">Environment variable overrides</a></li>
-            <li><a href="#what-the-script-installs">What the script installs</a></li>
-          </ul>
-        </li>
-        <li><a href="#build-from-source">Build from Source</a></li>
-        <li><a href="#install-using-docker">Install using Docker</a>
-          <ul>
-            <li><a href="#docker-compose">Docker Compose</a></li>
-          </ul>
-        </li>
-        <li><a href="#starting-the-service">Starting the Service</a>
-          <ul>
-            <li><a href="#systemd">Systemd</a></li>
-            <li><a href="#running-manually-without-systemd">Running manually (without systemd)</a></li>
-            <li><a href="#docker">Docker</a></li>
-          </ul>
-        </li>
-        <li><a href="#verify">Verify</a></li>
-      </ul>
-    </li>
-  </ul>
-</nav>
-
-
-
-  </aside>
-  
  
-      </header>
+    </header>
+
+    <main class="book-page">
+      
+      
+  
 
       
-      
-  <article class="markdown book-article"><h1 id="install">Install<a class="anchor" href="#install">#</a></h1>
+  <article class="markdown book-article"><h1 id="install">Install<a class="anchor" href="#install" aria-label="Link"></a></h1>
 <p>There are a few methods for produciton installation. The install script is recommended for most deployments due to it&rsquo;s simplicity.</p>
 <table>
 	<thead>
@@ -299,18 +311,18 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 	</tbody>
 </table>
 <hr>
-<h2 id="install-script-recommended">Install Script (Recommended)<a class="anchor" href="#install-script-recommended">#</a></h2>
+<h2 id="install-script-recommended">Install Script (Recommended)<a class="anchor" href="#install-script-recommended" aria-label="Link"></a></h2>
 <p>The install script downloads the appropriate release binary, creates a dedicated service user, installs a <code>ca.json</code> template, and registers a hardened <code>systemd</code> service unit.</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh</span></span></code></pre></div><h3 id="environment-variable-overrides">Environment variable overrides<a class="anchor" href="#environment-variable-overrides">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | sudo sh</span></span></code></pre></div><h3 id="environment-variable-overrides">Environment variable overrides<a class="anchor" href="#environment-variable-overrides" aria-label="Link"></a></h3>
 <p>All defaults are overridable:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#78787e"># Defaults</span>
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">INSTALL_DIR</span><span style="color:#ff6ac1">=</span>/opt/acme-proxy
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">DB_DIR</span><span style="color:#ff6ac1">=</span>/opt/acme-proxy/db
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">CONFIG_FILE</span><span style="color:#ff6ac1">=</span>/opt/acme-proxy/ca.json
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">SERVICE_USER</span><span style="color:#ff6ac1">=</span>acme-proxy
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">SERVICE_GROUP</span><span style="color:#ff6ac1">=</span>acme-proxy</span></span></code></pre></div><p>Example — custom paths and user:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  sudo <span style="color:#ff5c57">INSTALL_DIR</span><span style="color:#ff6ac1">=</span>/usr/local/acme-proxy <span style="color:#ff5c57">SERVICE_USER</span><span style="color:#ff6ac1">=</span>acmeservice sh</span></span></code></pre></div><h3 id="what-the-script-installs">What the script installs<a class="anchor" href="#what-the-script-installs">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#6c7086;font-style:italic"># Defaults</span>
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">INSTALL_DIR</span><span style="color:#89dceb;font-weight:bold">=</span>/opt/acme-proxy
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">DB_DIR</span><span style="color:#89dceb;font-weight:bold">=</span>/opt/acme-proxy/db
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">CONFIG_FILE</span><span style="color:#89dceb;font-weight:bold">=</span>/opt/acme-proxy/ca.json
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">SERVICE_USER</span><span style="color:#89dceb;font-weight:bold">=</span>acme-proxy
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">SERVICE_GROUP</span><span style="color:#89dceb;font-weight:bold">=</span>acme-proxy</span></span></code></pre></div><p>Example — custom paths and user:</p>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -fsSL https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh | <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  sudo <span style="color:#f5e0dc">INSTALL_DIR</span><span style="color:#89dceb;font-weight:bold">=</span>/usr/local/acme-proxy <span style="color:#f5e0dc">SERVICE_USER</span><span style="color:#89dceb;font-weight:bold">=</span>acmeservice sh</span></span></code></pre></div><h3 id="what-the-script-installs">What the script installs<a class="anchor" href="#what-the-script-installs" aria-label="Link"></a></h3>
 <table>
 	<thead>
 			<tr>
@@ -339,66 +351,89 @@ Method Best for Install script Standard Linux servers, systemd environments Buil
 </table>
 <p>The service is <strong>enabled but not started</strong>. <a href="/configuration/">Configure</a> <code>ca.json</code> file before starting.</p>
 <hr>
-<h2 id="build-from-source">Build from Source<a class="anchor" href="#build-from-source">#</a></h2>
+<h2 id="build-from-source">Build from Source<a class="anchor" href="#build-from-source" aria-label="Link"></a></h2>
 <p><strong>Requirements:</strong> Go &gt;= 1.25, <code>libpcsclite-dev</code> (Debian/Ubuntu) or <code>pcsc-lite-devel</code> (RHEL/Rocky)</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#78787e"># Install build dependency</span>
-</span></span><span style="display:flex;"><span>sudo apt-get install -y libpcsclite-dev pkg-config   <span style="color:#78787e"># Debian / Ubuntu</span>
-</span></span><span style="display:flex;"><span>sudo dnf install -y pcsc-lite-devel pkgconfig        <span style="color:#78787e"># RHEL / Rocky</span>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#6c7086;font-style:italic"># Install build dependency</span>
+</span></span><span style="display:flex;"><span>sudo apt-get install -y libpcsclite-dev pkg-config   <span style="color:#6c7086;font-style:italic"># Debian / Ubuntu</span>
+</span></span><span style="display:flex;"><span>sudo dnf install -y pcsc-lite-devel pkgconfig        <span style="color:#6c7086;font-style:italic"># RHEL / Rocky</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#78787e"># Clone and build</span>
+</span></span><span style="display:flex;"><span><span style="color:#6c7086;font-style:italic"># Clone and build</span>
 </span></span><span style="display:flex;"><span>git clone https://github.com/esnet/acme-proxy.git
-</span></span><span style="display:flex;"><span><span style="color:#ff5c57">cd</span> acme-proxy
+</span></span><span style="display:flex;"><span><span style="color:#89dceb">cd</span> acme-proxy
 </span></span><span style="display:flex;"><span>make</span></span></code></pre></div><p>The build produces a <code>step-ca</code> binary in the current directory. Copy it to your install location:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#78787e"># configure `ca.json` file before starting step-ca</span>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#6c7086;font-style:italic"># configure `ca.json` file before starting step-ca</span>
 </span></span><span style="display:flex;"><span>./step-ca ca.json</span></span></code></pre></div><p>Use the <a href="https://raw.githubusercontent.com/esnet/acme-proxy/main/install.sh">installer script</a> as a reference to complete the setup with systemd service unit, service account user, permissions etc.</p>
 <hr>
-<h2 id="install-using-docker">Install using Docker<a class="anchor" href="#install-using-docker">#</a></h2>
+<h2 id="install-using-docker">Install using Docker<a class="anchor" href="#install-using-docker" aria-label="Link"></a></h2>
 <p>Run the following commands before starting the container on a linux host</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkdir -p /opt/acme-proxy/db
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>mkdir -p /opt/acme-proxy/db
 </span></span><span style="display:flex;"><span>touch /opt/acme-proxy/ca.json
 </span></span><span style="display:flex;"><span>chown -R 65532:65532 /opt/acme-proxy</span></span></code></pre></div><p>Make sure you have configured the <code>ca.json</code> file</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker run -d <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  --name acme-proxy <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -p 443:443 <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v <span style="color:#5af78e">&#34;</span><span style="color:#ff6ac1">$(</span><span style="color:#ff5c57">pwd</span><span style="color:#ff6ac1">)</span><span style="color:#5af78e">&#34;</span>/ca.json:/opt/acme-proxy/ca.json:ro <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  -v <span style="color:#5af78e">&#34;</span><span style="color:#ff6ac1">$(</span><span style="color:#ff5c57">pwd</span><span style="color:#ff6ac1">)</span><span style="color:#5af78e">&#34;</span>/db:/opt/acme-proxy/db <span style="color:#5af78e">\
-</span></span></span><span style="display:flex;"><span>  --restart unless-stopped <span style="color:#5af78e">\
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker run -d <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  --name acme-proxy <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  -p 443:443 <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  -v <span style="color:#a6e3a1">&#34;</span><span style="color:#cba6f7">$(</span><span style="color:#89dceb">pwd</span><span style="color:#cba6f7">)</span><span style="color:#a6e3a1">&#34;</span>/ca.json:/opt/acme-proxy/ca.json:ro <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  -v <span style="color:#a6e3a1">&#34;</span><span style="color:#cba6f7">$(</span><span style="color:#89dceb">pwd</span><span style="color:#cba6f7">)</span><span style="color:#a6e3a1">&#34;</span>/db:/opt/acme-proxy/db <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  --restart unless-stopped <span style="color:#89b4fa">\
 </span></span></span><span style="display:flex;"><span>ghcr.io/esnet/acme-proxy:latest</span></span></code></pre></div><p>View logs:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#ff6ac1">services</span>:
-</span></span><span style="display:flex;"><span>  <span style="color:#ff6ac1">acme-proxy</span>:
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">image</span>: ghcr.io/esnet/acme-proxy:latest
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">ports</span>:
-</span></span><span style="display:flex;"><span>      - <span style="color:#5af78e">&#34;443:443&#34;</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">volumes</span>:
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose" aria-label="Link"></a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#cba6f7">services</span>:
+</span></span><span style="display:flex;"><span>  <span style="color:#cba6f7">acme-proxy</span>:
+</span></span><span style="display:flex;"><span>    <span style="color:#cba6f7">image</span>: ghcr.io/esnet/acme-proxy:latest
+</span></span><span style="display:flex;"><span>    <span style="color:#cba6f7">ports</span>:
+</span></span><span style="display:flex;"><span>      - <span style="color:#a6e3a1">&#34;443:443&#34;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cba6f7">volumes</span>:
 </span></span><span style="display:flex;"><span>      - ./ca.json:/opt/acme-proxy/ca.json:ro
 </span></span><span style="display:flex;"><span>      - ./db:/opt/acme-proxy/db
-</span></span><span style="display:flex;"><span>    <span style="color:#ff6ac1">restart</span>: unless-stopped</span></span></code></pre></div><hr>
-<h2 id="starting-the-service">Starting the Service<a class="anchor" href="#starting-the-service">#</a></h2>
-<h3 id="systemd">Systemd<a class="anchor" href="#systemd">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo systemctl start acme-proxy
+</span></span><span style="display:flex;"><span>    <span style="color:#cba6f7">restart</span>: unless-stopped</span></span></code></pre></div><hr>
+<h2 id="starting-the-service">Starting the Service<a class="anchor" href="#starting-the-service" aria-label="Link"></a></h2>
+<h3 id="systemd">Systemd<a class="anchor" href="#systemd" aria-label="Link"></a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo systemctl start acme-proxy
 </span></span><span style="display:flex;"><span>sudo systemctl status acme-proxy</span></span></code></pre></div><p>On first start, acme-proxy registers an account with the upstream CA and obtains a TLS certificate for itself. This takes a few seconds. Follow the logs:</p>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo journalctl -u acme-proxy -f</span></span></code></pre></div><p>Expected startup sequence:</p>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>sudo journalctl -u acme-proxy -f</span></span></code></pre></div><p>Expected startup sequence:</p>
 <pre tabindex="0"><code>Building new tls configuration using step-ca x509 Signer Interface
 Initializing ACME client...
 [INFO] acme: Registering account for certadmin@example.com
 [INFO] [acmeproxy.example.com] acme: Obtaining bundled SAN certificate
 [INFO] [acmeproxy.example.com] acme: Validations succeeded; requesting certificates
 Successfully obtained certificate from external CA
-Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">Running manually (without systemd)<a class="anchor" href="#running-manually-without-systemd">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/opt/acme-proxy/step-ca /opt/acme-proxy/ca.json</span></span></code></pre></div><h3 id="docker">Docker<a class="anchor" href="#docker">#</a></h3>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker compose up -d
+Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">Running manually (without systemd)<a class="anchor" href="#running-manually-without-systemd" aria-label="Link"></a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>/opt/acme-proxy/step-ca /opt/acme-proxy/ca.json</span></span></code></pre></div><h3 id="docker">Docker<a class="anchor" href="#docker" aria-label="Link"></a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>docker compose up -d
 </span></span><span style="display:flex;"><span>docker logs -f acme-proxy</span></span></code></pre></div><hr>
-<h2 id="verify">Verify<a class="anchor" href="#verify">#</a></h2>
-<div class="highlight"><pre tabindex="0" style="color:#e2e4e5;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -s https://acmeproxy.example.com/acme/acme/directory | jq .
+<h2 id="verify">Verify<a class="anchor" href="#verify" aria-label="Link"></a></h2>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span>curl -s https://acmeproxy.example.com/acme/acme/directory | jq .
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">{</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#5af78e">&#34;newNonce&#34;</span>: <span style="color:#5af78e">&#34;https://proxy.example.com/acme/acme/new-nonce&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#5af78e">&#34;newAccount&#34;</span>: <span style="color:#5af78e">&#34;https://proxy.example.com/acme/acme/new-account&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#5af78e">&#34;newOrder&#34;</span>: <span style="color:#5af78e">&#34;https://proxy.example.com/acme/acme/new-order&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#5af78e">&#34;revokeCert&#34;</span>: <span style="color:#5af78e">&#34;https://proxy.example.com/acme/acme/revoke-cert&#34;</span>,
-</span></span><span style="display:flex;"><span>  <span style="color:#5af78e">&#34;keyChange&#34;</span>: <span style="color:#5af78e">&#34;https://proxy.example.com/acme/acme/key-change&#34;</span>
-</span></span><span style="display:flex;"><span><span style="color:#ff6ac1">}</span></span></span></code></pre></div><p>A JSON object with <code>newNonce</code>, <code>newAccount</code>, <code>newOrder</code> keys confirms the ACME server is running and accepting requests.</p>
+</span></span><span style="display:flex;"><span><span style="color:#89dceb;font-weight:bold">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e3a1">&#34;newNonce&#34;</span>: <span style="color:#a6e3a1">&#34;https://proxy.example.com/acme/acme/new-nonce&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e3a1">&#34;newAccount&#34;</span>: <span style="color:#a6e3a1">&#34;https://proxy.example.com/acme/acme/new-account&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e3a1">&#34;newOrder&#34;</span>: <span style="color:#a6e3a1">&#34;https://proxy.example.com/acme/acme/new-order&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e3a1">&#34;revokeCert&#34;</span>: <span style="color:#a6e3a1">&#34;https://proxy.example.com/acme/acme/revoke-cert&#34;</span>,
+</span></span><span style="display:flex;"><span>  <span style="color:#a6e3a1">&#34;keyChange&#34;</span>: <span style="color:#a6e3a1">&#34;https://proxy.example.com/acme/acme/key-change&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#89dceb;font-weight:bold">}</span></span></span></code></pre></div><p>A JSON object with <code>newNonce</code>, <code>newAccount</code>, <code>newOrder</code> keys confirms the ACME server is running and accepting requests.</p>
+<hr>
+<h2 id="verifying-release-binaries">Verifying Release Binaries<a class="anchor" href="#verifying-release-binaries" aria-label="Link"></a></h2>
+<p>Each release binary is accompanied by a SHA256 checksum file and a <a href="https://docs.sigstore.dev/cosign/overview/">cosign</a> signature bundle for supply-chain verification.</p>
+<h3 id="checksum">Checksum<a class="anchor" href="#checksum" aria-label="Link"></a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#f5e0dc">VERSION</span><span style="color:#89dceb;font-weight:bold">=</span>v1.0.0   <span style="color:#6c7086;font-style:italic"># replace with the release version</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#a6e3a1">&#34;https://github.com/esnet/acme-proxy/releases/download/</span><span style="color:#a6e3a1">${</span><span style="color:#f5e0dc">VERSION</span><span style="color:#a6e3a1">}</span><span style="color:#a6e3a1">/step-ca_linux_amd64&#34;</span>
+</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#a6e3a1">&#34;https://github.com/esnet/acme-proxy/releases/download/</span><span style="color:#a6e3a1">${</span><span style="color:#f5e0dc">VERSION</span><span style="color:#a6e3a1">}</span><span style="color:#a6e3a1">/SHA256SUMS&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>sha256sum --check --ignore-missing SHA256SUMS</span></span></code></pre></div><h3 id="signature">Signature<a class="anchor" href="#signature" aria-label="Link"></a></h3>
+<p>Binaries are signed using <a href="https://docs.sigstore.dev/cosign/signing/overview/">keyless signing</a> via GitHub Actions OIDC — no long-lived signing key exists. Verification requires the <code>.bundle</code> file published alongside each binary.</p>
+<div class="highlight"><pre tabindex="0" style="color:#cdd6f4;background-color:#1e1e2e;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-sh" data-lang="sh"><span style="display:flex;"><span><span style="color:#6c7086;font-style:italic"># Install cosign: https://docs.sigstore.dev/cosign/system_config/installation/</span>
+</span></span><span style="display:flex;"><span><span style="color:#f5e0dc">VERSION</span><span style="color:#89dceb;font-weight:bold">=</span>v1.0.0   <span style="color:#6c7086;font-style:italic"># replace with the release version</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#a6e3a1">&#34;https://github.com/esnet/acme-proxy/releases/download/</span><span style="color:#a6e3a1">${</span><span style="color:#f5e0dc">VERSION</span><span style="color:#a6e3a1">}</span><span style="color:#a6e3a1">/step-ca_linux_amd64&#34;</span>
+</span></span><span style="display:flex;"><span>curl -fsSLO <span style="color:#a6e3a1">&#34;https://github.com/esnet/acme-proxy/releases/download/</span><span style="color:#a6e3a1">${</span><span style="color:#f5e0dc">VERSION</span><span style="color:#a6e3a1">}</span><span style="color:#a6e3a1">/step-ca_linux_amd64.bundle&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>cosign verify-blob <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  --bundle step-ca_linux_amd64.bundle <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  --certificate-identity <span style="color:#a6e3a1">&#34;https://github.com/esnet/acme-proxy/.github/workflows/ci.yml@refs/tags/</span><span style="color:#a6e3a1">${</span><span style="color:#f5e0dc">VERSION</span><span style="color:#a6e3a1">}</span><span style="color:#a6e3a1">&#34;</span> <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  --certificate-oidc-issuer <span style="color:#a6e3a1">&#34;https://token.actions.githubusercontent.com&#34;</span> <span style="color:#89b4fa">\
+</span></span></span><span style="display:flex;"><span>  step-ca_linux_amd64</span></span></code></pre></div><p>A successful verification prints:</p>
+<pre tabindex="0"><code>Verified OK</code></pre><p>Substitute <code>amd64</code> with <code>arm64</code> for the ARM binary.</p>
 </article>
  
       
@@ -408,17 +443,13 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
   <div class="flex flex-wrap justify-between">
 
 <div>
-<a class="flex align-center" href="https://github.com/esnet/acme-proxy/commit/02c70f9320fdbd613ce8d9b050565cd26429da4e" title='Last modified by Kapil Agrawal | August 8, 2026' target="_blank" rel="noopener">
-    <img src="/icons/calendar.svg" class="book-icon" alt="Calendar" />
-    <span>August 8, 2026</span>
-  </a>
 
 </div>
 
 <div>
 
-  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/content/install.md" target="_blank" rel="noopener edit">
-    <img src="/icons/edit.svg" class="book-icon" alt="Edit" />
+  <a class="flex align-center" href="https://github.com/esnet/acme-proxy/edit/main/docs/content/getting-started/install.md" target="_blank" rel="noopener edit">
+    <svg class="book-icon" aria-hidden="true"><use href="/iconset.min.075abc2f4b2a115c7499b9f31325aecb3d24f471b1e8f41b8a634e4913b10214.svg#edit"></use></svg>
     <span>Edit this page</span>
   </a>
 
@@ -426,18 +457,11 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
 
 </div>
 
-
-
-
-
-  
-  
-  
-  <div class="flex flex-wrap justify-between">
+<div class="flex flex-wrap justify-between">
     <span>
     
       <a href="/quickstart/" class="flex align-center">
-        <img src="/icons/backward.svg" class="book-icon" alt="Backward" />
+        <svg class="book-icon" aria-hidden="true"><use href="/iconset.min.075abc2f4b2a115c7499b9f31325aecb3d24f471b1e8f41b8a634e4913b10214.svg#backward"></use></svg>
         <span>Quickstart</span>
       </a>
     
@@ -446,13 +470,11 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
     
       <a href="/configuration/" class="flex align-center">
         <span>Configure</span>
-        <img src="/icons/forward.svg" class="book-icon" alt="Forward" />
+        <svg class="book-icon" aria-hidden="true"><use href="/iconset.min.075abc2f4b2a115c7499b9f31325aecb3d24f471b1e8f41b8a634e4913b10214.svg#forward"></use></svg>
       </a>
     
     </span>
   </div>
-  
-
 
  
         
@@ -463,19 +485,18 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
   
  
         
-  
   
     <script>(function(){document.querySelectorAll("pre:has(code)").forEach(e=>{e.addEventListener("click",e.focus),e.addEventListener("copy",function(t){if(t.preventDefault(),navigator.clipboard){const t=window.getSelection().toString()||e.textContent;navigator.clipboard.writeText(t)}})})})()</script>
   
 
       </footer>
 
-      <label for="menu-control" class="hidden book-menu-overlay"></label>
-    </div>
+      <label for="menu-control" class="hidden book-menu-overlay" aria-hidden="true"></label>
+    </main>
 
     
   
-  <aside class="book-toc">
+  <aside class="book-toc" aria-label="Table of Contents">
     <div class="book-toc-content">
       
   
@@ -503,6 +524,12 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
           </ul>
         </li>
         <li><a href="#verify">Verify</a></li>
+        <li><a href="#verifying-release-binaries">Verifying Release Binaries</a>
+          <ul>
+            <li><a href="#checksum">Checksum</a></li>
+            <li><a href="#signature">Signature</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -510,11 +537,15 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
 
 
 
+
+
+
+
     </div>
   </aside>
   
  
-  </main>
+  </div>
 
   <script>
   document.querySelectorAll("pre:has(code)").forEach(function (pre) {
@@ -538,6 +569,8 @@ Serving HTTPS on :443 ...</code></pre><h3 id="running-manually-without-systemd">
 
 </body>
 </html>
+
+
 
 
 

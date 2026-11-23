@@ -293,7 +293,7 @@ Standalone mode runs a temporary HTTP server on port 80 to answer the ACME chall
 
 > [!IMPORTANT]
 > **Important**  
-Port 80 must be temporarily available on the host. If IPtables or network firewall is in place, they must allow incoming http traffic from acme-proxy to the host. See [Connectivity Requirements](_index.md/#connectivity-requirements)
+Port 80 must be temporarily available on the host. If IPtables or network firewall is in place, they must allow incoming http traffic from acme-proxy to the host. See [Connectivity Requirements](../_index.md#connectivity-requirements)
 
 {{< tabs >}}
 {{% tab "acme.sh" %}}
