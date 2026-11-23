@@ -183,7 +183,7 @@ Expected:
 }
 ```
 
-Verify [connectivity requirements](index.md/#connectivity-requirements) have been met before proceeding to the next step.
+Verify [connectivity requirements](../_index.md#connectivity-requirements) have been met before proceeding to the next step.
 
 ---
 

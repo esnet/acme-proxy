@@ -2,27 +2,32 @@ baseURL = 'http://docs.acme-proxy.es.net/'
 title = 'acme-proxy'
 theme = 'hugo-book'
 
-# Book configuration
 disablePathToLower = true
 enableGitInfo = true
+
+# Keep the existing page URLs when grouping content into sidebar sections.
+[permalinks.page]
+getting-started = '/:contentbasename/'
+client-guides = '/:contentbasename/'
 
 # Needed for mermaid/katex shortcodes
 [markup]
 [markup.goldmark.renderer]
-  unsafe = true
+unsafe = true
 
 [markup.tableOfContents]
-  startLevel = 1
+startLevel = 1
 
 [markup.highlight]
-  style = 'base16-snazzy'
+style = 'catppuccin-mocha'
 
 [[menu.before]]
-  name = 'Home'
-  url  = '/'
-  weight = 1
+name = 'Home'
+title = 'Home'
+pageRef = '/'
+weight = 1
 
 [[menu.after]]
-  name = 'GitHub'
-  url  = 'https://github.com/esnet/acme-proxy'
-  weight = 1
+name = 'GitHub'
+url = 'https://github.com/esnet/acme-proxy'
+weight = 1
